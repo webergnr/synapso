@@ -6,6 +6,15 @@ Skia (the fork `Cargo.toml` pins is
 [webergnr/freya](https://github.com/webergnr/freya/tree/synapso); why Freya is
 in [ADR-009](docs/adr-009-freya.md)).
 
+![A note and its canvas side by side](docs/screenshots/01-split.png)
+
+| | |
+|---|---|
+| ![The canvas](docs/screenshots/02-canvas.png) | ![The graph around a note](docs/screenshots/04-graph.png) |
+| ![The editor](docs/screenshots/03-note.png) | ![The document picker](docs/screenshots/05-picker.png) |
+
+![The light theme](docs/screenshots/06-light.png)
+
 ## Why Synapso
 
 Your second brain should be fast, yours, and boring in the right ways.
