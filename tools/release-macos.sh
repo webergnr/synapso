@@ -54,9 +54,19 @@ cat > Synapso.app/Contents/Info.plist <<PLIST
 </plist>
 PLIST
 
+# the linker signs the binary ad hoc, but not the bundle around it, and a
+# bundle that is half signed fails `codesign --verify` ("code has no resources
+# but signature indicates they must be present"), which `syspolicy_check
+# distribution` calls Fatal. Signed ad hoc as a whole it is only a Warning:
+# still not a Developer ID, so Gatekeeper still asks on first launch
+codesign --force --sign - Synapso.app
+codesign --verify --strict Synapso.app
+
 # `ditto` is the system's own zip — it preserves the executable bit, which
-# another machine's `zip` does not guarantee
-ditto -c -k --keepParent Synapso.app "$ZIP"
+# another machine's `zip` does not guarantee. --norsrc --noextattr: no `._`
+# AppleDouble files, which any unzip but Finder's leaves inside the signed
+# bundle
+ditto -c -k --norsrc --noextattr --keepParent Synapso.app "$ZIP"
 echo "built $ZIP (version $VERSION)"
 
 if [ "$UPLOAD" != "--upload" ]; then

@@ -95,8 +95,9 @@ jobs:
             ''
             'Neither binary is signed.'
             ''
-            '- **macOS**: Gatekeeper blocks the first launch. Right-click -> Open,'
-            '  or `xattr -d com.apple.quarantine Synapso.app`.'
+            '- **macOS**: Gatekeeper blocks the first launch. Try to open it once, then'
+            '  System Settings -> Privacy & Security -> Open Anyway (right-click -> Open'
+            '  on macOS 14 and older), or `xattr -dr com.apple.quarantine Synapso.app`.'
             '- **Windows**: SmartScreen warns. More info -> Run anyway.'
           ) -join "`n"
           # running this again (after a failed upload, say) hits a release that

@@ -361,9 +361,9 @@ tools/release-macos.sh v0.3.0 --upload
 ```
 
 It runs `cargo test --release --locked`, checks the binary really is arm64,
-assembles `Synapso.app`, zips it with `ditto`, and adds it to the draft —
-refusing to touch a release somebody already published. Publishing is by hand,
-after both `.zip` files are on the draft.
+assembles `Synapso.app`, signs it ad hoc, zips it with `ditto`, and adds it to
+the draft — refusing to touch a release somebody already published. Publishing
+is by hand, after both `.zip` files are on the draft.
 
 Neither binary is signed, so Gatekeeper and SmartScreen warn on first launch
 (the release notes say how to get past them).
