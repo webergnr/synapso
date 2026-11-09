@@ -1,0 +1,21 @@
+{
+  "nodes": [
+    {"id":"cap","type":"text","x":300,"y":58,"width":160,"height":18,"text":"happy path — v0.3","shape":"caption"},
+    {"id":"client","type":"text","x":110,"y":100,"width":140,"height":56,"text":"client"},
+    {"id":"gw","type":"text","x":350,"y":100,"width":160,"height":56,"text":"api gateway"},
+    {"id":"auth","type":"text","x":610,"y":100,"width":150,"height":56,"text":"auth service"},
+    {"id":"retry","type":"text","x":402,"y":232,"width":56,"height":48,"text":"retry?","shape":"triangle"},
+    {"id":"store","type":"text","x":600,"y":290,"width":170,"height":64,"text":"token store","shape":"ellipse"},
+    {"id":"img","type":"file","x":110,"y":480,"width":220,"height":150,"file":"sequence-diagram.png"},
+    {"id":"cardA","type":"file","x":370,"y":440,"width":240,"height":112,"file":"auth-flow.md","color":"1"},
+    {"id":"cardB","type":"file","x":660,"y":510,"width":240,"height":112,"file":"adapter-design.md","color":"2"}
+  ],
+  "edges": [
+    {"id":"e1","fromNode":"client","fromSide":"right","toNode":"gw","toSide":"left","route":"straight"},
+    {"id":"e2","fromNode":"gw","fromSide":"right","toNode":"auth","toSide":"left","route":"straight"},
+    {"id":"e3","fromNode":"gw","fromSide":"bottom","toNode":"retry","toSide":"top","route":"straight","label":"on 401"},
+    {"id":"e4","fromNode":"auth","fromSide":"bottom","toNode":"store","toSide":"top","route":"straight"},
+    {"id":"e5","fromNode":"cardA","fromSide":"top","toNode":"gw","toSide":"bottom","route":"straight","dash":true,"color":"1","toEnd":"none"},
+    {"id":"e6","fromNode":"cardB","fromSide":"top","toNode":"store","toSide":"bottom","route":"straight","dash":true,"color":"2","toEnd":"none"}
+  ]
+}

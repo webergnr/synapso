@@ -1,0 +1,30 @@
+[package]
+name = "synapso-core"
+version = "0.1.0"
+edition = "2021"
+description = "The vault model, the parsers and the geometry — everything that is not a shell. The Freya shell (the root package) sits on top of this and must never appear under it."
+license = "Apache-2.0"
+rust-version = "1.94"
+
+[dependencies]
+# the geometry and colour vocabulary Floem already speaks — the end state of
+# docs/floem-migration-trd.md §5 Phase 0. Pinned to the exact set the floem
+# spike proved (~/Projects/floem-spike), so Phase 1 adds no second version.
+# `=` pins: exactly the floem-spike lock, so Phase 1's floem unifies to one
+# kurbo/peniko instead of dragging a second point release into the workspace
+# (0.13.1 exists and changes `Rect::inflate`'s arity)
+kurbo = "=0.13.0"
+peniko = "=0.6.0"
+serde = { version = "1", features = ["derive"] }
+# preserve_order: Canvas::save round-trips through serde_json::Value to patch
+# in the required "text" key on empty text nodes (issue #43) — without this,
+# Value's map is a BTreeMap and every save would re-sort keys alphabetically
+serde_json = { version = "1", features = ["preserve_order"] }
+# vault.rs measures image files (image_dimensions) and decodes pixels for the
+# editor buffer. PNG only, same as the shell: every other format would just be
+# dependency weight
+image = { version = "0.25", default-features = false, features = ["png"] }
+# the system clipboard's *image* side — vault.rs::paste_image writes a pasted
+# screenshot into the vault's assets. A system service, not a shell: Floem's
+# clipboard can feed this same fn raw pixels at cutover if it ever wants to
+arboard = { version = "3", default-features = false, features = ["image-data"] }

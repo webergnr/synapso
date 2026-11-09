@@ -1,0 +1,37 @@
+Synapso
+Copyright 2026 Weber Grandizoli
+
+This product includes software developed by Weber Grandizoli.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License in the LICENSE file at the root of this repository, or at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+
+--- Bundled third-party assets -------------------------------------------
+
+The binary embeds two typefaces, which are NOT covered by the Apache License
+above and carry their own terms:
+
+    JetBrains Mono
+    Copyright 2020 The JetBrains Mono Project Authors
+    https://github.com/JetBrains/JetBrainsMono
+    SIL Open Font License, Version 1.1
+    Full text: assets/fonts/OFL.txt
+
+    Excalifont
+    Copyright (c) 2024 by Excalidraw
+    https://github.com/excalidraw/excalidraw
+    SIL Open Font License, Version 1.1
+    Full text: assets/fonts/OFL-Excalifont.txt
+
+Rust dependencies are not vendored here; their licenses travel with their own
+crates and are resolved by Cargo. See Cargo.toml and Cargo.lock.

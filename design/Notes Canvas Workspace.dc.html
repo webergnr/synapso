@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>body{margin:0;background:#0C0D10;color:#D6D9E0;font-family:'JetBrains Mono',ui-monospace,monospace}a{color:#56C8D8}a:hover{color:#4FD08A}</style>
+</helmet>
+<section data-screen-label="00 config" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">00 · config — section rail left, one form column right; rail spine marks the active section</div>
+  <div style="display:flex;gap:32px;flex-wrap:wrap">
+    <dc-import name="Config" theme="dark" section="editor" hint-size="1100px,720px" style="width:1100px;height:720px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+    <dc-import name="Config" theme="light" section="storage" hint-size="1100px,720px" style="width:1100px;height:720px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+  </div>
+</section>
+<section data-screen-label="01 dark workspace" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">01 · main workspace — dark (default)</div>
+  <dc-import name="Workspace" theme="dark" toast="{{ true }}" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="02 light workspace" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">02 · main workspace — light (same token layer, data-theme="light")</div>
+  <dc-import name="Workspace" theme="light" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="03 command palette" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">03 · command palette open (⌘K)</div>
+  <dc-import name="Workspace" theme="dark" palette="{{ true }}" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="03b document picker" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">03b · document picker (⌘P) — filter left, preview right, spine color carries through</div>
+  <dc-import name="Workspace" theme="dark" picker="{{ true }}" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="04 empty state" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">04 · first launch — empty state</div>
+  <dc-import name="Workspace" theme="dark" empty="{{ true }}" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="05a notes only" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">05a · notes-only view — tabs move to a horizontal top strip</div>
+  <dc-import name="Workspace" theme="dark" view="notes" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="05b canvas only" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">05b · canvas-only view — doc tabs hidden</div>
+  <dc-import name="Workspace" theme="dark" view="canvas" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="05c global search" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">05c · global search — "auth" highlighted across editor, code, tabs and canvas</div>
+  <dc-import name="Workspace" theme="dark" search="{{ true }}" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="05d search scope" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">05d · search scoped to notes — canvas matches drop out, count updates</div>
+  <dc-import name="Workspace" theme="dark" search="{{ true }}" search-scope="notes" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="05e node rotation" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">05e · rotating a node — handle above top edge, angle readout, ⇧ snaps to 15°</div>
+  <dc-import name="Workspace" theme="dark" rotate="{{ true }}" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="05e2 folder tree" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">05e2 · folder tree (⌘⇧E) — floats over the note, pin docks it; breadcrumb reveals the folder; dbl-click / drag / right-click the canvas to create</div>
+  <dc-import name="Workspace" theme="dark" tree="{{ true }}" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="05f graph orbit" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">05f · graph view — orbit: rings are hops from the focused note, dots sit beyond depth; scrubber replays how the vault grew</div>
+  <dc-import name="Graph" theme="dark" layout="orbit" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="05g graph branch" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">05g · graph view — branch (mind map) layout, light; same angles, unfolded left/right</div>
+  <dc-import name="Graph" theme="light" layout="branch" hint-size="1600px,940px" style="width:1600px;height:940px;display:block;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5)"></dc-import>
+</section>
+<section data-screen-label="06 component specs" style="padding:48px 48px 0">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">06 · component specifications ({{ specTheme }} — switch via tweaks)</div>
+  <div data-theme="{{ specTheme }}" style="width:1600px;background:var(--bg-base);color:var(--text-primary);font-family:var(--font-mono);font-size:var(--text-base);border-radius:8px;border:1px solid var(--border-subtle);padding:var(--space-8);display:flex;flex-wrap:wrap;gap:var(--space-6);align-items:flex-start;line-height:var(--leading-normal)">
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:660px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">buttons</div>
+      <div style="display:flex;align-items:center;gap:var(--space-6)"><span style="width:80px;font-size:var(--text-xs);color:var(--text-muted)">primary</span>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">new note</button><span style="font-size:var(--text-xs);color:var(--text-faint)">default</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer;filter:brightness(1.12)">new note</button><span style="font-size:var(--text-xs);color:var(--text-faint)">hover</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer;filter:brightness(.88)">new note</button><span style="font-size:var(--text-xs);color:var(--text-faint)">active</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer;box-shadow:var(--shadow-focus)">new note</button><span style="font-size:var(--text-xs);color:var(--text-faint)">focus</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);opacity:.4;cursor:not-allowed">new note</button><span style="font-size:var(--text-xs);color:var(--text-faint)">disabled</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-6)"><span style="width:80px;font-size:var(--text-xs);color:var(--text-muted)">secondary</span>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">export</button><span style="font-size:var(--text-xs);color:var(--text-faint)">default</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--surface-overlay);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">export</button><span style="font-size:var(--text-xs);color:var(--text-faint)">hover</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">export</button><span style="font-size:var(--text-xs);color:var(--text-faint)">active</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer;box-shadow:var(--shadow-focus)">export</button><span style="font-size:var(--text-xs);color:var(--text-faint)">focus</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);opacity:.4;cursor:not-allowed">export</button><span style="font-size:var(--text-xs);color:var(--text-faint)">disabled</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-6)"><span style="width:80px;font-size:var(--text-xs);color:var(--text-muted)">ghost</span>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);background:transparent;color:var(--text-muted);border:var(--border-w) solid transparent;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">cancel</button><span style="font-size:var(--text-xs);color:var(--text-faint)">default</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid transparent;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">cancel</button><span style="font-size:var(--text-xs);color:var(--text-faint)">hover</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid transparent;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">cancel</button><span style="font-size:var(--text-xs);color:var(--text-faint)">active</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);background:transparent;color:var(--text-muted);border:var(--border-w) solid transparent;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer;box-shadow:var(--shadow-focus)">cancel</button><span style="font-size:var(--text-xs);color:var(--text-faint)">focus</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><button style="font-family:var(--font-mono);font-size:var(--text-sm);background:transparent;color:var(--text-muted);border:var(--border-w) solid transparent;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);opacity:.4;cursor:not-allowed">cancel</button><span style="font-size:var(--text-xs);color:var(--text-faint)">disabled</span></div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:420px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">inputs</div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+        <div style="display:flex;align-items:center;gap:var(--space-5)"><input value="document title" style="font-family:var(--font-mono);font-size:var(--text-base);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);width:220px;outline:none"><span style="font-size:var(--text-xs);color:var(--text-faint)">default</span></div>
+        <div style="display:flex;align-items:center;gap:var(--space-5)"><input value="adapter-desi" style="font-family:var(--font-mono);font-size:var(--text-base);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--accent);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);width:220px;outline:none;box-shadow:var(--shadow-focus)"><span style="font-size:var(--text-xs);color:var(--text-faint)">focus</span></div>
+        <div style="display:flex;align-items:center;gap:var(--space-5)"><input value="read-only path" disabled="disabled" style="font-family:var(--font-mono);font-size:var(--text-base);background:var(--surface-inset);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);width:220px;opacity:.5"><span style="font-size:var(--text-xs);color:var(--text-faint)">disabled</span></div>
+      </div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-top:var(--space-3)">toggle</div>
+      <div style="display:flex;align-items:center;gap:var(--space-7)">
+        <div style="display:flex;align-items:center;gap:var(--space-3)"><span style="width:30px;height:17px;border-radius:var(--radius-round);background:var(--surface-inset);border:var(--border-w) solid var(--border-strong);position:relative;display:inline-block"><span style="position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:var(--radius-round);background:var(--text-faint)"></span></span><span style="font-size:var(--text-xs);color:var(--text-faint)">off</span></div>
+        <div style="display:flex;align-items:center;gap:var(--space-3)"><span style="width:30px;height:17px;border-radius:var(--radius-round);background:var(--accent);position:relative;display:inline-block"><span style="position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:var(--radius-round);background:var(--on-accent)"></span></span><span style="font-size:var(--text-xs);color:var(--text-faint)">on</span></div>
+        <div style="display:flex;align-items:center;gap:var(--space-3)"><span style="width:30px;height:17px;border-radius:var(--radius-round);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);position:relative;display:inline-block;opacity:.4"><span style="position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:var(--radius-round);background:var(--text-faint)"></span></span><span style="font-size:var(--text-xs);color:var(--text-faint)">disabled</span></div>
+      </div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-top:var(--space-3)">theme switcher</div>
+      <div style="display:inline-flex;align-self:flex-start;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:2px;font-size:var(--text-sm)">
+        <span style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);background:var(--surface-raised);box-shadow:var(--shadow-1);font-weight:var(--weight-medium)">◐ dark</span>
+        <span style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);color:var(--text-muted);cursor:pointer" style-hover="color:var(--text-primary)">○ light</span>
+      </div>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:420px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">dropdown</div>
+      <div style="display:flex;gap:var(--space-7);align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)"><div style="display:flex;align-items:center;gap:var(--space-4);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);font-size:var(--text-base);width:130px;cursor:pointer"><span>sled</span><span style="flex:1"></span><span style="color:var(--text-faint)">▾</span></div><span style="font-size:var(--text-xs);color:var(--text-faint)">closed</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <div style="display:flex;align-items:center;gap:var(--space-4);background:var(--surface-inset);border:var(--border-w) solid var(--accent);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);font-size:var(--text-base);width:130px"><span>sled</span><span style="flex:1"></span><span style="color:var(--text-faint)">▴</span></div>
+          <div style="background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-2);display:flex;flex-direction:column;font-size:var(--text-sm);width:158px;z-index:var(--z-popover)">
+            <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-1)"><span style="color:var(--accent)">✓</span><span>sled</span></div>
+            <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);background:var(--surface-raised)"><span style="width:12px"></span><span>sqlite</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint)">hover</span></div>
+            <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span style="width:12px"></span><span>memory</span></div>
+            <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);color:var(--text-faint);opacity:.5"><span style="width:12px"></span><span>custom…</span></div>
+          </div>
+          <span style="font-size:var(--text-xs);color:var(--text-faint)">open</span>
+        </div>
+      </div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-top:var(--space-3)">toast</div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-4);align-items:flex-start">
+        <div style="background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-4) var(--space-6);display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-sm)"><span style="color:var(--accent)">✓</span><span>workspace saved</span><span style="color:var(--text-faint);font-size:var(--text-xs)">2s ago</span></div>
+        <div style="background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-4) var(--space-6);display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-sm);position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:var(--danger)"></span><span style="color:var(--danger)">✕</span><span>couldn't write to disk</span><button style="font-family:var(--font-mono);font-size:var(--text-xs);background:transparent;color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-1);padding:1px var(--space-3);cursor:pointer">retry</button></div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:300px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">vertical doc tabs</div>
+      <div style="display:flex;gap:var(--space-5);align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="position:relative;display:flex;justify-content:center;width:34px;height:150px;background:var(--surface-raised);color:var(--text-primary);font-size:var(--text-sm);font-weight:var(--weight-medium)"><div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:var(--doc-1);box-shadow:0 0 8px var(--doc-1)"></div><span style="writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;gap:var(--space-3);padding:var(--space-6) 0">auth-flow.md<span title="Close · ⌘W" style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint);font-size:var(--text-xs);cursor:pointer" style-hover="background:var(--surface-overlay);color:var(--text-primary)">✕</span></span></div><span style="font-size:var(--text-xs);color:var(--text-faint)">active</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="position:relative;display:flex;justify-content:center;width:34px;height:150px;color:var(--text-muted);font-size:var(--text-sm)"><div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:var(--doc-4);opacity:.45"></div><span style="writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;padding:var(--space-6) 0">notes.md</span></div><span style="font-size:var(--text-xs);color:var(--text-faint)">inactive</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="position: relative; display: flex; justify-content: center; width: 34px; height: 150px; color: var(--text-muted); font-size: 11px; flex-direction: column-reverse"><div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:var(--doc-3);opacity:.45"></div><span style="writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;padding:var(--space-6) 0 32px"><span>roadmap.md</span></span><span title="unsaved changes" style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:var(--radius-round);background:var(--doc-3)"></span></div><span style="font-size:var(--text-xs);color:var(--text-faint)">unsaved</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="position:relative;display:flex;justify-content:center;width:34px;height:150px;background:var(--surface-overlay);color:var(--text-primary);font-size:11px"><div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:var(--doc-3)"></div><span style="writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;padding:var(--space-6) 0 32px"><span>roadmap.md</span></span><span title="Close · ⌘W — unsaved changes" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);background:var(--surface-raised);color:var(--doc-3);font-size:var(--text-xs);cursor:pointer">✕</span></div><span style="font-size:var(--text-xs);color:var(--text-faint);text-align:center">unsaved · hover</span></div>
+      </div>
+      <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal)">tab spine = the doc spine: same 2px line continues down the editor gutter and onto that doc's canvas card. the unsaved dot sits where the close button appears on hover, so it swaps in place; the strip scrolls rather than collapsing tabs.</div>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:340px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">tool rail states</div>
+      <div style="display:flex;gap:var(--space-6);align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--text-muted);background:var(--surface-raised)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2.5" y="3.5" width="11" height="9" rx="1"></rect></svg></div><span style="font-size:var(--text-xs);color:var(--text-faint)">default</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--text-primary);background:var(--surface-overlay)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2.5" y="3.5" width="11" height="9" rx="1"></rect></svg></div><span style="font-size:var(--text-xs);color:var(--text-faint)">hover</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--accent);background:var(--accent-dim)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2.5" y="3.5" width="11" height="9" rx="1"></rect></svg></div><span style="font-size:var(--text-xs);color:var(--text-faint)">active</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--text-muted);background:var(--surface-raised);box-shadow:var(--shadow-focus)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2.5" y="3.5" width="11" height="9" rx="1"></rect></svg></div><span style="font-size:var(--text-xs);color:var(--text-faint)">focus</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-4)">
+        <div style="background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-2) var(--space-4);display:inline-flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm)"><span>Rectangle</span><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)">R</span></div>
+        <span style="font-size:var(--text-xs);color:var(--text-faint)">tooltip · --z-popover</span>
+      </div>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:660px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">canvas objects · selection · connectors</div>
+      <div style="position:relative;height:200px;border-radius:var(--radius-2);background:var(--canvas-bg);background-image:radial-gradient(var(--canvas-dot) 1px,transparent 1px);background-size:22px 22px;border:var(--border-w) solid var(--border-subtle);overflow:hidden">
+        <div style="position:absolute;left:20px;top:24px;width:100px;height:44px;background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:var(--radius-3);display:flex;align-items:center;justify-content:center;font-size:var(--text-sm)">rect</div>
+        <div style="position:absolute;left:140px;top:24px;width:100px;height:44px;background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm)">ellipse</div>
+        <svg style="position:absolute;left:258px;top:20px" width="60" height="54" viewBox="0 0 60 54"><polygon points="30,4 56,50 4,50" fill="var(--surface-raised)" stroke="var(--border-strong)" stroke-width="1.5"></polygon></svg>
+        <svg style="position:absolute;left:334px;top:26px" width="90" height="40" viewBox="0 0 90 40"><line x1="4" y1="32" x2="78" y2="10" stroke="var(--connector)" stroke-width="1.5"></line><polygon points="84,8 74,9 78,17" fill="var(--connector)"></polygon></svg>
+        <div style="position:absolute;left:340px;top:64px;font-size:var(--text-xs);color:var(--text-faint)">arrow</div>
+        <div style="position:absolute;left:440px;top:30px;font-size:var(--text-sm);color:var(--text-muted)">free text label</div>
+        <div style="position:absolute;left:20px;top:100px;width:150px;height:80px;border:var(--border-w) dashed var(--accent);background:var(--accent-dim)"></div>
+        <div style="position:absolute;left:32px;top:108px;font-size:var(--text-xs);color:var(--accent)">marquee</div>
+        <div style="position:absolute;left:200px;top:110px;width:120px;height:60px;background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:var(--radius-3);box-shadow:0 0 0 1px var(--accent);display:flex;align-items:center;justify-content:center;font-size:var(--text-sm)">selected</div>
+        <div style="position:absolute;left:196px;top:106px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+        <div style="position:absolute;left:316px;top:106px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+        <div style="position:absolute;left:196px;top:166px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+        <div style="position:absolute;left:316px;top:166px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+        <svg style="position:absolute;left:360px;top:100px" width="270" height="90" viewBox="0 0 270 90">
+          <line x1="20" y1="30" x2="120" y2="30" stroke="var(--connector)" stroke-width="1.5" stroke-dasharray="4 4"></line>
+          <circle cx="20" cy="30" r="4" fill="var(--canvas-bg)" stroke="var(--connector)" stroke-width="1.5"></circle>
+          <circle cx="120" cy="30" r="4" fill="var(--doc-1)"></circle>
+          <circle cx="200" cy="30" r="4" fill="var(--canvas-bg)" stroke="var(--accent)" stroke-width="1.5"></circle>
+          <circle cx="200" cy="30" r="8" fill="none" stroke="var(--accent)" stroke-width="1" opacity=".4"></circle>
+        </svg>
+        <div style="position:absolute;left:368px;top:142px;font-size:var(--text-xs);color:var(--text-faint)">endpoint: free · connected (doc color) · hover</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:340px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">doc-reference card</div>
+      <div style="position:relative;width:240px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-1);overflow:hidden">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:var(--doc-4);box-shadow:0 0 8px var(--doc-4)"></div>
+        <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-2)">
+          <div style="display:flex;align-items:center;gap:var(--space-3)"><span style="font-size:var(--text-sm);font-weight:var(--weight-medium)">roadmap.md</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2)">doc</span></div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted)">v0.3 ships auth + adapters; canvas frames land in v0.4…</div>
+          <div style="font-size:var(--text-xs);color:var(--text-faint)">2 links · edited 3d ago</div>
+        </div>
+      </div>
+      <span style="font-size:var(--text-xs);color:var(--text-faint)">default — selected state adds 0 0 0 1px --accent + handles (see screens)</span>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:520px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">context menus</div>
+      <div style="display:flex;gap:var(--space-7);align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <div style="width:210px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-2);font-size:var(--text-sm)">
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);background:var(--surface-raised)"><span>add doc reference…</span></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span>bring to front</span><span style="color:var(--text-faint)">]</span></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span>send to back</span><span style="color:var(--text-faint)">[</span></div>
+            <div style="height:1px;background:var(--border-subtle);margin:var(--space-2) var(--space-2)"></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span>copy</span><span style="color:var(--text-faint)">⌘C</span></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span>duplicate</span><span style="color:var(--text-faint)">⌘D</span></div>
+            <div style="height:1px;background:var(--border-subtle);margin:var(--space-2) var(--space-2)"></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--danger)"><span>delete</span><span style="opacity:.7">⌫</span></div>
+          </div>
+          <span style="font-size:var(--text-xs);color:var(--text-faint)">canvas variant</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <div style="width:230px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-2);font-size:var(--text-sm)">
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span>cut</span><span style="color:var(--text-faint)">⌘X</span></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span>copy</span><span style="color:var(--text-faint)">⌘C</span></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-faint);opacity:.5"><span>paste as plain text</span><span>⌘⇧V</span></div>
+            <div style="height:1px;background:var(--border-subtle);margin:var(--space-2) var(--space-2)"></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span>toggle checkbox</span><span style="color:var(--text-faint)">⌘↵</span></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);color:var(--text-muted)"><span>insert code block</span><span style="color:var(--text-faint)">⌘⇧C</span></div>
+            <div style="height:1px;background:var(--border-subtle);margin:var(--space-2) var(--space-2)"></div>
+            <div style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4)"><span>send to canvas</span><span style="color:var(--text-faint)">→</span></div>
+          </div>
+          <span style="font-size:var(--text-xs);color:var(--text-faint)">editor variant</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:360px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">new note modal</div>
+      <div style="background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:280px">
+        <div style="display:flex;align-items:center"><span style="font-size:var(--text-sm);font-weight:var(--weight-medium)">new note</span><span style="flex:1"></span><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)">esc</span></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <span style="font-size:var(--text-xs);color:var(--text-muted)">name</span>
+          <input value="adapter-tests.md" style="font-family:var(--font-mono);font-size:var(--text-base);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--accent);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);outline:none;box-shadow:var(--shadow-focus)">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+          <span style="font-size:var(--text-xs);color:var(--text-muted)">color</span>
+          <div style="display:flex;gap:var(--space-5)">
+            <span style="width:18px;height:18px;border-radius:var(--radius-round);background:var(--doc-1);cursor:pointer"></span>
+            <span style="width:18px;height:18px;border-radius:var(--radius-round);background:var(--doc-2);cursor:pointer;box-shadow:0 0 0 2px var(--surface-overlay),0 0 0 3.5px var(--doc-2)"></span>
+            <span style="width:18px;height:18px;border-radius:var(--radius-round);background:var(--doc-3);cursor:pointer"></span>
+            <span style="width:18px;height:18px;border-radius:var(--radius-round);background:var(--doc-4);cursor:pointer"></span>
+            <span style="width:1px;background:var(--border-subtle);align-self:stretch;margin:0 var(--space-1)"></span>
+            <span title="choose colour" style="width:18px;height:18px;border-radius:var(--radius-round);cursor:pointer;background:conic-gradient(from 90deg,#E0584F,#E0A24F,#4FD08A,#56C8D8,#7B8CFF,#C86FE0,#E0584F);box-shadow:inset 0 0 0 3px var(--surface-panel),0 0 0 1px var(--border-strong)"></span>
+          </div>
+          <div style="position:relative;width:236px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-4)">
+            <div style="display:flex;align-items:center;font-size:var(--text-xs);color:var(--text-muted)"><span>choose colour</span><span style="flex:1"></span><span style="color:var(--text-faint);cursor:pointer">×</span></div>
+            <div style="height:96px;border-radius:var(--radius-1);background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),#56C8D8;position:relative">
+              <span style="position:absolute;left:70%;top:28%;width:10px;height:10px;border-radius:var(--radius-round);border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);transform:translate(-50%,-50%)"></span>
+            </div>
+            <div style="height:10px;border-radius:var(--radius-round);background:linear-gradient(to right,#E0584F,#E0A24F,#4FD08A,#56C8D8,#7B8CFF,#C86FE0,#E0584F);position:relative">
+              <span style="position:absolute;left:56%;top:50%;width:6px;height:16px;border-radius:2px;background:var(--surface-raised);border:var(--border-w) solid var(--border-strong);transform:translate(-50%,-50%)"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-3)">
+              <span style="width:18px;height:18px;border-radius:var(--radius-round);background:#56C8D8;flex:none"></span>
+              <input value="#56C8D8" style="flex:1;min-width:0;font-family:var(--font-mono);font-size:var(--text-xs);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:var(--space-2) var(--space-3)">
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-3);background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-3) var(--space-4);font-size:var(--text-sm)">
+          <span style="width:var(--spine-w);height:14px;background:var(--doc-2);box-shadow:0 0 6px var(--doc-2);flex:none"></span>
+          <span>adapter-tests.md</span>
+          <span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint)">preview</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:var(--space-4)">
+          <button style="font-family:var(--font-mono);font-size:var(--text-sm);background:transparent;color:var(--text-muted);border:var(--border-w) solid transparent;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">cancel</button>
+          <button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer" style-hover="filter:brightness(1.1)">create ↵</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);width:660px">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">markdown editor type spec</div>
+      <sc-for list="{{ mdSpec }}" as="m" hint-placeholder-count="6">
+        <div style="display:flex;align-items:baseline;gap:var(--space-6);border-bottom:var(--border-w) solid var(--border-subtle);padding-bottom:var(--space-3)">
+          <span style="width:110px;flex:none;font-size:var(--text-xs);color:var(--text-muted)">{{ m.el }}</span>
+          <span style="width:250px;flex:none;font-size:var(--text-xs);color:var(--text-faint)">{{ m.spec }}</span>
+          <span style="font-size:{{ m.size }};font-weight:{{ m.weight }};color:{{ m.color }}">{{ m.sample }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+<section data-screen-label="07 token reference" style="padding:48px 48px 96px">
+  <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6A7180;margin-bottom:12px">07 · token reference — source of truth is tokens.css</div>
+  <div data-theme="dark" style="width:1600px;background:var(--bg-base);color:var(--text-primary);font-family:var(--font-mono);font-size:var(--text-base);border-radius:8px;border:1px solid var(--border-subtle);padding:var(--space-8);display:flex;flex-wrap:wrap;gap:var(--space-6);align-items:flex-start;line-height:var(--leading-normal)">
+    <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);width:620px;display:flex;flex-direction:column;gap:var(--space-3)">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-bottom:var(--space-2)">color — semantic layer</div>
+      <div style="display:grid;grid-template-columns:170px 130px 130px 1fr;gap:var(--space-2) var(--space-5);font-size:var(--text-xs);color:var(--text-faint)"><span></span><span>dark</span><span>light</span><span></span></div>
+      <sc-for list="{{ colorTokens }}" as="c" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:170px 130px 130px 1fr;gap:var(--space-2) var(--space-5);align-items:center;font-size:var(--text-xs)">
+          <span style="color:var(--text-primary)">{{ c.n }}</span>
+          <span style="display:flex;align-items:center;gap:var(--space-3)"><span style="width:14px;height:14px;border-radius:var(--radius-1);border:var(--border-w) solid var(--border-subtle);background:{{ c.d }};flex:none"></span><span style="color:var(--text-muted)">{{ c.d }}</span></span>
+          <span style="display:flex;align-items:center;gap:var(--space-3)"><span style="width:14px;height:14px;border-radius:var(--radius-1);border:var(--border-w) solid var(--border-subtle);background:{{ c.l }};flex:none"></span><span style="color:var(--text-muted)">{{ c.l }}</span></span>
+          <span style="color:var(--text-faint)">{{ c.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-6);width:440px">
+      <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-3)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-bottom:var(--space-2)">typography — JetBrains Mono only</div>
+        <sc-for list="{{ typeTokens }}" as="t" hint-placeholder-count="6">
+          <div style="display:flex;align-items:baseline;gap:var(--space-5)"><span style="width:90px;flex:none;font-size:var(--text-xs);color:var(--text-primary)">{{ t.n }}</span><span style="width:36px;flex:none;font-size:var(--text-xs);color:var(--text-muted)">{{ t.v }}</span><span style="font-size:{{ t.v }};white-space:nowrap;overflow:hidden">{{ t.use }}</span></div>
+        </sc-for>
+        <div style="font-size:var(--text-xs);color:var(--text-faint);margin-top:var(--space-2)">weights 400 / 500 / 700 · leading 1.25 / 1.55 / 1.75</div>
+      </div>
+      <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-3)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-bottom:var(--space-2)">spacing</div>
+        <sc-for list="{{ spaceTokens }}" as="s" hint-placeholder-count="9">
+          <div style="display:flex;align-items:center;gap:var(--space-5)"><span style="width:90px;flex:none;font-size:var(--text-xs);color:var(--text-primary)">{{ s.n }}</span><span style="width:36px;flex:none;font-size:var(--text-xs);color:var(--text-muted)">{{ s.v }}</span><span style="height:10px;width:{{ s.v }};background:var(--accent);opacity:.7;border-radius:1px"></span></div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-6);width:420px">
+      <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">radius · borders</div>
+        <div style="display:flex;gap:var(--space-6);align-items:flex-end">
+          <sc-for list="{{ radiusTokens }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="width:52px;height:34px;background:var(--surface-raised);border:var(--border-w) solid var(--border-strong);border-radius:{{ r.v }}"></div><span style="font-size:var(--text-xs);color:var(--text-muted)">{{ r.n }}</span><span style="font-size:var(--text-xs);color:var(--text-faint)">{{ r.v }}</span></div>
+          </sc-for>
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--text-faint)">--border-w 1px everywhere · --spine-w 2px (doc spine only)</div>
+      </div>
+      <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">shadows</div>
+        <div style="display:flex;gap:var(--space-6)">
+          <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="width:90px;height:50px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-1)"></div><span style="font-size:var(--text-xs);color:var(--text-muted)">--shadow-1</span><span style="font-size:var(--text-xs);color:var(--text-faint)">canvas cards</span></div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="width:90px;height:50px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2)"></div><span style="font-size:var(--text-xs);color:var(--text-muted)">--shadow-2</span><span style="font-size:var(--text-xs);color:var(--text-faint)">rail, menus</span></div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-2);align-items:center"><div style="width:90px;height:50px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-3)"></div><span style="font-size:var(--text-xs);color:var(--text-muted)">--shadow-3</span><span style="font-size:var(--text-xs);color:var(--text-faint)">palette</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-5)"><div style="width:90px;height:26px;background:var(--surface-raised);border-radius:var(--radius-2);box-shadow:var(--shadow-focus)"></div><span style="font-size:var(--text-xs);color:var(--text-muted)">--shadow-focus — keyboard focus ring, both themes</span></div>
+      </div>
+      <div style="background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-2)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-bottom:var(--space-2)">z-index</div>
+        <sc-for list="{{ zTokens }}" as="z" hint-placeholder-count="6">
+          <div style="display:flex;gap:var(--space-5);font-size:var(--text-xs)"><span style="width:110px;color:var(--text-primary)">{{ z.n }}</span><span style="width:30px;color:var(--text-muted)">{{ z.v }}</span><span style="color:var(--text-faint)">{{ z.use }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;specTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;,&quot;section&quot;:&quot;Spec sheet&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      specTheme: this.props.specTheme ?? 'dark',
+      colorTokens: [
+        { n: '--bg-base', d: '#131418', l: '#F6F7F9', note: 'window base' },
+        { n: '--surface-panel', d: '#1A1C21', l: '#FFFFFF', note: 'panes, bars' },
+        { n: '--surface-raised', d: '#22252C', l: '#FFFFFF', note: 'cards, rail, shapes' },
+        { n: '--surface-overlay', d: '#262A32', l: '#FFFFFF', note: 'menus, palette, toasts' },
+        { n: '--surface-inset', d: '#0E0F12', l: '#EFF1F4', note: 'code, inputs, wells' },
+        { n: '--border-subtle', d: '#2B2F38', l: '#E2E5EA', note: '' },
+        { n: '--border-strong', d: '#3A4050', l: '#C7CCD5', note: 'shape strokes' },
+        { n: '--text-primary', d: '#D6D9E0', l: '#23262D', note: '' },
+        { n: '--text-muted', d: '#8A91A0', l: '#646B79', note: '' },
+        { n: '--text-faint', d: '#5B6270', l: '#9AA1AD', note: 'captions, kbd' },
+        { n: '--text-link', d: '#56C8D8', l: '#0E7A8A', note: '' },
+        { n: '--accent', d: '#4FD08A', l: '#1E9E5F', note: 'selection, focus, primary' },
+        { n: '--on-accent', d: '#0C1F14', l: '#FFFFFF', note: '' },
+        { n: '--danger', d: '#E5484D', l: '#CE2C31', note: '' },
+        { n: '--doc-1', d: '#E8737F', l: '#C4414E', note: 'doc color · coral' },
+        { n: '--doc-2', d: '#E3B341', l: '#9A7011', note: 'doc color · amber' },
+        { n: '--doc-3', d: '#A78BFA', l: '#7554D6', note: 'doc color · violet' },
+        { n: '--doc-4', d: '#56C8D8', l: '#0D8296', note: 'doc color · cyan' },
+        { n: '--canvas-bg', d: '#101115', l: '#F0F1F4', note: '' },
+        { n: '--canvas-dot', d: '#25282E', l: '#D5D9E0', note: 'grid dots' },
+        { n: '--connector', d: '#4A5162', l: '#A9B0BC', note: 'neutral connectors' },
+      ],
+      typeTokens: [
+        { n: '--text-xs', v: '10px', use: 'status bar, captions, kbd' },
+        { n: '--text-sm', v: '11px', use: 'chrome: tabs, menus, rail' },
+        { n: '--text-base', v: '13px', use: 'editor body, inputs' },
+        { n: '--text-md', v: '15px', use: 'h3, card titles' },
+        { n: '--text-lg', v: '18px', use: 'h2' },
+        { n: '--text-xl', v: '24px', use: 'h1' },
+      ],
+      spaceTokens: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i, k) => ({ n: '--space-' + i, v: ['2px', '4px', '6px', '8px', '12px', '16px', '24px', '32px', '48px'][k] })),
+      radiusTokens: [
+        { n: '--radius-1', v: '3px' }, { n: '--radius-2', v: '4px' }, { n: '--radius-3', v: '6px' }, { n: '--radius-round', v: '999px' },
+      ],
+      zTokens: [
+        { n: '--z-base', v: '0', use: 'panes, status bar' },
+        { n: '--z-objects', v: '10', use: 'canvas objects' },
+        { n: '--z-rail', v: '20', use: 'tool rail' },
+        { n: '--z-scrim', v: '30', use: 'overlay scrim' },
+        { n: '--z-popover', v: '40', use: 'palette, menus, tooltips' },
+        { n: '--z-toast', v: '50', use: 'toasts' },
+      ],
+      mdSpec: [
+        { el: 'h1', spec: '--text-xl · --weight-bold · 1.25', size: 'var(--text-xl)', weight: 'var(--weight-bold)', color: 'var(--text-primary)', sample: 'Auth Flow' },
+        { el: 'h2', spec: '--text-lg · --weight-bold · 1.25', size: 'var(--text-lg)', weight: 'var(--weight-bold)', color: 'var(--text-primary)', sample: 'Token exchange' },
+        { el: 'body', spec: '--text-base · --weight-regular · 1.55', size: 'var(--text-base)', weight: 'var(--weight-regular)', color: 'var(--text-primary)', sample: 'Tokens are minted once and cached locally.' },
+        { el: 'link', spec: '--text-link · underline, offset 2px', size: 'var(--text-base)', weight: 'var(--weight-regular)', color: 'var(--text-link)', sample: 'adapter-design.md' },
+        { el: 'blockquote', spec: '--text-muted · 2px --border-strong left', size: 'var(--text-base)', weight: 'var(--weight-regular)', color: 'var(--text-muted)', sample: 'Only the gateway sees the client secret.' },
+        { el: 'code', spec: '12px · --surface-inset · --radius-1', size: '12px', weight: 'var(--weight-regular)', color: 'var(--text-primary)', sample: 'TokenStore' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

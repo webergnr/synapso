@@ -1,0 +1,4 @@
+# Check out with LF everywhere. Hosted Windows runners set core.autocrlf=true,
+# which turned the include_str! fixtures into CRLF and shifted every byte
+# offset the surface tests assert on.
+* text=auto eol=lf

@@ -1,0 +1,72 @@
+[package]
+name = "synapso"
+version = "0.1.0"
+edition = "2024"
+description = "Notes and canvas in one workspace, over a plain folder of Markdown and JSON Canvas files"
+repository = "https://github.com/webergnr/synapso"
+license = "Apache-2.0"
+readme = "README.md"
+# ⚠️ the toolchain this is built and tested with, not a floor anybody has
+# verified. Nothing here reaches for a recent feature on purpose, so it may
+# well build on older — but until CI has an MSRV job (see issue #42) claiming
+# a lower number would be a promise nothing checks.
+rust-version = "1.94"
+
+[dependencies]
+# the model/parsers/geometry, extracted with no shell dependency (TRD Phase 0)
+synapso-core = { path = "crates/synapso-core" }
+# The shell: Freya 0.5.0-rc.10 (Skia, its own component model) on our fork,
+# branch `synapso`, pinned by rev. The fork is upstream plus five commits:
+# rotated labels are drawn supersampled (the tab rail's vertical text stair-
+# stepped otherwise), Tab and the arrows stay inside a focused text field
+# instead of moving focus, and a paragraph paints the holder its layout
+# measured (⌘P's arrows panicked otherwise), a trackpad pinch reaches
+# the app as `on_pinch`, and a paragraph's cursor width can be set (the
+# canvas editor is zoomed). See docs/adr-009-freya.md.
+freya = { git = "https://github.com/webergnr/freya", rev = "ab0e94ca", features = ["zoom-shortcuts", "borderless"] }
+freya-engine = { git = "https://github.com/webergnr/freya", rev = "ab0e94ca" }
+freya-winit = { git = "https://github.com/webergnr/freya", rev = "ab0e94ca" }
+# the sidecar is edited in place, so keys this build doesn't know keep their order
+serde_json = { version = "1", features = ["preserve_order"] }
+# the versions the core pins, so colours and geometry cross unconverted
+kurbo = "=0.13.0"
+peniko = "=0.6.0"
+
+# ⌘O's native folder chooser. macOS: an `NSOpenPanel` through objc2, which
+# winit already pulls in — no new heavy tree, no GTK. `xdg-portal` off because
+# its async runtime feature is a dependency this app has no other use for; on
+# Linux that leaves the GTK backend, which is the platform's own dialog too.
+rfd = { version = "0.15", default-features = false, features = ["gtk3"] }
+
+# The exe's icon on Windows (`build.rs`): Explorer and shortcuts read it from
+# the binary's resources, compiled by the SDK's rc.exe.
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
+
+# The Dock icon for a bare (unbundled) binary: hand AppKit the logo at
+# startup. All three crates are already in the tree through winit — these
+# lines only make the needed classes visible to this crate.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "NSApplication",
+    "NSImage",
+    "NSResponder",
+] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "NSData",
+] }
+
+[profile.dev]
+opt-level = 1
+# Skia and the layout engine are slow unoptimised; the app's own code stays quick to build
+[profile.dev.package."*"]
+opt-level = 2
+
+# The model/parsers/geometry live in `crates/synapso-core` with no shell
+# dependency; this package is the Freya shell on top of it (ADR-009).
+[workspace]
+resolver = "2"
+members = ["crates/synapso-core"]

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>body{margin:0}a{color:var(--text-link)}a:hover{color:var(--accent)}input{font-family:'JetBrains Mono',monospace}</style>
+</helmet>
+<div data-theme="{{ theme }}" style="width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-base);color:var(--text-primary);font-family:var(--font-mono);font-size:var(--text-base);overflow:hidden">
+
+  <div style="height:34px;flex:none;display:flex;align-items:center;gap:var(--space-5);padding:0 var(--space-5);background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm)">
+    <div style="display:flex;gap:var(--space-3)">
+      <span style="width:10px;height:10px;border-radius:var(--radius-round);background:var(--border-strong)"></span>
+      <span style="width:10px;height:10px;border-radius:var(--radius-round);background:var(--border-strong)"></span>
+      <span style="width:10px;height:10px;border-radius:var(--radius-round);background:var(--border-strong)"></span>
+    </div>
+    <span style="color:var(--text-muted)">preferences</span>
+    <span style="flex:1"></span>
+    <span style="font-size:var(--text-xs);color:var(--text-faint)">⌘,</span>
+  </div>
+
+  <div style="flex:1;display:flex;min-height:0">
+
+    <div style="width:196px;flex:none;background:var(--surface-panel);border-right:var(--border-w) solid var(--border-subtle);padding:var(--space-5) 0;display:flex;flex-direction:column;gap:var(--space-1)">
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);padding:var(--space-3) var(--space-6) var(--space-4)">settings</div>
+      <div onClick="{{ nav.editor.click }}" style="position:relative;display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-6);cursor:pointer;font-size:var(--text-sm);background:{{ nav.editor.bg }};color:{{ nav.editor.fg }};font-weight:{{ nav.editor.w }}" style-hover="color:var(--text-primary)">
+        <span style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ nav.editor.spine }}"></span>
+        <span style="width:14px;color:var(--text-faint)">✎</span><span>editor</span>
+      </div>
+      <div onClick="{{ nav.canvas.click }}" style="position:relative;display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-6);cursor:pointer;font-size:var(--text-sm);background:{{ nav.canvas.bg }};color:{{ nav.canvas.fg }};font-weight:{{ nav.canvas.w }}" style-hover="color:var(--text-primary)">
+        <span style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ nav.canvas.spine }}"></span>
+        <span style="width:14px;color:var(--text-faint)">◇</span><span>canvas</span>
+      </div>
+      <div onClick="{{ nav.appearance.click }}" style="position:relative;display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-6);cursor:pointer;font-size:var(--text-sm);background:{{ nav.appearance.bg }};color:{{ nav.appearance.fg }};font-weight:{{ nav.appearance.w }}" style-hover="color:var(--text-primary)">
+        <span style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ nav.appearance.spine }}"></span>
+        <span style="width:14px;color:var(--text-faint)">◐</span><span>appearance</span>
+      </div>
+      <div onClick="{{ nav.storage.click }}" style="position:relative;display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-6);cursor:pointer;font-size:var(--text-sm);background:{{ nav.storage.bg }};color:{{ nav.storage.fg }};font-weight:{{ nav.storage.w }}" style-hover="color:var(--text-primary)">
+        <span style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ nav.storage.spine }}"></span>
+        <span style="width:14px;color:var(--text-faint)">▤</span><span>storage</span>
+      </div>
+      <span style="flex:1"></span>
+      <div style="padding:var(--space-4) var(--space-6);font-size:var(--text-xs);color:var(--text-faint);line-height:var(--leading-normal)">grove 0.6.2<br>config at ~/.grove/config.toml</div>
+    </div>
+
+    <div style="flex:1;min-width:0;overflow:auto;padding:var(--space-8) var(--space-9)">
+      <div style="max-width:640px;display:flex;flex-direction:column;gap:var(--space-7)">
+
+        <sc-if value="{{ isEditor }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:var(--space-7)">
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="font-size:var(--text-lg);font-weight:var(--weight-medium)">editor</div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-normal)">Typing, formatting and how markdown renders while you write.</div>
+          </div>
+
+          <div style="display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>font size</div><div style="font-size:var(--text-xs);color:var(--text-muted)">editor body text, in pixels</div></div>
+              <div style="display:flex;align-items:center;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);overflow:hidden">
+                <span onClick="{{ fontDown }}" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)" style-hover="background:var(--surface-raised);color:var(--text-primary)">−</span>
+                <span style="width:38px;text-align:center;font-variant-numeric:tabular-nums">{{ fontSize }}</span>
+                <span onClick="{{ fontUp }}" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)" style-hover="background:var(--surface-raised);color:var(--text-primary)">+</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>line height</div><div style="font-size:var(--text-xs);color:var(--text-muted)">vertical rhythm of body copy</div></div>
+              <div style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:2px;font-size:var(--text-sm)">
+                <span onClick="{{ lead.tight.click }}" style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);cursor:pointer;background:{{ lead.tight.bg }};color:{{ lead.tight.fg }}">tight</span>
+                <span onClick="{{ lead.normal.click }}" style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);cursor:pointer;background:{{ lead.normal.bg }};color:{{ lead.normal.fg }}">normal</span>
+                <span onClick="{{ lead.loose.click }}" style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);cursor:pointer;background:{{ lead.loose.bg }};color:{{ lead.loose.fg }}">loose</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>spellcheck</div><div style="font-size:var(--text-xs);color:var(--text-muted)">underline unknown words as you type</div></div>
+              <span onClick="{{ tg.spell.click }}" style="width:30px;height:17px;flex:none;border-radius:var(--radius-round);position:relative;cursor:pointer;display:inline-block;background:{{ tg.spell.bg }};border:var(--border-w) solid {{ tg.spell.bd }}">
+                <span style="position:absolute;top:2px;left:{{ tg.spell.x }};width:11px;height:11px;border-radius:var(--radius-round);background:{{ tg.spell.knob }}"></span>
+              </span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>vim keybindings</div><div style="font-size:var(--text-xs);color:var(--text-muted)">modal editing inside the note pane</div></div>
+              <span onClick="{{ tg.vim.click }}" style="width:30px;height:17px;flex:none;border-radius:var(--radius-round);position:relative;cursor:pointer;display:inline-block;background:{{ tg.vim.bg }};border:var(--border-w) solid {{ tg.vim.bd }}">
+                <span style="position:absolute;top:2px;left:{{ tg.vim.x }};width:11px;height:11px;border-radius:var(--radius-round);background:{{ tg.vim.knob }}"></span>
+              </span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>show line numbers</div><div style="font-size:var(--text-xs);color:var(--text-muted)">in the gutter, beside the doc spine</div></div>
+              <span onClick="{{ tg.lines.click }}" style="width:30px;height:17px;flex:none;border-radius:var(--radius-round);position:relative;cursor:pointer;display:inline-block;background:{{ tg.lines.bg }};border:var(--border-w) solid {{ tg.lines.bd }}">
+                <span style="position:absolute;top:2px;left:{{ tg.lines.x }};width:11px;height:11px;border-radius:var(--radius-round);background:{{ tg.lines.knob }}"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isCanvas }}">
+        <div style="display:flex;flex-direction:column;gap:var(--space-7)">
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="font-size:var(--text-lg);font-weight:var(--weight-medium)">canvas</div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-normal)">Node placement, grid and connector behaviour.</div>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>snap to grid</div><div style="font-size:var(--text-xs);color:var(--text-muted)">8px increments; hold ⌥ to bypass</div></div>
+              <span onClick="{{ tg.snap.click }}" style="width:30px;height:17px;flex:none;border-radius:var(--radius-round);position:relative;cursor:pointer;display:inline-block;background:{{ tg.snap.bg }};border:var(--border-w) solid {{ tg.snap.bd }}">
+                <span style="position:absolute;top:2px;left:{{ tg.snap.x }};width:11px;height:11px;border-radius:var(--radius-round);background:{{ tg.snap.knob }}"></span>
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>show dot grid</div><div style="font-size:var(--text-xs);color:var(--text-muted)">background dots on the infinite canvas</div></div>
+              <span onClick="{{ tg.dots.click }}" style="width:30px;height:17px;flex:none;border-radius:var(--radius-round);position:relative;cursor:pointer;display:inline-block;background:{{ tg.dots.bg }};border:var(--border-w) solid {{ tg.dots.bd }}">
+                <span style="position:absolute;top:2px;left:{{ tg.dots.x }};width:11px;height:11px;border-radius:var(--radius-round);background:{{ tg.dots.knob }}"></span>
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>connector style</div><div style="font-size:var(--text-xs);color:var(--text-muted)">how links between nodes are drawn</div></div>
+              <div style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:2px;font-size:var(--text-sm)">
+                <span onClick="{{ conn.curve.click }}" style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);cursor:pointer;background:{{ conn.curve.bg }};color:{{ conn.curve.fg }}">curved</span>
+                <span onClick="{{ conn.ortho.click }}" style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);cursor:pointer;background:{{ conn.ortho.bg }};color:{{ conn.ortho.fg }}">orthogonal</span>
+                <span onClick="{{ conn.line.click }}" style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);cursor:pointer;background:{{ conn.line.bg }};color:{{ conn.line.fg }}">straight</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>default node width</div><div style="font-size:var(--text-xs);color:var(--text-muted)">applied to new cards, in pixels</div></div>
+              <input value="280" style="font-size:var(--text-base);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);width:90px;outline:none">
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isAppearance }}">
+        <div style="display:flex;flex-direction:column;gap:var(--space-7)">
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="font-size:var(--text-lg);font-weight:var(--weight-medium)">appearance</div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-normal)">Theme and chrome density. Both read straight from the token layer.</div>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>theme</div><div style="font-size:var(--text-xs);color:var(--text-muted)">follows the system setting when set to auto</div></div>
+              <div style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:2px;font-size:var(--text-sm)">
+                <span onClick="{{ th.dark.click }}" style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);cursor:pointer;background:{{ th.dark.bg }};color:{{ th.dark.fg }}">◐ dark</span>
+                <span onClick="{{ th.light.click }}" style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);cursor:pointer;background:{{ th.light.bg }};color:{{ th.light.fg }}">○ light</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>doc spine palette</div><div style="font-size:var(--text-xs);color:var(--text-muted)">colors assigned to new documents</div></div>
+              <div style="display:flex;gap:var(--space-3)">
+                <span style="width:18px;height:18px;border-radius:var(--radius-1);background:var(--doc-1)"></span>
+                <span style="width:18px;height:18px;border-radius:var(--radius-1);background:var(--doc-2)"></span>
+                <span style="width:18px;height:18px;border-radius:var(--radius-1);background:var(--doc-3)"></span>
+                <span style="width:18px;height:18px;border-radius:var(--radius-1);background:var(--doc-4)"></span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>compact chrome</div><div style="font-size:var(--text-xs);color:var(--text-muted)">tighter bars and rails</div></div>
+              <span onClick="{{ tg.compact.click }}" style="width:30px;height:17px;flex:none;border-radius:var(--radius-round);position:relative;cursor:pointer;display:inline-block;background:{{ tg.compact.bg }};border:var(--border-w) solid {{ tg.compact.bd }}">
+                <span style="position:absolute;top:2px;left:{{ tg.compact.x }};width:11px;height:11px;border-radius:var(--radius-round);background:{{ tg.compact.knob }}"></span>
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>reduce motion</div><div style="font-size:var(--text-xs);color:var(--text-muted)">disable pane and canvas transitions</div></div>
+              <span onClick="{{ tg.motion.click }}" style="width:30px;height:17px;flex:none;border-radius:var(--radius-round);position:relative;cursor:pointer;display:inline-block;background:{{ tg.motion.bg }};border:var(--border-w) solid {{ tg.motion.bd }}">
+                <span style="position:absolute;top:2px;left:{{ tg.motion.x }};width:11px;height:11px;border-radius:var(--radius-round);background:{{ tg.motion.knob }}"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isStorage }}">
+        <div style="display:flex;flex-direction:column;gap:var(--space-7)">
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="font-size:var(--text-lg);font-weight:var(--weight-medium)">storage</div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-normal)">Where notes live on disk and how the index is kept.</div>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>vault path</div><div style="font-size:var(--text-xs);color:var(--text-muted)">markdown files are written here directly</div></div>
+              <div style="display:flex;gap:var(--space-3);align-items:center">
+                <input value="~/notes/grove" style="font-size:var(--text-base);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);width:190px;outline:none">
+                <button style="font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">browse…</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>index backend</div><div style="font-size:var(--text-xs);color:var(--text-muted)">search and backlink store</div></div>
+              <div style="display:flex;align-items:center;gap:var(--space-4);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);width:130px;cursor:pointer"><span>sled</span><span style="flex:1"></span><span style="color:var(--text-faint)">▾</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>watch filesystem</div><div style="font-size:var(--text-xs);color:var(--text-muted)">pick up edits made outside grove</div></div>
+              <span onClick="{{ tg.watch.click }}" style="width:30px;height:17px;flex:none;border-radius:var(--radius-round);position:relative;cursor:pointer;display:inline-block;background:{{ tg.watch.bg }};border:var(--border-w) solid {{ tg.watch.bd }}">
+                <span style="position:absolute;top:2px;left:{{ tg.watch.x }};width:11px;height:11px;border-radius:var(--radius-round);background:{{ tg.watch.knob }}"></span>
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-7);padding:var(--space-5) 0">
+              <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1)"><div>rebuild index</div><div style="font-size:var(--text-xs);color:var(--text-muted)">last built 14 min ago · 1,204 notes</div></div>
+              <button style="font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer">rebuild</button>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </div>
+
+  <div style="height:38px;flex:none;display:flex;align-items:center;gap:var(--space-5);padding:0 var(--space-6);background:var(--surface-panel);border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-faint)">
+    <span>changes apply immediately</span>
+    <span style="flex:1"></span>
+    <button style="font-family:var(--font-mono);font-size:var(--text-sm);background:transparent;color:var(--text-muted);border:var(--border-w) solid transparent;border-radius:var(--radius-2);padding:var(--space-2) var(--space-5);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">restore defaults</button>
+    <button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-6);cursor:pointer">done</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:720},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;},&quot;section&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;editor&quot;,&quot;canvas&quot;,&quot;appearance&quot;,&quot;storage&quot;],&quot;default&quot;:&quot;editor&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const SECTIONS = ['editor', 'canvas', 'appearance', 'storage'];
+const TOGGLES = ['spell', 'vim', 'lines', 'snap', 'dots', 'compact', 'motion', 'watch'];
+
+class Component extends DCLogic {
+  state = {
+    section: null, theme: null, fontSize: 13, leading: 'normal', conn: 'curved',
+    on: { spell: true, vim: false, lines: true, snap: true, dots: true, compact: false, motion: false, watch: true }
+  };
+
+  // stable handler identities — built once, never re-created per render
+  h = null;
+  handlers() {
+    if (this.h) return this.h;
+    const h = { nav: {}, tg: {}, lead: {}, conn: {}, th: {} };
+    SECTIONS.forEach(k => { h.nav[k] = () => this.setState({ section: k }); });
+    TOGGLES.forEach(k => {
+      h.tg[k] = () => this.setState(s => {
+        const on = Object.assign({}, s.on);
+        on[k] = !on[k];
+        return { on: on };
+      });
+    });
+    ['tight', 'normal', 'loose'].forEach(v => { h.lead[v] = () => this.setState({ leading: v }); });
+    [['curve', 'curved'], ['ortho', 'orthogonal'], ['line', 'straight']].forEach(p => { h.conn[p[0]] = () => this.setState({ conn: p[1] }); });
+    ['dark', 'light'].forEach(v => { h.th[v] = () => this.setState({ theme: v }); });
+    h.fontUp = () => this.setState(s => ({ fontSize: Math.min(20, s.fontSize + 1) }));
+    h.fontDown = () => this.setState(s => ({ fontSize: Math.max(10, s.fontSize - 1) }));
+    this.h = h;
+    return h;
+  }
+
+  renderVals() {
+    const h = this.handlers();
+    const section = this.state.section ?? this.props.section ?? 'editor';
+    const theme = this.state.theme ?? this.props.theme ?? 'dark';
+
+    const nav = {};
+    SECTIONS.forEach(k => {
+      const a = k === section;
+      nav[k] = {
+        bg: a ? 'var(--surface-raised)' : 'transparent',
+        fg: a ? 'var(--text-primary)' : 'var(--text-muted)',
+        w: a ? 'var(--weight-medium)' : 'var(--weight-regular)',
+        spine: a ? 'var(--accent)' : 'transparent',
+        click: h.nav[k]
+      };
+    });
+
+    const tg = {};
+    TOGGLES.forEach(k => {
+      const v = this.state.on[k];
+      tg[k] = {
+        bg: v ? 'var(--accent)' : 'var(--surface-inset)',
+        bd: v ? 'var(--accent)' : 'var(--border-strong)',
+        knob: v ? 'var(--on-accent)' : 'var(--text-faint)',
+        x: v ? '16px' : '2px',
+        click: h.tg[k]
+      };
+    });
+
+    const seg = (pairs, cur, hs) => {
+      const o = {};
+      pairs.forEach(p => {
+        const a = p[1] === cur;
+        o[p[0]] = {
+          bg: a ? 'var(--surface-raised)' : 'transparent',
+          fg: a ? 'var(--text-primary)' : 'var(--text-muted)',
+          click: hs[p[0]]
+        };
+      });
+      return o;
+    };
+
+    return {
+      theme: theme, nav: nav, tg: tg,
+      isEditor: section === 'editor', isCanvas: section === 'canvas',
+      isAppearance: section === 'appearance', isStorage: section === 'storage',
+      fontSize: this.state.fontSize, fontUp: h.fontUp, fontDown: h.fontDown,
+      lead: seg([['tight', 'tight'], ['normal', 'normal'], ['loose', 'loose']], this.state.leading, h.lead),
+      conn: seg([['curve', 'curved'], ['ortho', 'orthogonal'], ['line', 'straight']], this.state.conn, h.conn),
+      th: seg([['dark', 'dark'], ['light', 'light']], theme, h.th)
+    };
+  }
+}
+</script>
+</body>
+</html>

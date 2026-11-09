@@ -1,0 +1,237 @@
+<title>Synapso Ligadura</title>
+<style>
+  @font-face {
+    font-family: 'JB Mono'; font-style: normal; font-weight: 400; font-display: block;
+    src: url(__JBM_REGULAR__) format('truetype');
+  }
+  @font-face {
+    font-family: 'JB Mono'; font-style: normal; font-weight: 500; font-display: block;
+    src: url(__JBM_MEDIUM__) format('truetype');
+  }
+
+  /* Tokens lifted 1:1 from design/tokens.css — Syn Light is the bare :root,
+     Syn Dark takes over on preference or an explicit stamp. */
+  :root {
+    --bg-base: #F6F7F9;
+    --surface-panel: #FFFFFF;
+    --surface-inset: #EFF1F4;
+    --border-subtle: #E2E5EA;
+    --border-strong: #C7CCD5;
+    --text-primary: #23262D;
+    --text-muted: #646B79;
+    --text-faint: #9AA1AD;
+    --accent: #1E9E5F;
+    --doc-1: #C4414E;
+    --doc-3: #7554D6;
+
+    --font: 'JB Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --text-xs: 10px; --text-sm: 11px; --text-base: 13px; --text-md: 15px; --text-xl: 24px;
+    --tracking-wide: .08em;
+    --radius-2: 4px; --radius-3: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-base: #131418;
+      --surface-panel: #1A1C21;
+      --surface-inset: #0E0F12;
+      --border-subtle: #2B2F38;
+      --border-strong: #3A4050;
+      --text-primary: #D6D9E0;
+      --text-muted: #8A91A0;
+      --text-faint: #5B6270;
+      --accent: #4FD08A;
+      --doc-1: #E8737F;
+      --doc-3: #A78BFA;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg-base: #131418;
+    --surface-panel: #1A1C21;
+    --surface-inset: #0E0F12;
+    --border-subtle: #2B2F38;
+    --border-strong: #3A4050;
+    --text-primary: #D6D9E0;
+    --text-muted: #8A91A0;
+    --text-faint: #5B6270;
+    --accent: #4FD08A;
+    --doc-1: #E8737F;
+    --doc-3: #A78BFA;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: var(--text-base);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 24px 64px; }
+
+  header { border-bottom: 1px solid var(--border-subtle); padding-bottom: 20px; margin-bottom: 8px; }
+  .eyebrow {
+    font-size: var(--text-xs); letter-spacing: var(--tracking-wide);
+    text-transform: uppercase; color: var(--text-faint); margin: 0 0 8px;
+  }
+  h1 { font-size: var(--text-xl); font-weight: 500; margin: 0 0 10px; letter-spacing: -.01em; }
+  header p { margin: 0; color: var(--text-muted); font-size: var(--text-base); max-width: 64ch; }
+
+  /* the comparison matrix: test name | A | B */
+  .grid { display: grid; grid-template-columns: 116px 1fr 1fr; gap: 1px; background: var(--border-subtle); border: 1px solid var(--border-subtle); margin-top: 28px; }
+  .grid > * { background: var(--surface-panel); padding: 16px; }
+
+  .col-head { display: flex; align-items: baseline; gap: 10px; padding-left: 14px; position: relative; }
+  /* the doc spine — the app's signature 2px line, here identifying each direction */
+  .col-head::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px; }
+  .col-a::before { background: var(--doc-1); }
+  .col-b::before { background: var(--doc-3); }
+  .col-head strong { font-weight: 500; font-size: var(--text-md); }
+  .col-head span { font-size: var(--text-sm); color: var(--text-muted); }
+
+  .rowlabel {
+    font-size: var(--text-xs); letter-spacing: var(--tracking-wide); text-transform: uppercase;
+    color: var(--text-faint); display: flex; align-items: center;
+  }
+  .cell { display: flex; align-items: center; justify-content: center; gap: 22px; min-height: 96px; }
+  .cell.ladder { gap: 28px; }
+  .ladder .unit { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .ladder .unit em { font-style: normal; font-size: var(--text-xs); color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+  /* specimen grounds — these are deliberately fixed, they are the thing under test */
+  .tile { display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+  .dark  { --bg: #131418; --ink: #4FD08A; --tip: #56C8D8; background: #131418; }
+  .light { --bg: #FFFFFF; --ink: #1E9E5F; --tip: #0D8296; background: #FFFFFF; border: 1px solid #E2E5EA; }
+  .flat  { --bg: #FFFFFF; --ink: #111111; --tip: #111111; background: #FFFFFF; border: 1px solid #E2E5EA; }
+  .canvasbg {
+    --bg: #101115; --ink: #4FD08A; --tip: #56C8D8;
+    background-color: #101115;
+    background-image: radial-gradient(#25282E 1px, transparent 1px);
+    background-size: 12px 12px;
+  }
+  .pad { padding: 18px; }
+
+  .lockup { display: flex; align-items: center; gap: 14px; }
+  .lockup .word { font-size: 22px; font-weight: 500; letter-spacing: .08em; color: #D6D9E0; }
+  .light .lockup .word, .flat .lockup .word { color: #23262D; }
+
+  .notes { margin-top: 36px; display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+  .note { border-left: 2px solid var(--border-strong); padding-left: 14px; }
+  .note h2 { font-size: var(--text-sm); font-weight: 500; margin: 0 0 6px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-muted); }
+  .note p { margin: 0 0 8px; font-size: var(--text-base); color: var(--text-primary); }
+  .note p:last-child { margin-bottom: 0; }
+  .note .con { color: var(--text-muted); }
+
+  footer {
+    margin-top: 40px; padding-top: 12px; border-top: 1px solid var(--border-subtle);
+    font-size: var(--text-xs); color: var(--text-faint);
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: 1fr; }
+    .rowlabel { border-top: 1px solid var(--border-subtle); }
+    .notes { grid-template-columns: 1fr; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark-a" viewBox="0 0 64 64" fill="none">
+    <g transform="translate(0 2)">
+      <path d="M48 15 H23 L15 23 L23 31 H41 L49 39 L41 47 H22"
+            stroke="var(--ink, #4FD08A)" stroke-width="4" stroke-linejoin="miter"/>
+      <path d="M14 47 L22 43 L22 51 Z" fill="var(--tip, #56C8D8)" stroke="none"/>
+      <g fill="var(--bg, #131418)" stroke="var(--ink, #4FD08A)" stroke-width="2.5">
+        <rect x="42.5" y="9.5" width="11" height="11"/>
+        <rect x="9.5" y="17.5" width="11" height="11"/>
+        <rect x="43.5" y="33.5" width="11" height="11"/>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="mark-b" viewBox="0 0 64 64" fill="none">
+    <path d="M41.9 14.93 A14 10 0 1 0 32 32 A14 10 0 1 1 22.1 49.07"
+          stroke="var(--ink, #4FD08A)" stroke-width="4"/>
+    <path d="M15.6 44.4 L24.42 45.81 L19.78 52.33 Z" fill="var(--tip, #56C8D8)" stroke="none"/>
+    <g fill="var(--bg, #131418)" stroke="var(--ink, #4FD08A)" stroke-width="2.5">
+      <rect x="36.4" y="9.43" width="11" height="11"/>
+      <rect x="12.5" y="16.5" width="11" height="11"/>
+      <rect x="40.5" y="36.5" width="11" height="11"/>
+    </g>
+  </symbol>
+</svg>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Synapso · ligature direction</p>
+    <h1>The S as a canvas edge</h1>
+    <p>Two constructions of the same idea: the stroke starts and ends on anchors — the 7×7
+      squares the app draws on a selected node — and the head is the connector's flat
+      8px triangle. A differs from B only in the geometry of the path.</p>
+  </header>
+
+  <div class="grid">
+    <div></div>
+    <div class="col-head col-a"><strong>A</strong><span>straight segments</span></div>
+    <div class="col-head col-b"><strong>B</strong><span>continuous curve</span></div>
+
+    <div class="rowlabel">dark theme</div>
+    <div class="cell tile dark pad"><svg width="180" height="180"><use href="#mark-a"/></svg></div>
+    <div class="cell tile dark pad"><svg width="180" height="180"><use href="#mark-b"/></svg></div>
+
+    <div class="rowlabel">real sizes</div>
+    <div class="cell ladder tile dark pad">
+      <span class="unit"><svg width="64" height="64"><use href="#mark-a"/></svg><em>64</em></span>
+      <span class="unit"><svg width="32" height="32"><use href="#mark-a"/></svg><em>32</em></span>
+      <span class="unit"><svg width="16" height="16"><use href="#mark-a"/></svg><em>16</em></span>
+    </div>
+    <div class="cell ladder tile dark pad">
+      <span class="unit"><svg width="64" height="64"><use href="#mark-b"/></svg><em>64</em></span>
+      <span class="unit"><svg width="32" height="32"><use href="#mark-b"/></svg><em>32</em></span>
+      <span class="unit"><svg width="16" height="16"><use href="#mark-b"/></svg><em>16</em></span>
+    </div>
+
+    <div class="rowlabel">light theme</div>
+    <div class="cell tile light pad"><svg width="120" height="120"><use href="#mark-a"/></svg></div>
+    <div class="cell tile light pad"><svg width="120" height="120"><use href="#mark-b"/></svg></div>
+
+    <div class="rowlabel">single colour</div>
+    <div class="cell tile flat pad"><svg width="120" height="120"><use href="#mark-a"/></svg></div>
+    <div class="cell tile flat pad"><svg width="120" height="120"><use href="#mark-b"/></svg></div>
+
+    <div class="rowlabel">lockup</div>
+    <div class="cell tile dark pad">
+      <span class="lockup"><svg width="52" height="52"><use href="#mark-a"/></svg><span class="word">synapso</span></span>
+    </div>
+    <div class="cell tile dark pad">
+      <span class="lockup"><svg width="52" height="52"><use href="#mark-b"/></svg><span class="word">synapso</span></span>
+    </div>
+
+    <div class="rowlabel">over the canvas</div>
+    <div class="cell tile canvasbg pad"><svg width="120" height="120"><use href="#mark-a"/></svg></div>
+    <div class="cell tile canvasbg pad"><svg width="120" height="120"><use href="#mark-b"/></svg></div>
+  </div>
+
+  <div class="notes">
+    <div class="note">
+      <h2>A — straight segments</h2>
+      <p>It is what the app actually draws: <code>connector()</code> traces a straight
+        line, not a curve. The 45° bends give the anchors an obvious place to exist.</p>
+      <p class="con">Risk: with a horizontal middle, at 16px it comes close to a “5”. How
+        tight the middle gap is set is what decides it.</p>
+    </div>
+    <div class="note">
+      <h2>B — continuous curve</h2>
+      <p>Two tangent ellipses (rx 14, ry 10) — the seam in the centre is horizontal on
+        both, so the curve runs smooth. It reads as a letter before it reads as a
+        diagram.</p>
+      <p class="con">Risk: the arrow on the tail ends up pointing up-left and can read as
+        an “undo” icon. Shortening the tail fixes it.</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>design/logo-a-straight.svg · design/logo-b-curved.svg</span>
+    <span>tokens: design/tokens.css · JetBrains Mono</span>
+  </footer>
+</div>

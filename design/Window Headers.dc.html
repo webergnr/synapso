@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>body{margin:0;background:#0d0e11}a{color:var(--text-link);text-decoration:underline;text-underline-offset:2px}a:hover{color:var(--accent)}</style>
+</helmet>
+<div style="min-height:100vh;box-sizing:border-box;padding:48px;display:flex;flex-direction:column;gap:56px;font-family:'JetBrains Mono',monospace;color:#c9ccd3;background:#0d0e11">
+  <sc-for list="{{ oses }}" as="os" hint-placeholder-count="2">
+    <section data-screen-label="{{ os.label }}" style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px">
+        <span style="font-size:15px;font-weight:500;color:#e6e8ec">{{ os.title }}</span>
+        <span style="font-size:12px;color:#7b808c;white-space:nowrap">{{ os.meta }}</span>
+      </div>
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:11px;color:#7b808c;letter-spacing:.04em">{{ t.name }}</span>
+          <div style="max-width:1280px;overflow-x:auto;overflow-y:hidden"><div data-theme="{{ t.name }}" style="min-width:1100px;white-space:nowrap;font-family:var(--font-mono);font-size:var(--text-base);background:var(--bg-base);color:var(--text-primary);border:var(--border-w) solid var(--border-subtle);border-radius:8px;overflow:hidden;line-height:var(--leading-normal)">
+            <sc-if value="{{ os.mac }}" hint-placeholder-val="{{ true }}">
+              <div style="height:28px;display:flex;align-items:center;gap:var(--space-5);padding:0 var(--space-5);background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle);position:relative">
+                <div style="display:flex;align-items:center;gap:8px;flex:none">
+                  <span style="width:12px;height:12px;border-radius:var(--radius-round);background:#FF5F57;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(0,0,0,.55);cursor:pointer">✕</span>
+                  <span style="width:12px;height:12px;border-radius:var(--radius-round);background:#FEBC2E;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(0,0,0,.55);cursor:pointer">−</span>
+                  <span style="width:12px;height:12px;border-radius:var(--radius-round);background:#28C840;display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1;color:rgba(0,0,0,.55);cursor:pointer">⤢</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:var(--space-3);color:var(--text-faint);font-size:var(--text-sm);margin-left:var(--space-3)">
+                  <span style="cursor:pointer;padding:2px var(--space-2);border-radius:var(--radius-1)" style-hover="background:var(--surface-inset);color:var(--text-primary)">‹</span>
+                  <span style="cursor:pointer;padding:2px var(--space-2);border-radius:var(--radius-1)" style-hover="background:var(--surface-inset);color:var(--text-primary)">›</span>
+                </div>
+                <div style="position:absolute;left:0;right:0;display:flex;justify-content:center;pointer-events:none">
+                  <div style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm)">
+                    <span style="width:6px;height:6px;border-radius:var(--radius-round);background:var(--doc-1);box-shadow:0 0 6px var(--doc-1)"></span>
+                    <span style="color:var(--text-primary);font-weight:var(--weight-medium)">roadmap.md</span>
+                    <span style="color:var(--text-faint)">•</span>
+                    <span style="color:var(--text-faint)">—</span>
+                    <span style="color:var(--text-muted)">Q4 planning</span>
+                  </div>
+                </div>
+                <span style="flex:1"></span>
+                <div style="display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-xs);color:var(--text-muted)">
+                  <span style="box-sizing:border-box;height:20px;display:flex;align-items:stretch;gap:var(--space-3);color:var(--text-muted);background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:6px;padding:2px 2px 2px var(--space-3);line-height:1;cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong);background:var(--surface-raised)">
+                    <span style="display:flex;align-items:center">⌕ search</span>
+                    <span style="font-size:10px;background:var(--surface-raised);border:1px solid {{ t.kbdBorder }};border-radius:3px;padding:0 4px;color:var(--text-faint);display:flex;align-items:center;gap:1px;box-sizing:border-box"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="M6 6h4v4H6z M6 6V4.5A1.5 1.5 0 1 0 4.5 6H6 M10 6V4.5A1.5 1.5 0 1 1 11.5 6H10 M10 10v1.5a1.5 1.5 0 1 0 1.5-1.5H10 M6 10v1.5A1.5 1.5 0 1 1 4.5 10H6"></path></svg>K</span>
+                  </span>
+                  <span style="box-sizing:border-box;height:20px;display:flex;align-items:stretch;gap:var(--space-3);color:var(--text-muted);background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:6px;padding:2px 2px 2px var(--space-3);line-height:1;cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong);background:var(--surface-raised)">
+                    <span style="display:flex;align-items:center">↗ open</span>
+                    <span style="font-size:10px;background:var(--surface-raised);border:1px solid {{ t.kbdBorder }};border-radius:3px;padding:0 4px;color:var(--text-faint);display:flex;align-items:center;gap:1px;box-sizing:border-box"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="M6 6h4v4H6z M6 6V4.5A1.5 1.5 0 1 0 4.5 6H6 M10 6V4.5A1.5 1.5 0 1 1 11.5 6H10 M10 10v1.5a1.5 1.5 0 1 0 1.5-1.5H10 M6 10v1.5A1.5 1.5 0 1 1 4.5 10H6"></path></svg>P</span>
+                  </span>
+                  <span style="color:var(--accent)">●</span><span>synced</span>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ os.win }}" hint-placeholder-val="{{ false }}">
+              <div style="height:32px;display:flex;align-items:stretch;background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle)">
+                <div style="display:flex;align-items:center;gap:var(--space-4);padding-left:var(--space-5);font-size:var(--text-xs);color:var(--text-muted)">
+                  <span style="width:12px;height:12px;border-radius:3px;background:var(--accent);opacity:.9"></span>
+                  <span style="display:flex;align-items:center;gap:var(--space-3)">
+                    <span style="color:var(--text-primary)">roadmap.md</span>
+                    <span style="color:var(--text-faint)">•</span>
+                    <span style="color:var(--text-faint)">—</span>
+                    <span>Q4 planning</span>
+                    <span style="color:var(--text-faint)">—</span>
+                    <span>Grove</span>
+                  </span>
+                </div>
+                <span style="flex:1"></span>
+                <div style="display:flex;align-items:center;gap:var(--space-4);padding-right:var(--space-5);font-size:var(--text-xs);color:var(--text-muted)">
+                  <span style="box-sizing:border-box;height:24px;display:flex;align-items:stretch;gap:var(--space-3);color:var(--text-muted);background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:6px;padding:2px 2px 2px var(--space-3);line-height:1;cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong);background:var(--surface-raised)">
+                    <span style="display:flex;align-items:center">⌕ search</span>
+                    <span style="font-size:10px;background:var(--surface-raised);border:1px solid {{ t.kbdBorder }};border-radius:3px;padding:0 4px;color:var(--text-faint);display:flex;align-items:center;gap:1px;box-sizing:border-box"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="M4 10 8 5.5l4 4.5"></path></svg>K</span>
+                  </span>
+                  <span style="box-sizing:border-box;height:24px;display:flex;align-items:stretch;gap:var(--space-3);color:var(--text-muted);background:var(--surface-inset);border:1px solid var(--border-subtle);border-radius:6px;padding:2px 2px 2px var(--space-3);line-height:1;cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong);background:var(--surface-raised)">
+                    <span style="display:flex;align-items:center">↗ open</span>
+                    <span style="font-size:10px;background:var(--surface-raised);border:1px solid {{ t.kbdBorder }};border-radius:3px;padding:0 4px;color:var(--text-faint);display:flex;align-items:center;gap:1px;box-sizing:border-box"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="M4 10 8 5.5l4 4.5"></path></svg>P</span>
+                  </span>
+                  <span style="color:var(--accent)">●</span><span>synced</span>
+                </div>
+                <div style="display:flex;align-items:stretch;flex:none">
+                  <span style="width:46px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;cursor:pointer" style-hover="background:var(--surface-inset);color:var(--text-primary)">─</span>
+                  <span style="width:46px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;cursor:pointer" style-hover="background:var(--surface-inset);color:var(--text-primary)">▢</span>
+                  <span style="width:46px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:11px;cursor:pointer" style-hover="background:#E81123;color:#fff">✕</span>
+                </div>
+              </div>
+            </sc-if>
+            <div style="height:72px;background:var(--bg-base)"></div>
+          </div></div>
+        </div>
+      </sc-for>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      themes: [{ name: 'dark', kbdBorder: 'var(--border-subtle)' }, { name: 'light', kbdBorder: 'var(--border-strong)' }],
+      oses: [
+        { label: 'macOS', title: 'macOS', meta: '28px · traffic lights · título centralizado', mac: true, win: false },
+        { label: 'Windows', title: 'Windows', meta: '32px · título à esquerda · controles 46px', mac: false, win: true }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+/* ============================================================
+   Notes + Canvas Workspace — semantic token layer
+   SINGLE SOURCE OF TRUTH. Components reference only these vars.
+   Theme switching: data-theme="dark" | "light" on any root node.
+   ============================================================ */
+
+:root {
+  /* typography */
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --text-xs: 10px;   /* status bar, captions, kbd */
+  --text-sm: 11px;   /* chrome: tabs, menus, rail, buttons */
+  --text-base: 13px; /* editor body, inputs, cards */
+  --text-md: 15px;   /* h3, card titles */
+  --text-lg: 18px;   /* h2 */
+  --text-xl: 24px;   /* h1 */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --leading-tight: 1.25;
+  --leading-normal: 1.55;
+  --leading-loose: 1.75;
+  --tracking-wide: .08em;
+
+  /* spacing */
+  --space-1: 2px;  --space-2: 4px;  --space-3: 6px;  --space-4: 8px;
+  --space-5: 12px; --space-6: 16px; --space-7: 24px; --space-8: 32px; --space-9: 48px;
+
+  /* radius */
+  --radius-1: 3px; --radius-2: 4px; --radius-3: 6px; --radius-round: 999px;
+
+  /* borders */
+  --border-w: 1px;
+  --spine-w: 2px; /* the doc spine — signature element */
+
+  /* z-index */
+  --z-base: 0; --z-objects: 10; --z-rail: 20; --z-scrim: 30; --z-popover: 40; --z-toast: 50;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-base: #131418;
+  --surface-panel: #1A1C21;   /* panes, bars */
+  --surface-raised: #22252C;  /* cards, rail, shapes */
+  --surface-overlay: #262A32; /* menus, palette, toasts */
+  --surface-inset: #0E0F12;   /* code blocks, inputs, wells */
+
+  --border-subtle: #2B2F38;
+  --border-strong: #3A4050;
+
+  --text-primary: #D6D9E0;
+  --text-muted: #8A91A0;
+  --text-faint: #5B6270;
+  --text-link: #56C8D8;
+  --on-accent: #0C1F14;
+
+  --accent: #4FD08A;
+  --accent-dim: rgba(79, 208, 138, .14);
+  --danger: #E5484D;
+  --danger-dim: rgba(229, 72, 77, .14);
+
+  /* per-document colors (chromatic moments) */
+  --doc-1: #E8737F; --doc-1-dim: rgba(232, 115, 127, .12); /* coral */
+  --doc-2: #E3B341; --doc-2-dim: rgba(227, 179, 65, .12);  /* amber */
+  --doc-3: #A78BFA; --doc-3-dim: rgba(167, 139, 250, .12); /* violet */
+  --doc-4: #56C8D8; --doc-4-dim: rgba(86, 200, 216, .12);  /* cyan */
+  --doc-5: #EE9A5B; --doc-5-dim: rgba(238, 154, 91, .12);  /* orange */
+  --doc-6: #A9C95B; --doc-6-dim: rgba(169, 201, 91, .12);  /* lime */
+  --doc-7: #7B9CF5; --doc-7-dim: rgba(123, 156, 245, .12); /* blue */
+  --doc-8: #E37BC9; --doc-8-dim: rgba(227, 123, 201, .12); /* magenta */
+
+  --canvas-bg: #101115;
+  --canvas-dot: #25282E;
+  --connector: #4A5162;
+
+  --scrim: rgba(9, 10, 13, .55);
+  --selection: rgba(79, 208, 138, .22);
+  --search-hl: rgba(227, 179, 65, .32);
+  --search-hl-active: #E3B341;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, .45);
+  --shadow-3: 0 12px 32px rgba(0, 0, 0, .55);
+  --shadow-focus: 0 0 0 1px var(--bg-base), 0 0 0 3px var(--accent);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-base: #F6F7F9;
+  --surface-panel: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --surface-overlay: #FFFFFF;
+  --surface-inset: #EFF1F4;
+
+  --border-subtle: #E2E5EA;
+  --border-strong: #C7CCD5;
+
+  --text-primary: #23262D;
+  --text-muted: #646B79;
+  --text-faint: #9AA1AD;
+  --text-link: #0E7A8A;
+  --on-accent: #FFFFFF;
+
+  --accent: #1E9E5F;
+  --accent-dim: rgba(30, 158, 95, .12);
+  --danger: #CE2C31;
+  --danger-dim: rgba(206, 44, 49, .10);
+
+  --doc-1: #C4414E; --doc-1-dim: rgba(196, 65, 78, .10);
+  --doc-2: #9A7011; --doc-2-dim: rgba(154, 112, 17, .10);
+  --doc-3: #7554D6; --doc-3-dim: rgba(117, 84, 214, .10);
+  --doc-4: #0D8296; --doc-4-dim: rgba(13, 130, 150, .10);
+  --doc-5: #B65A1C; --doc-5-dim: rgba(182, 90, 28, .10);
+  --doc-6: #5E7A14; --doc-6-dim: rgba(94, 122, 20, .10);
+  --doc-7: #3F63D1; --doc-7-dim: rgba(63, 99, 209, .10);
+  --doc-8: #AE3B93; --doc-8-dim: rgba(174, 59, 147, .10);
+
+  --canvas-bg: #F0F1F4;
+  --canvas-dot: #D5D9E0;
+  --connector: #A9B0BC;
+
+  --scrim: rgba(23, 25, 31, .30);
+  --selection: rgba(30, 158, 95, .18);
+  --search-hl: rgba(154, 112, 17, .22);
+  --search-hl-active: #9A7011;
+
+  --shadow-1: 0 1px 2px rgba(20, 24, 33, .08);
+  --shadow-2: 0 4px 12px rgba(20, 24, 33, .12);
+  --shadow-3: 0 12px 32px rgba(20, 24, 33, .18);
+  --shadow-focus: 0 0 0 1px var(--bg-base), 0 0 0 3px var(--accent);
+}

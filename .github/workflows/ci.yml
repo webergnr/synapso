@@ -1,0 +1,65 @@
+name: ci
+
+# The gate every PR walks through before it can merge: format, lint, test.
+#
+# ⚠️ This runs on GitHub's hosted Windows image, not macOS. The self-hosted
+# box it used while the account's minutes were blocked is not always on, and
+# jobs queued for it died after 24h with no gate at all. Windows costs 2x
+# minutes, macOS 10x; a gate on the wrong OS is still worth more than none:
+# the compiler, the lints and every test are the same, and what Windows cannot
+# catch is layout on a Mac, which no CI was checking anyway.
+#
+# A fork's PR runs here too: the hosted image is a disposable VM, so the
+# fork's workflow code touches nothing of ours. Whether a first-time
+# contributor's run waits for a maintainer's approval is a repository setting
+# (Settings > Actions), not something this file decides.
+
+# Nothing here needs to write: the gate reads the tree and reports its own
+# status. Declared once, so a step added later starts read-only.
+permissions:
+  contents: read
+
+on:
+  # ⚠️ no `branches:` filter on the PR trigger, on purpose. With
+  # `branches: [main]` a PR whose base is another feature branch — a stacked
+  # one — reported "no checks reported on the branch" and could be merged with
+  # no gate at all. The gate is per PR, not per destination.
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: windows-latest
+    # ⚠️ GitHub's default shell on Windows is `pwsh` — PowerShell 7, which is a
+    # separate install this box does not have. `powershell` is the 5.1 that
+    # ships with the OS, and every step here is a one-liner either can run.
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # ⚠️ `actions-rust-lang/setup-rust-toolchain` is bash inside, and a
+      # Windows box has no bash unless somebody installed Git Bash — the step
+      # died on `bash: command not found` before running anything. PowerShell
+      # is what this runner has, so the toolchain is installed in PowerShell.
+      - name: rust toolchain
+        run: |
+          if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+            Invoke-WebRequest https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
+            ./rustup-init.exe -y --default-toolchain stable --profile minimal
+            # ⚠️ not Out-File: PowerShell 5.1 writes it with a BOM, and the
+            # runner reads the first line of $GITHUB_PATH with the BOM in it
+            Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.cargo\bin"
+            $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
+          }
+          rustup toolchain install stable --component rustfmt,clippy --no-self-update
+          rustup default stable
+          rustc --version; cargo --version
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - run: cargo test --workspace --locked

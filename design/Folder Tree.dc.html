@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>body{margin:0;background:#0C0D10;color:#D6D9E0;font-family:'JetBrains Mono',ui-monospace,monospace}a{color:#56C8D8}a:hover{color:#4FD08A}input::placeholder{color:#5B6270}</style>
+</helmet>
+<section data-screen-label="05 folder tree" style="padding:48px 48px 24px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:16px"><span style="font-size:15px;font-weight:500;color:#D6D9E0">folders in the workspace · where the tree lives</span><span onClick="{{ reset }}" style="font-size:11px;color:#5B6270;cursor:pointer" style-hover="color:#D6D9E0">reset</span></div>
+    <div style="font-size:12px;color:#8A91A0;line-height:1.6;max-width:940px;text-wrap:pretty">the three frames share one vault; only the tree's position next to the tab rail changes. try: <span style="color:#D6D9E0">+</span> on a folder row · <span style="color:#D6D9E0">+ new ⌘N</span> in the note header (name is editable right away) · click a folder in the breadcrumb · double-click empty canvas · drag a note from the tree onto the canvas · right-click the canvas. names that already exist are refused.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+    <sc-for list="{{ frames }}" as="F" hint-placeholder-count="3">
+      <div id="{{ F.id }}" style="display:flex;flex-direction:column;gap:10px;width:1040px;flex:none">
+        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">{{ F.id }}</span><span style="font-size:12px;color:#D6D9E0">{{ F.title }}</span><span style="flex:1"></span><span onClick="{{ F.toggle }}" style="font-size:11px;color:#8A91A0;cursor:pointer;border:1px solid #2B2F38;border-radius:3px;padding:1px 6px" style-hover="color:#D6D9E0;border-color:#3A4050">⌘B · {{ F.toggleLabel }}</span></div>
+        <div data-theme="{{ theme }}" style="height:560px;position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);font-size:var(--text-base);color:var(--text-primary);line-height:var(--leading-normal);display:flex">
+
+          <sc-if value="{{ F.showTree }}" hint-placeholder-val="{{ true }}">
+            <div style="order:{{ F.treeOrder }};position:{{ F.treePos }};left:{{ F.treeLeft }};top:0;bottom:0;width:{{ F.treeW }};flex:none;box-sizing:border-box;background:var(--surface-panel);border-right:var(--border-w) solid var(--border-subtle);box-shadow:{{ F.treeShadow }};z-index:{{ F.treeZ }};display:flex;flex-direction:column;min-height:0">
+              <div style="height:32px;flex:none;display:flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3) 0 var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs)">
+                <span style="letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">vault</span><span style="flex:1"></span>
+                <span onClick="{{ F.addNote }}" title="new note in {{ F.curFolder }}" style="padding:1px var(--space-3);border-radius:var(--radius-1);color:var(--text-muted);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">+ note</span>
+                <span onClick="{{ F.addFolder }}" title="new folder in {{ F.curFolder }}" style="padding:1px var(--space-3);border-radius:var(--radius-1);color:var(--text-muted);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">+ folder</span>
+                <sc-if value="{{ F.pin }}" hint-placeholder-val="{{ false }}"><span onClick="{{ togglePin }}" title="dock beside the rail" style="padding:1px var(--space-3);border-radius:var(--radius-1);color:{{ F.pinColor }};cursor:pointer" style-hover="background:var(--surface-raised)">{{ F.pinLabel }}</span></sc-if>
+                <span onClick="{{ F.toggle }}" title="hide · ⌘B" style="padding:1px var(--space-2);border-radius:var(--radius-1);color:var(--text-faint);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">‹</span>
+              </div>
+              <sc-if value="{{ F.openSection }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;padding:var(--space-3) 0;border-bottom:var(--border-w) solid var(--border-subtle)">
+                  <div style="font-size:var(--text-xs);color:var(--text-faint);padding:0 var(--space-5) var(--space-2)">open · {{ F.openCount }}</div>
+                  <sc-for list="{{ F.tabs }}" as="t" hint-placeholder-count="3">
+                    <div onClick="{{ t.click }}" style="display:flex;align-items:center;gap:var(--space-3);height:24px;padding:0 var(--space-3) 0 var(--space-5);background:{{ t.bg }};color:{{ t.fg }};font-size:var(--text-sm);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+                      <span style="width:var(--spine-w);height:12px;flex:none;background:{{ t.color }};opacity:{{ t.op }}"></span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ t.label }}</span><span style="flex:1"></span>
+                      <span onClick="{{ t.close }}" title="close · ⌘W" style="width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint);font-size:var(--text-xs)" style-hover="background:var(--surface-overlay);color:var(--text-primary)">✕</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="flex:1;min-height:0;overflow:auto;padding:var(--space-3) 0">
+                <sc-for list="{{ F.rows }}" as="r" hint-placeholder-count="10">
+                  <sc-if value="{{ r.notInp }}" hint-placeholder-val="{{ true }}">
+                    <div draggable="{{ r.drag }}" onDragStart="{{ r.dragStart }}" onDragEnd="{{ dragEnd }}" onClick="{{ r.click }}" onMouseEnter="{{ r.enter }}" onMouseLeave="{{ r.leave }}" style="display:flex;align-items:center;gap:var(--space-3);height:24px;padding:0 var(--space-3) 0 {{ r.pad }};background:{{ r.bg }};color:{{ r.fg }};font-size:var(--text-sm);cursor:pointer;transition:background .4s" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+                      <span style="width:10px;flex:none;color:var(--text-faint);font-size:9px;text-align:center">{{ r.chev }}</span>
+                      <span style="width:var(--spine-w);height:12px;flex:none;background:{{ r.color }};opacity:{{ r.op }}"></span>
+                      <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ r.label }}<span style="color:var(--text-faint)">{{ r.ext }}</span></span>
+                      <span style="flex:1"></span>
+                      <span style="color:{{ r.color }};font-size:7px">{{ r.mark }}</span>
+                      <span onClick="{{ r.add }}" title="{{ r.addTip }}" style="width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint)" style-hover="background:var(--surface-overlay);color:var(--accent)">{{ r.plus }}</span>
+                      <sc-if value="{{ r.hov }}" hint-placeholder-val="{{ false }}"><span onClick="{{ r.del }}" title="{{ r.delTip }}" style="width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint)" style-hover="background:var(--surface-overlay);color:var(--danger)"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.8 6.5v4.5M9.2 6.5v4.5"></path></svg></span></sc-if>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ r.inp }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:2px;padding:2px var(--space-3) 2px {{ r.pad }}">
+                      <div style="display:flex;align-items:center;gap:var(--space-3)">
+                        <span style="width:10px;flex:none;color:var(--accent);font-size:var(--text-sm);text-align:center">+</span>
+                        <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ createKey }}" onBlur="{{ commitCreate }}" autoFocus="{{ true }}" spellCheck="false" placeholder="{{ r.ph }}" style="flex:1;min-width:0;font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid {{ r.border }};border-radius:var(--radius-1);outline:none;padding:1px var(--space-3)">
+                      </div>
+                      <sc-if value="{{ r.hasErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:var(--text-xs);color:var(--danger);padding-left:16px">{{ err }}</span></sc-if>
+                    </div>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ F.showRail }}" hint-placeholder-val="{{ true }}">
+            <div style="order:1;width:34px;flex:none;background:var(--bg-base);border-right:var(--border-w) solid var(--border-subtle);display:flex;flex-direction:column;gap:var(--space-1);overflow:hidden">
+              <div onClick="{{ F.toggle }}" title="folders · ⌘B" style="height:34px;flex:none;display:flex;align-items:center;justify-content:center;color:{{ F.railBtnFg }};background:{{ F.railBtnBg }};cursor:pointer;border-bottom:var(--border-w) solid var(--border-subtle)" style-hover="color:var(--text-primary)">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 4h4.2l1.3 1.6H14v6.9H2z"></path></svg>
+              </div>
+              <sc-for list="{{ F.tabs }}" as="t" hint-placeholder-count="3">
+                <div onClick="{{ t.click }}" style="position:relative;display:flex;justify-content:center;width:34px;flex:none;background:{{ t.bg }};color:{{ t.fg }};font-size:var(--text-sm);font-weight:var(--weight-medium);cursor:pointer">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ t.color }};opacity:{{ t.op }};box-shadow:{{ t.glow }}"></div>
+                  <span style="writing-mode:vertical-rl;transform:rotate(180deg);padding:var(--space-6) 0;white-space:nowrap">{{ t.label }}</span>
+                </div>
+              </sc-for>
+              <div onClick="{{ F.newNote }}" title="new note · ⌘N" style="width:34px;height:34px;margin-top:auto;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:var(--text-md);cursor:pointer" style-hover="color:var(--text-primary);background:var(--surface-raised)">+</div>
+            </div>
+          </sc-if>
+
+          <div style="order:3;flex:1;min-width:0;background:var(--surface-panel);display:flex;flex-direction:column;border-right:var(--border-w) solid var(--border-subtle)">
+            <div style="height:32px;flex:none;display:flex;align-items:center;gap:var(--space-2);padding:0 var(--space-4) 0 var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm);color:var(--text-muted);white-space:nowrap;overflow:hidden">
+              <sc-for list="{{ F.crumbs }}" as="c" hint-placeholder-count="2">
+                <span onClick="{{ c.click }}" title="reveal in tree" style="display:flex;align-items:center;gap:var(--space-3);padding:1px var(--space-2);border-radius:var(--radius-1);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)"><span style="width:var(--spine-w);height:10px;background:{{ c.color }};opacity:{{ c.op }}"></span>{{ c.name }}</span><span style="color:var(--text-faint)">/</span>
+              </sc-for>
+              <sc-if value="{{ F.renaming }}" hint-placeholder-val="{{ false }}">
+                <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ renameKey }}" onBlur="{{ commitRename }}" autoFocus="{{ true }}" spellCheck="false" style="width:150px;font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid {{ F.renBorder }};border-radius:var(--radius-1);outline:none;padding:1px var(--space-3)"><span style="color:var(--text-faint)">.md</span>
+                <sc-if value="{{ F.renErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:var(--text-xs);color:var(--danger);margin-left:var(--space-3)">{{ err }}</span></sc-if>
+              </sc-if>
+              <sc-if value="{{ F.notRenaming }}" hint-placeholder-val="{{ true }}">
+                <span onDoubleClick="{{ F.startRename }}" title="double-click to rename" style="color:var(--text-primary);padding:1px var(--space-2)">{{ F.fileName }}</span>
+              </sc-if>
+              <span style="flex:1"></span>
+              <span onClick="{{ F.newNote }}" title="new note in {{ F.curFolder }}" style="display:flex;align-items:center;gap:var(--space-3);padding:1px var(--space-3);border-radius:var(--radius-1);border:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-muted);cursor:pointer;flex:none" style-hover="border-color:var(--border-strong);color:var(--text-primary)">+ new<span style="color:var(--text-faint)">⌘N</span></span>
+            </div>
+            <div style="flex:1;min-height:0;position:relative;padding:var(--space-7) var(--space-7) var(--space-7) var(--space-8);display:flex;flex-direction:column;gap:var(--space-5)">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ F.noteColor }};opacity:.7"></div>
+              <div style="font-size:var(--text-xl);font-weight:var(--weight-bold);line-height:1.25;overflow-wrap:anywhere">{{ F.title1 }}</div>
+              <div style="color:{{ F.bodyFg }};text-wrap:pretty">{{ F.body }}</div>
+            </div>
+          </div>
+
+          <div style="order:4;flex:1;min-width:0;display:flex;flex-direction:column">
+            <div style="height:32px;flex:none;display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-5);background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm);white-space:nowrap;overflow:hidden">
+              <span style="width:var(--spine-w);height:12px;flex:none;background:{{ F.boardColor }}"></span><span><span style="color:var(--text-faint)">{{ F.boardPath }}</span>{{ F.boardName }}<span style="color:var(--text-faint)">.canvas</span></span>
+            </div>
+            <div onDoubleClick="{{ F.cvDbl }}" onDragOver="{{ cvOver }}" onDrop="{{ F.cvDrop }}" onContextMenu="{{ F.cvCtx }}" onClick="{{ closeMenu }}" style="flex:1;min-height:0;position:relative;overflow:hidden;background-color:var(--canvas-bg);background-image:radial-gradient(var(--canvas-dot) 1px,transparent 1px);background-size:22px 22px;outline:{{ F.dropOutline }};outline-offset:-8px">
+              <sc-for list="{{ F.cards }}" as="k" hint-placeholder-count="3">
+                <div onClick="{{ k.click }}" style="position:absolute;left:{{ k.x }};top:{{ k.y }};width:176px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:{{ k.shadow }};overflow:hidden;cursor:pointer">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ k.color }};box-shadow:0 0 8px {{ k.color }}"></div>
+                  <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-1)">
+                    <sc-if value="{{ k.edit }}" hint-placeholder-val="{{ false }}">
+                      <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ cardKey }}" onBlur="{{ commitCard }}" autoFocus="{{ true }}" spellCheck="false" style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid {{ k.border }};border-radius:var(--radius-1);outline:none;padding:1px var(--space-3);min-width:0">
+                      <sc-if value="{{ k.hasErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:var(--text-xs);color:var(--danger)">{{ err }}</span></sc-if>
+                    </sc-if>
+                    <sc-if value="{{ k.notEdit }}" hint-placeholder-val="{{ true }}"><span style="font-size:var(--text-sm);font-weight:var(--weight-medium);overflow-wrap:anywhere">{{ k.label }}</span></sc-if>
+                    <span style="font-size:var(--text-xs);color:var(--text-faint)">{{ k.path }}</span>
+                    <sc-if value="{{ k.hasEx }}" hint-placeholder-val="{{ false }}"><span style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.45">{{ k.ex }}</span></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ F.cvEmpty }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);color:var(--text-faint);pointer-events:none">empty board · double-click to add a note</div></sc-if>
+              <sc-if value="{{ F.menuOn }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:{{ F.menuX }};top:{{ F.menuY }};width:204px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-2);font-size:var(--text-sm);z-index:var(--z-popover)">
+                  <div onClick="{{ F.menuNote }}" style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);cursor:pointer" style-hover="background:var(--surface-raised)"><span>new note here</span><span style="color:var(--text-faint);font-size:var(--text-xs)">dbl-click</span></div>
+                  <div onClick="{{ F.menuFolder }}" style="display:flex;justify-content:space-between;gap:var(--space-4);padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);cursor:pointer;color:var(--text-muted)" style-hover="background:var(--surface-raised);color:var(--text-primary)"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">new folder in {{ F.boardFolder }}/</span></div>
+                </div>
+              </sc-if>
+              <div style="position:absolute;left:12px;right:12px;bottom:10px;display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-5);font-size:var(--text-xs);color:var(--text-faint);pointer-events:none"><span>dbl-click · note</span><span>drag from tree · reference</span><span>right-click · menu</span></div>
+            </div>
+          </div>
+
+        </div>
+        <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">{{ F.caption }}</div>
+        <div style="font-size:11px;color:#5B6270">{{ F.width }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+<section data-screen-label="05d palette" style="padding:24px 48px 96px">
+  <div id="5d" style="display:flex;flex-direction:column;gap:10px;max-width:1120px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">5d</span><span style="font-size:12px;color:#D6D9E0">8 group colors · folder → note inheritance</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+      <div data-theme="dark" style="width:300px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-3);font-family:var(--font-mono);color:var(--text-primary)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-bottom:var(--space-2)">dark</div>
+        <sc-for list="{{ pal }}" as="p" hint-placeholder-count="8">
+          <div style="display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-sm);height:20px">
+            <span style="width:var(--spine-w);height:14px;background:{{ p.d }};box-shadow:0 0 6px {{ p.d }}"></span>
+            <span style="width:64px">{{ p.name }}</span><span style="font-size:var(--text-xs);color:var(--text-muted);width:64px">{{ p.d }}</span><span style="font-size:var(--text-xs);color:var(--text-faint)">{{ p.v }}</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--accent)">{{ p.isNew }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div data-theme="light" style="width:300px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-3);font-family:var(--font-mono);color:var(--text-primary)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-bottom:var(--space-2)">light</div>
+        <sc-for list="{{ pal }}" as="p" hint-placeholder-count="8">
+          <div style="display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-sm);height:20px">
+            <span style="width:var(--spine-w);height:14px;background:{{ p.l }}"></span>
+            <span style="width:64px;color:{{ p.l }}">{{ p.name }}</span><span style="font-size:var(--text-xs);color:var(--text-muted);width:64px">{{ p.l }}</span><span style="font-size:var(--text-xs);color:var(--text-faint)">{{ p.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div data-theme="dark" style="width:440px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-3);font-family:var(--font-mono);color:var(--text-primary)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);margin-bottom:var(--space-2)">folder colors · live in all frames above</div>
+        <sc-for list="{{ folderColors }}" as="fc" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-sm);height:22px">
+            <span style="width:118px;flex:none;padding-left:{{ fc.pad }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fc.name }}</span>
+            <div style="display:flex;gap:var(--space-3)">
+              <sc-for list="{{ fc.sw }}" as="w" hint-placeholder-count="9">
+                <span onClick="{{ w.click }}" title="{{ w.title }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ w.bg }};border:{{ w.border }};box-shadow:{{ w.ring }};cursor:pointer"></span>
+              </sc-for>
+            </div>
+            <span style="font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap">{{ fc.res }}</span>
+          </div>
+        </sc-for>
+        <div style="height:1px;background:var(--border-subtle);margin:var(--space-2) 0"></div>
+        <div style="display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-sm);height:22px">
+          <span style="width:118px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ own.name }}</span>
+          <div style="display:flex;gap:var(--space-3)">
+            <sc-for list="{{ own.sw }}" as="w" hint-placeholder-count="9">
+              <span onClick="{{ w.click }}" title="{{ w.title }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ w.bg }};border:{{ w.border }};box-shadow:{{ w.ring }};cursor:pointer"></span>
+            </sc-for>
+          </div>
+          <span style="font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap">{{ own.res }}</span>
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal);text-wrap:pretty;margin-top:var(--space-2)">the active note, last row: its own color wins; the dashed square hands it back to the nearest folder. tab spine, note gutter, canvas card and graph group all read the same resolved color. top-level folders are the graph's groups. stored as hex in .synapso.json, for folders and notes alike.</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#8A91A0;line-height:1.6;max-width:900px;text-wrap:pretty">the four existing colors stay put; orange, lime, blue and magenta are added at the same lightness so eight top-level groups never repeat. green stays reserved for --accent (selection, focus). added to tokens.css as --doc-5 … --doc-8 in both themes.</div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;}}">
+const PN = ['none', 'coral', 'amber', 'violet', 'cyan', 'orange', 'lime', 'blue', 'magenta'];
+const HD = ['', '#E8737F', '#E3B341', '#A78BFA', '#56C8D8', '#EE9A5B', '#A9C95B', '#7B9CF5', '#E37BC9'];
+const HL = ['', '#C4414E', '#9A7011', '#7554D6', '#0D8296', '#B65A1C', '#5E7A14', '#3F63D1', '#AE3B93'];
+const PAL = c => c ? 'var(--doc-' + c + ')' : 'var(--text-faint)';
+const W = 1040;
+const seed = () => ({
+  folders: [
+    { id: 'auth', name: 'auth', parent: null, color: 1 },
+    { id: 'adapters', name: 'adapters', parent: null, color: 4 },
+    { id: 'adapters/storage', name: 'storage', parent: 'adapters', color: 0 },
+    { id: 'roadmap', name: 'roadmap', parent: null, color: 3 },
+    { id: 'inbox', name: 'inbox', parent: null, color: 0 },
+  ],
+  items: [
+    { id: 'auth-flow', name: 'auth-flow', ext: 'md', folder: 'auth', own: 0, ex: 'Tokens are minted once and cached locally. Only the gateway sees the client secret.' },
+    { id: 'tokens', name: 'tokens', ext: 'md', folder: 'auth', own: 0, ex: 'Refresh rotates on every use.' },
+    { id: 'auth-map', name: 'auth-map', ext: 'canvas', folder: 'auth', own: 0 },
+    { id: 'adapter-design', name: 'adapter-design', ext: 'md', folder: 'adapters', own: 0, ex: 'Every store implements the same four calls.' },
+    { id: 'sled', name: 'sled', ext: 'md', folder: 'adapters/storage', own: 0 },
+    { id: 'sqlite', name: 'sqlite', ext: 'md', folder: 'adapters/storage', own: 2, ex: 'WAL mode, one writer.' },
+    { id: 'roadmap', name: 'roadmap', ext: 'md', folder: 'roadmap', own: 0, ex: 'v0.3 ships auth + adapters; canvas frames land in v0.4.' },
+    { id: 'v04', name: 'v0.4', ext: 'md', folder: 'roadmap', own: 0 },
+    { id: 'scratch', name: 'scratch', ext: 'md', folder: 'inbox', own: 0 },
+    { id: 'readme', name: 'README', ext: 'md', folder: null, own: 0 },
+  ],
+  open: ['auth-flow', 'adapter-design', 'roadmap'], active: 'auth-flow', board: 'auth-map',
+  expanded: { auth: 1, adapters: 1, 'adapters/storage': 1 },
+  cards: [
+    { id: 'c1', board: 'auth-map', item: 'auth-flow', x: 28, y: 40 },
+    { id: 'c2', board: 'auth-map', item: 'tokens', x: 60, y: 210 },
+    { id: 'c3', board: 'auth-map', item: 'sqlite', x: 230, y: 120 },
+  ],
+  tree: { a: true, b: true, c: true }, pinned: false, hov: { frame: 'a', key: 'sqlite' },
+  creating: null, renaming: null, cardEdit: null, menu: null, flash: null, dragging: false, draft: '', err: '', n: 1,
+});
+const pt = e => { const el = e.currentTarget, r = el.getBoundingClientRect(), sc = r.width / el.offsetWidth || 1; return { x: (e.clientX - r.left) / sc, y: (e.clientY - r.top) / sc, w: el.offsetWidth, h: el.offsetHeight }; };
+
+class Component extends DCLogic {
+  state = seed();
+  item(id) { return this.state.items.find(x => x.id === id); }
+  folder(id) { return this.state.folders.find(x => x.id === id); }
+  fCol(fid) { let f = this.folder(fid); while (f) { if (f.color) return f.color; f = this.folder(f.parent); } return 0; }
+  iCol(it) { return it.own || this.fCol(it.folder); }
+  expandTo(exp, fid) { const e = { ...exp }; let f = this.folder(fid); while (f) { e[f.id] = 1; f = this.folder(f.parent); } return e; }
+  uniq(folder, base, ext) { const s = this.state; let n = base, k = 2; while (s.items.some(x => x.folder === folder && x.name === n && x.ext === ext)) n = base + '-' + (k++); return n; }
+  overlay(f) { return f === 'c' && this.state.tree.c && !this.state.pinned; }
+  setTree(f, v) { this.setState(s => ({ tree: { ...s.tree, [f]: v }, creating: v ? s.creating : null })); }
+  startCreate(f, folder, kind) {
+    this.setState(s => ({ creating: { frame: f, folder, kind }, draft: '', err: '', menu: null, tree: { ...s.tree, [f]: true }, expanded: this.expandTo(s.expanded, folder) }));
+  }
+  commitCreate() {
+    const s = this.state, c = s.creating; if (!c) return;
+    let name = s.draft.trim().replace(/^\/+|\/+$/g, '');
+    if (!name) { this.setState({ creating: null, err: '' }); return; }
+    if (c.kind === 'folder') {
+      const id = c.folder ? c.folder + '/' + name : name;
+      if (s.folders.some(x => x.id === id)) { this.setState({ err: name + '/ already exists here' }); return; }
+      this.setState({ folders: [...s.folders, { id, name, parent: c.folder, color: 0 }], creating: null, err: '', expanded: { ...this.expandTo(s.expanded, c.folder), [id]: 1 } });
+      return;
+    }
+    let ext = 'md';
+    if (/\.canvas$/.test(name)) { ext = 'canvas'; name = name.replace(/\.canvas$/, ''); } else name = name.replace(/\.md$/, '');
+    if (s.items.some(x => x.folder === c.folder && x.name === name && x.ext === ext)) { this.setState({ err: name + '.' + ext + ' already exists here' }); return; }
+    const id = 'n' + s.n, st = { items: [...s.items, { id, name, ext, folder: c.folder, own: 0 }], n: s.n + 1, creating: null, err: '' };
+    if (ext === 'md') { st.open = [...s.open, id]; st.active = id; } else st.board = id;
+    this.setState(st);
+  }
+  renameCore(id, raw, key) {
+    const s = this.state, it = this.item(id);
+    if (!it) { this.setState({ [key]: null }); return; }
+    const name = raw.trim().replace(/\.md$/, '');
+    if (!name || name === it.name) { this.setState({ [key]: null, err: '' }); return; }
+    if (s.items.some(x => x !== it && x.folder === it.folder && x.name === name && x.ext === it.ext)) { this.setState({ err: name + '.' + it.ext + ' already exists' }); return; }
+    this.setState({ items: s.items.map(x => x === it ? { ...x, name } : x), [key]: null, err: '' });
+  }
+  newNote(f) {
+    const s = this.state, act = this.item(s.active), folder = act ? act.folder : null, name = this.uniq(folder, 'untitled', 'md'), id = 'n' + s.n;
+    this.setState({ items: [...s.items, { id, name, ext: 'md', folder, own: 0 }], n: s.n + 1, open: [...s.open, id], active: id, renaming: { frame: f, id }, draft: name, err: '', expanded: this.expandTo(s.expanded, folder) });
+  }
+  openItem(f, id) {
+    const it = this.item(id); if (!it) return;
+    if (it.ext === 'canvas') { this.setState({ board: id }); return; }
+    this.setState(s => ({ open: s.open.includes(id) ? s.open : [...s.open, id], active: id, tree: this.overlay(f) ? { ...s.tree, c: false } : s.tree }));
+  }
+  closeTab(id) {
+    this.setState(s => { const open = s.open.filter(x => x !== id); return { open, active: s.active === id ? (open[open.length - 1] || null) : s.active }; });
+  }
+  reveal(f, fid) {
+    clearTimeout(this._fl);
+    this.setState(s => ({ tree: { ...s.tree, [f]: true }, expanded: fid ? this.expandTo(s.expanded, fid) : s.expanded, flash: fid }));
+    this._fl = setTimeout(() => this.setState({ flash: null }), 1400);
+  }
+  addCardNote(f, p) {
+    const s = this.state, b = this.item(s.board), folder = b ? b.folder : null, name = this.uniq(folder, 'untitled', 'md'), id = 'n' + s.n, cid = 'c' + s.n;
+    this.setState({ items: [...s.items, { id, name, ext: 'md', folder, own: 0 }], cards: [...s.cards, { id: cid, board: s.board, item: id, x: Math.max(8, Math.round(p.x - 88)), y: Math.max(8, Math.round(p.y - 20)) }], n: s.n + 1, cardEdit: { frame: f, id: cid }, draft: name, err: '', menu: null, expanded: this.expandTo(s.expanded, folder) });
+  }
+  componentWillUnmount() { clearTimeout(this._fl); }
+  hovProps(f, key, tip, fn) {
+    const h = this.state.hov;
+    return { hov: !!h && h.frame === f && h.key === key, delTip: tip,
+      enter: () => this.setState({ hov: { frame: f, key } }),
+      leave: () => this.setState(s => s.hov && s.hov.frame === f && s.hov.key === key ? { hov: null } : null),
+      del: e => { e.stopPropagation(); fn(); } };
+  }
+  delItems(ids) {
+    this.setState(s => {
+      const open = s.open.filter(x => !ids.includes(x)), items = s.items.filter(x => !ids.includes(x.id));
+      const board = ids.includes(s.board) ? ((items.find(x => x.ext === 'canvas') || {}).id || null) : s.board;
+      return { items, open, active: ids.includes(s.active) ? (open[open.length - 1] || null) : s.active, board,
+        cards: s.cards.filter(c => !ids.includes(c.item) && !ids.includes(c.board)), hov: null };
+    });
+  }
+  delFolder(fid) {
+    const s = this.state, under = id => id === fid || id.startsWith(fid + '/');
+    this.delItems(s.items.filter(x => x.folder && under(x.folder)).map(x => x.id));
+    this.setState(st => ({ folders: st.folders.filter(x => !under(x.id)) }));
+  }
+
+  rows(f) {
+    const s = this.state, out = [], c = s.creating && s.creating.frame === f ? s.creating : null;
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    const walk = (parent, depth) => {
+      const pad = (12 + depth * 14) + 'px';
+      if (c && c.folder === parent) out.push({ key: 'inp', inp: true, notInp: false, pad, ph: c.kind === 'folder' ? 'folder name' : 'name · end with .canvas for a board', border: s.err ? 'var(--danger)' : 'var(--accent)', hasErr: !!s.err });
+      s.folders.filter(x => x.parent === parent).sort(byName).forEach(fo => {
+        const open = !!s.expanded[fo.id], col = this.fCol(fo.id);
+        out.push({ notInp: true, inp: false, pad, chev: open ? '▾' : '▸', label: fo.name, ext: '', color: PAL(col), op: fo.color ? 1 : (col ? .45 : .6), mark: '', plus: '+', addTip: 'new note in ' + fo.name,
+          bg: s.flash === fo.id ? 'var(--accent-dim)' : 'transparent', fg: 'var(--text-primary)', drag: false,
+          click: () => this.setState(st => ({ expanded: { ...st.expanded, [fo.id]: open ? 0 : 1 } })),
+          add: e => { e.stopPropagation(); this.startCreate(f, fo.id, 'note'); } });
+        Object.assign(out[out.length - 1], this.hovProps(f, fo.id, 'delete ' + fo.name + '/ and its contents', () => this.delFolder(fo.id)));
+        if (open) walk(fo.id, depth + 1);
+      });
+      s.items.filter(x => x.folder === parent).sort(byName).forEach(it => {
+        const on = it.id === s.active || (it.ext === 'canvas' && it.id === s.board), md = it.ext === 'md';
+        out.push({ notInp: true, inp: false, pad, chev: '', label: it.name, ext: '.' + it.ext, color: PAL(this.iCol(it)), op: it.own ? 1 : .5,
+          mark: md && s.open.includes(it.id) && !on ? '●' : '', plus: '', addTip: '', add: null,
+          bg: on ? 'var(--surface-raised)' : 'transparent', fg: on ? 'var(--text-primary)' : 'var(--text-muted)', drag: md,
+          dragStart: md ? e => { e.dataTransfer.setData('text/plain', it.id); e.dataTransfer.effectAllowed = 'copy'; setTimeout(() => this.setState({ dragging: true }), 0); } : null,
+          click: () => this.openItem(f, it.id), ...this.hovProps(f, it.id, 'delete ' + it.name + '.' + it.ext, () => this.delItems([it.id])) });
+      });
+    };
+    walk(null, 0);
+    return out;
+  }
+
+  frame(f) {
+    const s = this.state, open = s.tree[f], ov = this.overlay(f), act = this.item(s.active), curFolder = act ? act.folder : null;
+    const tabs = s.open.map(id => this.item(id)).filter(Boolean).map(it => {
+      const on = it.id === s.active, col = PAL(this.iCol(it));
+      return { label: it.name + '.' + it.ext, color: col, op: on ? 1 : .45, glow: on ? '0 0 8px ' + col : 'none', bg: on ? 'var(--surface-raised)' : 'transparent', fg: on ? 'var(--text-primary)' : 'var(--text-muted)',
+        click: () => this.setState({ active: it.id }), close: e => { e.stopPropagation(); this.closeTab(it.id); } };
+    });
+    const chain = []; let fo = act ? this.folder(act.folder) : null;
+    while (fo) { chain.unshift(fo); fo = this.folder(fo.parent); }
+    const crumbs = [{ name: 'vault', color: 'var(--text-faint)', op: .6, click: () => this.reveal(f, null) }].concat(chain.map(x => ({ name: x.name, color: PAL(this.fCol(x.id)), op: x.color ? 1 : .45, click: () => this.reveal(f, x.id) })));
+    const ren = !!(s.renaming && s.renaming.frame === f && act && s.renaming.id === act.id);
+    const b = this.item(s.board);
+    const cards = s.cards.filter(c => c.board === s.board).map(c => {
+      const it = this.item(c.item); if (!it) return null;
+      const edit = !!(s.cardEdit && s.cardEdit.frame === f && s.cardEdit.id === c.id);
+      return { x: c.x + 'px', y: c.y + 'px', color: PAL(this.iCol(it)), label: it.name + '.md', path: (it.folder || 'vault') + '/', ex: it.ex || '', hasEx: !!it.ex,
+        edit, notEdit: !edit, border: s.err ? 'var(--danger)' : 'var(--accent)', hasErr: edit && !!s.err,
+        shadow: it.id === s.active ? '0 0 0 1px var(--accent), var(--shadow-1)' : 'var(--shadow-1)', click: () => this.openItem(f, it.id) };
+    }).filter(Boolean);
+    const treeW = f === 'b' ? 240 : ov ? 260 : 220;
+    const showRail = f !== 'b' || !open;
+    const side = (showRail ? 34 : 0) + (open && !ov ? treeW : 0);
+    const ed = Math.round((W - side) / 2), ed14 = Math.round((1440 - side) / 2);
+    const menu = s.menu && s.menu.frame === f ? s.menu : null;
+    const T = {
+      a: ['tree docked before the rail', 'the IDE default. tree and tabs are both always visible; the tree pushes the note and canvas right, so this costs the most width in split mode.'],
+      b: ['the rail expands into the tree', '⌘B swaps the 34px tab rail for a 240px panel: open notes on top, the vault below. one column, never both, so the panel only costs 206px more than the rail.'],
+      c: ['tree floats over the note', '⌘B slides the tree over the editor without reflowing anything; opening a note closes it. pin docks it beside the rail, which is 5a with the rail on the outside.'],
+    }[f];
+    return {
+      id: '5' + f, title: T[0], caption: T[1],
+      width: 'note pane ≈ ' + ed + 'px in this frame · ' + ed14 + 'px in a 1440px window' + (ov ? ' · tree floats, no reflow' : ''),
+      toggle: () => this.setTree(f, !open), toggleLabel: open ? 'hide folders' : 'show folders',
+      showTree: open, treeOrder: f === 'a' ? 0 : 2, treePos: ov ? 'absolute' : 'relative', treeLeft: ov ? '34px' : '0px', treeW: treeW + 'px',
+      treeShadow: ov ? 'var(--shadow-3)' : 'none', treeZ: ov ? 40 : 'auto',
+      showRail, openSection: f === 'b', openCount: tabs.length, pin: f === 'c', pinLabel: s.pinned ? 'unpin' : 'pin', pinColor: s.pinned ? 'var(--accent)' : 'var(--text-muted)',
+      railBtnBg: open ? 'var(--accent-dim)' : 'transparent', railBtnFg: open ? 'var(--accent)' : 'var(--text-faint)',
+      curFolder: curFolder || 'vault',
+      addNote: () => this.startCreate(f, curFolder, 'note'), addFolder: () => this.startCreate(f, curFolder, 'folder'),
+      rows: open ? this.rows(f) : [], tabs, crumbs,
+      renaming: ren, notRenaming: !ren, renBorder: s.err ? 'var(--danger)' : 'var(--accent)', renErr: ren && !!s.err,
+      fileName: act ? act.name + '.md' : '', startRename: () => act && this.setState({ renaming: { frame: f, id: act.id }, draft: act.name, err: '' }),
+      newNote: () => this.newNote(f),
+      noteColor: act ? PAL(this.iCol(act)) : 'var(--border-subtle)',
+      title1: act ? act.name : 'no note open', body: act ? (act.ex || 'empty note — start typing.') : '⌘N creates one in the last folder you used.', bodyFg: act && act.ex ? 'var(--text-primary)' : 'var(--text-faint)',
+      boardColor: b ? PAL(this.iCol(b)) : 'var(--text-faint)', boardPath: b && b.folder ? b.folder + '/' : '', boardName: b ? b.name : '', boardFolder: (b && b.folder) || 'vault',
+      cards, cvEmpty: cards.length === 0,
+      cvDbl: e => { if (e.target !== e.currentTarget) return; this.addCardNote(f, pt(e)); },
+      cvDrop: e => {
+        e.preventDefault(); const id = e.dataTransfer.getData('text/plain'), it = this.item(id);
+        this.setState({ dragging: false }); if (!it || it.ext !== 'md') return;
+        const p = pt(e); this.setState(st => ({ cards: [...st.cards, { id: 'c' + st.n, board: st.board, item: id, x: Math.max(8, Math.round(p.x - 88)), y: Math.max(8, Math.round(p.y - 20)) }], n: st.n + 1 }));
+      },
+      cvCtx: e => { e.preventDefault(); const p = pt(e); this.setState({ menu: { frame: f, x: Math.round(Math.min(p.x, p.w - 212)), y: Math.round(Math.min(p.y, p.h - 90)) } }); },
+      menuOn: !!menu, menuX: menu ? menu.x + 'px' : '0px', menuY: menu ? menu.y + 'px' : '0px',
+      menuNote: () => menu && this.addCardNote(f, { x: menu.x + 88, y: menu.y + 20 }),
+      menuFolder: () => this.startCreate(f, b ? b.folder : null, 'folder'),
+      dropOutline: s.dragging ? '1px dashed var(--accent)' : 'none',
+    };
+  }
+
+  swatches(cur, onPick, zeroTitle) {
+    return [0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => ({
+      bg: i ? PAL(i) : 'transparent', border: i ? 'none' : '1px dashed var(--border-strong)',
+      ring: cur === i ? '0 0 0 2px var(--surface-panel), 0 0 0 3.5px ' + (i ? PAL(i) : 'var(--text-muted)') : 'none',
+      title: i ? PN[i] : zeroTitle, click: () => onPick(i),
+    }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const fcs = [];
+    const walk = (parent, depth) => s.folders.filter(x => x.parent === parent).sort((a, b) => a.name.localeCompare(b.name)).forEach(fo => {
+      const inh = fo.parent ? this.fCol(fo.parent) : 0;
+      fcs.push({ name: fo.name + '/', pad: depth * 14 + 'px', res: fo.color ? '' : (inh ? '↑ ' + PN[inh] : 'neutral'),
+        sw: this.swatches(fo.color, i => this.setState(st => ({ folders: st.folders.map(x => x.id === fo.id ? { ...x, color: i } : x) })), fo.parent ? 'inherit from parent' : 'neutral') });
+      walk(fo.id, depth + 1);
+    });
+    walk(null, 0);
+    const act = this.item(s.active);
+    const own = act ? { name: act.name + '.md', res: act.own ? 'own color' : (this.fCol(act.folder) ? '↑ ' + PN[this.fCol(act.folder)] : 'neutral'),
+      sw: this.swatches(act.own, i => this.setState(st => ({ items: st.items.map(x => x.id === act.id ? { ...x, own: i } : x) })), 'use folder color') } : { name: 'no note open', res: '', sw: [] };
+    return {
+      theme: this.props.theme ?? 'dark',
+      frames: ['a', 'b', 'c'].map(f => this.frame(f)),
+      draft: s.draft, err: s.err,
+      onDraft: e => this.setState({ draft: e.target.value, err: '' }),
+      createKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.commitCreate(); } else if (e.key === 'Escape') this.setState({ creating: null, err: '' }); },
+      commitCreate: () => this.commitCreate(),
+      renameKey: e => { if (e.key === 'Enter') { e.preventDefault(); s.renaming && this.renameCore(s.renaming.id, s.draft, 'renaming'); } else if (e.key === 'Escape') this.setState({ renaming: null, err: '' }); },
+      commitRename: () => { const r = this.state.renaming; if (r) this.renameCore(r.id, this.state.draft, 'renaming'); },
+      cardKey: e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); const ce = s.cardEdit, c = ce && s.cards.find(x => x.id === ce.id); if (!c) return; if (e.key === 'Escape') this.setState({ cardEdit: null, err: '' }); else this.renameCore(c.item, s.draft, 'cardEdit'); } },
+      commitCard: () => { const st = this.state, ce = st.cardEdit, c = ce && st.cards.find(x => x.id === ce.id); if (c) this.renameCore(c.item, st.draft, 'cardEdit'); },
+      cvOver: e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; },
+      dragEnd: () => this.state.dragging && this.setState({ dragging: false }),
+      closeMenu: () => this.state.menu && this.setState({ menu: null }),
+      togglePin: () => this.setState(st => ({ pinned: !st.pinned })),
+      reset: () => this.setState(seed()),
+      pal: [1, 2, 3, 4, 5, 6, 7, 8].map(i => ({ name: PN[i], d: HD[i], l: HL[i], v: '--doc-' + i, isNew: i > 4 ? 'new' : '' })),
+      folderColors: fcs, own,
+    };
+  }
+}
+</script>
+</body>
+</html>

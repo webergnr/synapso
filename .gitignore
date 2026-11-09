@@ -1,0 +1,12 @@
+/target
+
+# what the release workflow assembles — only here if you run its steps by hand
+/Synapso.app
+/synapso-*.zip
+
+# the scratch vault fixture/gen_vault.py writes
+/fixture/vault/
+
+# the Claude Design runtime the .dc.html screens load: third-party, not ours
+# to ship. Drop a Claude Design export's copy here to render them locally.
+/design/support.js

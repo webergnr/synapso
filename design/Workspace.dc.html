@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>body{margin:0;background:#131418}a{color:var(--text-link);text-decoration:underline;text-underline-offset:2px}a:hover{color:var(--accent)}::selection{background:var(--selection)}</style>
+</helmet>
+<div ref="{{ rootRef }}" data-theme="{{ theme }}" onMouseEnter="{{ hotOn }}" onMouseLeave="{{ hotOff }}" style="width:100%;height:{{ rootH }};display:flex;flex-direction:column;font-family:var(--font-mono);font-size:var(--text-base);background:var(--bg-base);color:var(--text-primary);overflow:hidden;position:relative;line-height:var(--leading-normal)">
+  <sc-if value="{{ macChrome }}" hint-placeholder-val="{{ false }}">
+    <div style="height:38px;flex:none;display:flex;align-items:center;gap:var(--space-5);padding:0 var(--space-5);background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle);position:relative;z-index:var(--z-popover)">
+      <div style="display:flex;align-items:center;gap:8px;flex:none">
+        <span style="width:12px;height:12px;border-radius:var(--radius-round);background:#FF5F57;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(0,0,0,.55);cursor:pointer">✕</span>
+        <span style="width:12px;height:12px;border-radius:var(--radius-round);background:#FEBC2E;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(0,0,0,.55);cursor:pointer">−</span>
+        <span style="width:12px;height:12px;border-radius:var(--radius-round);background:#28C840;display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1;color:rgba(0,0,0,.55);cursor:pointer">⤢</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-3);color:var(--text-faint);font-size:var(--text-sm);margin-left:var(--space-3)">
+        <span style="cursor:pointer;padding:2px var(--space-2);border-radius:var(--radius-1)" style-hover="background:var(--surface-inset);color:var(--text-primary)">‹</span>
+        <span style="cursor:pointer;padding:2px var(--space-2);border-radius:var(--radius-1)" style-hover="background:var(--surface-inset);color:var(--text-primary)">›</span>
+      </div>
+      <div style="position:absolute;left:0;right:0;display:flex;justify-content:center;pointer-events:none">
+        <div style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm)">
+          <span style="width:6px;height:6px;border-radius:var(--radius-round);background:{{ noteColor }};box-shadow:0 0 6px {{ noteColor }}"></span>
+          <span style="color:var(--text-primary);font-weight:var(--weight-medium)">{{ docLabel }}</span>
+          <sc-if value="{{ dirty }}" hint-placeholder-val="{{ true }}"><span style="color:var(--text-faint)">•</span></sc-if>
+          <span style="color:var(--text-faint)">—</span>
+          <span style="color:var(--text-muted)">{{ canvasName }}</span>
+        </div>
+      </div>
+      <span style="flex:1"></span>
+      <div style="display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-xs);color:var(--text-muted)">
+        <sc-if value="{{ searchOn }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex;align-items:center;gap:var(--space-2);background:var(--accent-dim);color:var(--accent);border-radius:var(--radius-1);padding:1px var(--space-3)">⌕ 7</span>
+        </sc-if>
+        <span style="display:flex;align-items:center;gap:var(--space-4)">
+          <span style="display:flex;align-items:center;gap:var(--space-3);color:var(--text-muted);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:2px var(--space-3);cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong);background:var(--surface-raised)">
+            <span>⌕ search</span>
+            <span style="font-size:10px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:2px;padding:0 4px;color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>K</span>
+          </span>
+          <span style="display:flex;align-items:center;gap:var(--space-3);color:var(--text-muted);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:2px var(--space-3);cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong);background:var(--surface-raised)">
+            <span>↗ open</span>
+            <span style="font-size:10px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:2px;padding:0 4px;color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>P</span>
+          </span>
+        </span>
+        <span style="color:var(--accent)">●</span><span>{{ sync }}</span>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ winChrome }}" hint-placeholder-val="{{ false }}">
+    <div style="height:32px;flex:none;display:flex;align-items:stretch;background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle);position:relative;z-index:var(--z-popover)">
+      <div style="display:flex;align-items:center;gap:var(--space-4);padding-left:var(--space-5);font-size:var(--text-xs);color:var(--text-muted)">
+        <span style="width:12px;height:12px;border-radius:3px;background:var(--accent);opacity:.9"></span>
+        <span style="display:flex;align-items:center;gap:var(--space-3)">
+          <span style="color:var(--text-primary)">{{ docLabel }}</span>
+          <sc-if value="{{ dirty }}" hint-placeholder-val="{{ true }}"><span style="color:var(--text-faint)">•</span></sc-if>
+          <span style="color:var(--text-faint)">—</span>
+          <span>{{ canvasName }}</span>
+          <span style="color:var(--text-faint)">—</span>
+          <span>Grove</span>
+        </span>
+      </div>
+      <span style="flex:1"></span>
+      <div style="display:flex;align-items:center;gap:var(--space-4);padding-right:var(--space-5);font-size:var(--text-xs);color:var(--text-muted)">
+        <sc-if value="{{ searchOn }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex;align-items:center;gap:var(--space-2);background:var(--accent-dim);color:var(--accent);border-radius:var(--radius-1);padding:1px var(--space-3)">⌕ 7</span>
+        </sc-if>
+        <span style="display:flex;align-items:center;gap:var(--space-4)">
+          <span style="display:flex;align-items:center;gap:var(--space-3);color:var(--text-muted);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:2px var(--space-3);cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong);background:var(--surface-raised)">
+            <span>⌕ search</span>
+            <span style="font-size:10px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:2px;padding:0 4px;color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>K</span>
+          </span>
+          <span style="display:flex;align-items:center;gap:var(--space-3);color:var(--text-muted);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:2px var(--space-3);cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong);background:var(--surface-raised)">
+            <span>↗ open</span>
+            <span style="font-size:10px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:2px;padding:0 4px;color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>P</span>
+          </span>
+        </span>
+        <span style="color:var(--accent)">●</span><span>{{ sync }}</span>
+      </div>
+      <div style="display:flex;align-items:stretch;flex:none">
+        <span style="width:46px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;cursor:pointer" style-hover="background:var(--surface-inset);color:var(--text-primary)">─</span>
+        <span style="width:46px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;cursor:pointer" style-hover="background:var(--surface-inset);color:var(--text-primary)">▢</span>
+        <span style="width:46px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:11px;cursor:pointer" style-hover="background:#E81123;color:#fff">✕</span>
+      </div>
+    </div>
+  </sc-if>
+  <div style="flex:1;display:flex;min-height:0;position:relative">
+    <sc-if value="{{ sideTabs }}" hint-placeholder-val="{{ true }}">
+    <div style="width: 34px; flex: none; background: var(--bg-base); border-right: var(--border-w) solid var(--border-subtle); display: flex; flex-direction: column; padding-top: 0px; gap: 0px; z-index: {{ sideZ }}">
+      <div data-tree="1" onClick="{{ toggleTree }}" title="folders · {{ modT }}⇧E" style="width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;color:{{ tgFg }};background:{{ tgBg }};border-bottom:var(--border-w) solid var(--border-subtle);cursor:pointer" style-hover="color:var(--text-primary)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 4h4.2l1.3 1.6H14v6.9H2z"></path></svg></div>
+      <sc-if value="{{ notEmpty }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ docs }}" as="d" hint-placeholder-count="3">
+          <div onClick="{{ d.go }}" onMouseEnter="{{ d.tEnter }}" onMouseLeave="{{ d.tLeave }}" style="position:relative;display:flex;justify-content:center;width:34px;margin-bottom:var(--space-1);background:{{ d.bg }};color:{{ d.fg }};font-size:var(--text-sm);font-weight:var(--weight-medium);letter-spacing:.02em;cursor:pointer">
+            <div data-tip="1" onMouseEnter="{{ d.enter }}" onMouseLeave="{{ d.leave }}" onClick="{{ d.click }}" title="color" style="position:absolute;left:0;top:0;bottom:0;width:8px;cursor:pointer;z-index:1"><div style="width:{{ d.thick }};height:100%;background:{{ d.color }};opacity:{{ d.op }};box-shadow:{{ d.glow }};transition:width .1s, box-shadow .1s"></div></div><sc-if value="{{ d.open }}" hint-placeholder-val="{{ false }}"><div data-tip="1" style="position:absolute;left:40px;top:6px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap;font-size:var(--text-xs);font-weight:var(--weight-regular);letter-spacing:0;line-height:1;cursor:default"><sc-if value="{{ d.swOpen }}" hint-placeholder-val="{{ true }}"><div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)"><sc-for list="{{ d.opts }}" as="o" hint-placeholder-count="9"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for><span onClick="{{ tipCustom }}" onMouseEnter="{{ tipRbHover }}" title="any color · 9" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:conic-gradient(oklch(.74 .13 0), oklch(.74 .13 90), oklch(.74 .13 180), oklch(.74 .13 270), oklch(.74 .13 360));box-shadow:{{ d.rbRing }};cursor:pointer"></span></div></sc-if><sc-if value="{{ d.pickOpen }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:var(--space-3)"><span onClick="{{ tipBack }}" title="back · esc" style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);cursor:pointer;border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">‹</span><div onMouseMove="{{ padMove }}" onMouseLeave="{{ padLeave }}" onClick="{{ padPick }}" style="position:relative;width:128px;height:14px;border-radius:var(--radius-1);cursor:crosshair;background:linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0) 50%, rgba(0,0,0,.32)), linear-gradient(to right, oklch(.74 .13 0), oklch(.74 .13 45), oklch(.74 .13 90), oklch(.74 .13 135), oklch(.74 .13 180), oklch(.74 .13 225), oklch(.74 .13 270), oklch(.74 .13 315), oklch(.74 .13 360))"><span style="position:absolute;left:{{ padX }};top:{{ padY }};opacity:{{ padOp }};width:8px;height:8px;margin:-4px 0 0 -4px;box-sizing:border-box;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);background:{{ padColor }};pointer-events:none"></span></div></div></sc-if><span style="min-width:64px;color:var(--text-muted)">{{ tipLabel }}</span></div></sc-if>
+            <div style="writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;gap:var(--space-3);padding:var(--space-6) 0">
+              <span>{{ d.a }}<span style="background:{{ d.hl }};border-radius:2px">{{ d.b }}</span>{{ d.c }}</span>
+              <span style="width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center"><sc-if value="{{ d.showX }}" hint-placeholder-val="{{ false }}"><span onClick="{{ d.close }}" title="close · {{ modT }}W" style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-muted)" style-hover="background:var(--surface-overlay);color:var(--text-primary)"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 1.5l5 5M6.5 1.5l-5 5"></path></svg></span></sc-if><sc-if value="{{ d.dotOn }}" hint-placeholder-val="{{ false }}"><span style="width:5px;height:5px;border-radius:var(--radius-round);background:{{ d.color }}"></span></sc-if></span>
+            </div>
+          </div>
+        </sc-for>
+      </sc-if>
+      <div onClick="{{ newNote }}" title="new note in {{ curFolder }} · {{ modT }}N" style="width:34px;height:34px;margin-top:auto;margin-bottom:var(--space-3);flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:var(--text-md);cursor:pointer" style-hover="color:var(--text-primary);background:var(--surface-raised)">+</div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ treeOn }}" hint-placeholder-val="{{ false }}">
+    <div data-tree="1" style="position:{{ treePos }};left:{{ treeLeft }};top:0;bottom:0;width:{{ treeW }};flex:none;box-sizing:border-box;background:var(--surface-panel);border-right:var(--border-w) solid var(--border-subtle);box-shadow:{{ treeShadow }};z-index:{{ treeZ }};display:flex;flex-direction:column;min-height:0">
+      <div style="height:34px;flex:none;display:flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3) 0 var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs)">
+        <span style="letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);white-space:nowrap">vault</span><span style="flex:1"></span>
+        <span onClick="{{ addNote }}" title="new note in {{ curFolder }}" style="width:22px;height:20px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-muted);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5H4.5v11h7V5z"></path><path d="M9 2.5V5h2.5"></path><path d="M8 7.5v4M6 9.5h4"></path></svg></span>
+        <span onClick="{{ addFolder }}" title="new folder in {{ curFolder }}" style="width:22px;height:20px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-muted);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h4.2l1.3 1.6H14v6.9H2z"></path><path d="M8 7.3v3.6M6.2 9.1h3.6"></path></svg></span>
+        <span onClick="{{ togglePin }}" title="dock beside the rail" style="flex:none;white-space:nowrap;padding:1px var(--space-3);border-radius:var(--radius-1);color:{{ pinColor }};cursor:pointer" style-hover="background:var(--surface-raised)">{{ pinLabel }}</span>
+        <span onClick="{{ hideTree }}" title="hide · {{ modT }}⇧E" style="flex:none;padding:1px var(--space-2);border-radius:var(--radius-1);color:var(--text-faint);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">‹</span>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto;padding:var(--space-3) 0">
+        <sc-for list="{{ treeRows }}" as="r" hint-placeholder-count="8">
+          <sc-if value="{{ r.notInp }}" hint-placeholder-val="{{ true }}">
+            <div draggable="{{ r.drag }}" onDragStart="{{ r.dragStart }}" onDragEnd="{{ dragEnd }}" onClick="{{ r.click }}" style="display:flex;align-items:center;gap:var(--space-3);height:24px;padding:0 var(--space-3) 0 {{ r.pad }};background:{{ r.bg }};color:{{ r.fg }};font-size:var(--text-sm);cursor:pointer;transition:background .4s" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+              <span style="width:10px;flex:none;color:var(--text-faint);font-size:9px;text-align:center">{{ r.chev }}</span>
+              <span data-tip="1" onMouseEnter="{{ r.enter }}" onMouseLeave="{{ r.leave }}" onClick="{{ r.tipClick }}" title="color" style="width:14px;height:22px;margin:0 -4px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;border-radius:var(--radius-1);background:{{ r.hitBg }}"><span style="width:{{ r.thick }};height:12px;background:{{ r.color }};opacity:{{ r.op }};box-shadow:{{ r.glow }};transition:width .1s, box-shadow .1s"></span></span>
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ r.label }}<span style="color:var(--text-faint)">{{ r.ext }}</span></span>
+              <span style="flex:1"></span>
+              <span style="color:{{ r.color }};font-size:7px">{{ r.mark }}</span>
+              <span onClick="{{ r.add }}" title="{{ r.addTip }}" style="width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint)" style-hover="background:var(--surface-overlay);color:var(--accent)">{{ r.plus }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ r.inp }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:2px var(--space-3) 2px {{ r.pad }}">
+              <div style="display:flex;align-items:center;gap:var(--space-3)">
+                <span style="width:10px;flex:none;color:var(--accent);font-size:var(--text-sm);text-align:center">+</span>
+                <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ createKey }}" onBlur="{{ commitCreate }}" autoFocus="{{ true }}" spellCheck="false" placeholder="{{ r.ph }}" style="flex:1;min-width:0;font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid {{ r.border }};border-radius:var(--radius-1);outline:none;padding:1px var(--space-3)">
+              </div>
+              <sc-if value="{{ r.hasErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:var(--text-xs);color:var(--danger);padding-left:16px">{{ err }}</span></sc-if>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <sc-if value="{{ tt.open }}" hint-placeholder-val="{{ false }}">
+        <div data-tip="1" style="position:absolute;left:{{ ttX }};top:{{ ttY }};z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap;font-size:var(--text-xs);line-height:1">
+          <sc-if value="{{ tt.swOpen }}" hint-placeholder-val="{{ true }}">
+            <div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)">
+              <sc-for list="{{ tt.opts }}" as="o" hint-placeholder-count="9"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for>
+              <span onClick="{{ tipCustom }}" onMouseEnter="{{ tipRbHover }}" title="any color · 9" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:conic-gradient(oklch(.74 .13 0), oklch(.74 .13 90), oklch(.74 .13 180), oklch(.74 .13 270), oklch(.74 .13 360));box-shadow:{{ tt.rbRing }};cursor:pointer"></span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ tt.pickOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:var(--space-3)">
+              <span onClick="{{ tipBack }}" title="back · esc" style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);cursor:pointer;border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">‹</span>
+              <div onMouseMove="{{ padMove }}" onMouseLeave="{{ padLeave }}" onClick="{{ padPick }}" style="position:relative;width:128px;height:14px;border-radius:var(--radius-1);cursor:crosshair;background:linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0) 50%, rgba(0,0,0,.32)), linear-gradient(to right, oklch(.74 .13 0), oklch(.74 .13 45), oklch(.74 .13 90), oklch(.74 .13 135), oklch(.74 .13 180), oklch(.74 .13 225), oklch(.74 .13 270), oklch(.74 .13 315), oklch(.74 .13 360))"><span style="position:absolute;left:{{ padX }};top:{{ padY }};opacity:{{ padOp }};width:8px;height:8px;margin:-4px 0 0 -4px;box-sizing:border-box;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);background:{{ padColor }};pointer-events:none"></span></div>
+            </div>
+          </sc-if>
+          <span style="min-width:64px;color:var(--text-muted)">{{ tipLabel }}</span>
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{ showEditor }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:{{ edFlex }};min-width:340px;background:var(--surface-panel);display:flex;flex-direction:column;position:relative;z-index:var(--z-base)">
+      <sc-if value="{{ topTabs }}" hint-placeholder-val="{{ false }}">
+        <div style="height:36px;flex:none;display:flex;align-items:stretch;background:var(--bg-base)">
+          <div data-tree="1" onClick="{{ toggleTree }}" title="folders · {{ modT }}⇧E" style="width:36px;flex:none;display:flex;align-items:center;justify-content:center;color:{{ tgFg }};background:{{ tgBg }};border-right:var(--border-w) solid var(--border-subtle);cursor:pointer" style-hover="color:var(--text-primary)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 4h4.2l1.3 1.6H14v6.9H2z"></path></svg></div>
+          <sc-for list="{{ docs }}" as="d" hint-placeholder-count="3">
+            <div onClick="{{ d.go }}" onMouseEnter="{{ d.tEnter }}" onMouseLeave="{{ d.tLeave }}" style="position:relative;display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-3) 0 var(--space-6);background:{{ d.bg }};color:{{ d.fg }};font-size:var(--text-sm);font-weight:var(--weight-medium);cursor:pointer">
+              <div data-tip="1" onMouseEnter="{{ d.enter }}" onMouseLeave="{{ d.leave }}" onClick="{{ d.click }}" title="color" style="position:absolute;left:0;right:0;top:0;height:8px;cursor:pointer;z-index:1"><div style="height:{{ d.thick }};background:{{ d.color }};opacity:{{ d.op }};box-shadow:{{ d.glow }};transition:height .1s, box-shadow .1s"></div></div><sc-if value="{{ d.open }}" hint-placeholder-val="{{ false }}"><div data-tip="1" style="position:absolute;left:6px;top:10px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap;font-size:var(--text-xs);font-weight:var(--weight-regular);letter-spacing:0;line-height:1;cursor:default"><sc-if value="{{ d.swOpen }}" hint-placeholder-val="{{ true }}"><div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)"><sc-for list="{{ d.opts }}" as="o" hint-placeholder-count="9"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for><span onClick="{{ tipCustom }}" onMouseEnter="{{ tipRbHover }}" title="any color · 9" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:conic-gradient(oklch(.74 .13 0), oklch(.74 .13 90), oklch(.74 .13 180), oklch(.74 .13 270), oklch(.74 .13 360));box-shadow:{{ d.rbRing }};cursor:pointer"></span></div></sc-if><sc-if value="{{ d.pickOpen }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:var(--space-3)"><span onClick="{{ tipBack }}" title="back · esc" style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);cursor:pointer;border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">‹</span><div onMouseMove="{{ padMove }}" onMouseLeave="{{ padLeave }}" onClick="{{ padPick }}" style="position:relative;width:128px;height:14px;border-radius:var(--radius-1);cursor:crosshair;background:linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0) 50%, rgba(0,0,0,.32)), linear-gradient(to right, oklch(.74 .13 0), oklch(.74 .13 45), oklch(.74 .13 90), oklch(.74 .13 135), oklch(.74 .13 180), oklch(.74 .13 225), oklch(.74 .13 270), oklch(.74 .13 315), oklch(.74 .13 360))"><span style="position:absolute;left:{{ padX }};top:{{ padY }};opacity:{{ padOp }};width:8px;height:8px;margin:-4px 0 0 -4px;box-sizing:border-box;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);background:{{ padColor }};pointer-events:none"></span></div></div></sc-if><span style="min-width:64px;color:var(--text-muted)">{{ tipLabel }}</span></div></sc-if>
+              <span>{{ d.a }}<span style="background:{{ d.hl }};border-radius:2px">{{ d.b }}</span>{{ d.c }}</span>
+              <span style="width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center"><sc-if value="{{ d.showX }}" hint-placeholder-val="{{ false }}"><span onClick="{{ d.close }}" title="close · {{ modT }}W" style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-muted)" style-hover="background:var(--surface-overlay);color:var(--text-primary)"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1.5 1.5l5 5M6.5 1.5l-5 5"></path></svg></span></sc-if><sc-if value="{{ d.dotOn }}" hint-placeholder-val="{{ false }}"><span style="width:5px;height:5px;border-radius:var(--radius-round);background:{{ d.color }}"></span></sc-if></span>
+            </div>
+          </sc-for>
+          <div onClick="{{ newNote }}" title="new note in {{ curFolder }} · {{ modT }}N" style="width:34px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:var(--text-md);cursor:pointer" style-hover="color:var(--text-primary)">+</div>
+        </div>
+        <div style="height:var(--spine-w);flex:none;background:{{ noteColor }};box-shadow:0 0 10px {{ noteColor }};opacity:.9"></div>
+      </sc-if>
+      <sc-if value="{{ notEmpty }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ sideSpine }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ noteColor }};box-shadow:0 0 10px {{ noteColor }};opacity:.9;z-index:1"></div></sc-if>
+        <div style="height:34px;flex:none;display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-6);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm);color:var(--text-muted)">
+          <sc-for list="{{ crumbs }}" as="c" hint-placeholder-count="2"><span data-tree="1" onClick="{{ c.click }}" title="reveal in folders" style="display:flex;align-items:center;gap:var(--space-3);padding:1px var(--space-2);border-radius:var(--radius-1);color:var(--text-muted);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)"><sc-if value="{{ c.bar }}" hint-placeholder-val="{{ true }}"><span style="width:var(--spine-w);height:10px;background:{{ c.color }};opacity:{{ c.op }}"></span></sc-if>{{ c.name }}</span><span style="color:var(--text-faint)">/</span></sc-for>
+          <sc-if value="{{ renaming }}" hint-placeholder-val="{{ false }}"><input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ renameKey }}" onBlur="{{ commitRename }}" autoFocus="{{ true }}" spellCheck="false" style="width:170px;font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid {{ renBorder }};border-radius:var(--radius-1);outline:none;padding:1px var(--space-3)"><span style="color:var(--text-faint)">.md</span><sc-if value="{{ renErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:var(--text-xs);color:var(--danger)">{{ err }}</span></sc-if></sc-if>
+          <sc-if value="{{ fileMark }}" hint-placeholder-val="{{ false }}"><span title="file color" style="width:var(--spine-w);height:10px;flex:none;background:{{ noteColor }}"></span></sc-if><sc-if value="{{ notRenaming }}" hint-placeholder-val="{{ true }}"><span onDoubleClick="{{ startRename }}" style="color:var(--text-primary);font-weight:var(--weight-medium)">{{ fileA }}<span style="background:{{ hlBg }};border-radius:2px">{{ fileB }}</span>{{ fileC }}</span></sc-if>
+          <sc-if value="{{ activeUnsaved }}" hint-placeholder-val="{{ true }}"><span style="width:5px;height:5px;border-radius:var(--radius-round);background:{{ noteColor }}" title="unsaved changes"></span></sc-if>
+          <span style="flex:1"></span>
+          <span title="Rename · F2" onClick="{{ startRename }}" style="width:22px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.2 2.6 L13.4 5.8 L6.2 13 H3 V9.8 Z"></path><path d="M9 3.8 L12.2 7"></path></svg></span>
+          <span title="Delete file" style="width:22px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint);cursor:pointer" style-hover="background:var(--danger-dim);color:var(--danger)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 4.4h10.4"></path><path d="M6.4 4.4V3.2h3.2v1.2"></path><path d="M4.2 4.4l.6 8.2a.9.9 0 0 0 .9.8h4.6a.9.9 0 0 0 .9-.8l.6-8.2"></path><path d="M6.8 6.8v4"></path><path d="M9.2 6.8v4"></path></svg></span>
+          <span style="width:1px;height:12px;background:var(--border-subtle);margin:0 var(--space-2)"></span>
+          <span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-2)">MD</span>
+        </div>
+        <div style="height:30px;flex:none;display:flex;align-items:center;gap:var(--space-1);padding:0 var(--space-5) 0 14px;border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm);color:var(--text-muted)">
+          <div style="position:relative">
+            <div title="Heading" onClick="{{ mn.heading.click }}" style="height:22px;padding:0 var(--space-2);display:flex;align-items:center;gap:1px;border-radius:var(--radius-1);cursor:pointer;background:{{ mn.heading.bg }};color:{{ mn.heading.fg }}" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5v9"></path><path d="M12 3.5v9"></path><path d="M4 8h8"></path></svg><span style="font-size:8px;color:{{ mn.heading.caret }}">▾</span></div>
+            <sc-if value="{{ mn.heading.open }}"><div style="position:absolute;top:26px;left:0;z-index:var(--z-popover);min-width:170px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-2);display:flex;flex-direction:column;gap:1px"><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Heading 1</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⌥1</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Heading 2</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⌥2</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Heading 3</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⌥3</span></div></div></sc-if>
+          </div>
+          <span style="width:1px;height:14px;background:var(--border-subtle);margin:0 var(--space-2)"></span>
+          <div style="position:relative">
+            <div title="Format" onClick="{{ mn.format.click }}" style="height:22px;padding:0 var(--space-2);display:flex;align-items:center;gap:1px;border-radius:var(--radius-1);cursor:pointer;background:{{ mn.format.bg }};color:{{ mn.format.fg }}" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 12.8 8 3.4l4.8 9.4"></path><path d="M5.2 9.2h5.6"></path></svg><span style="font-size:8px;color:{{ mn.format.caret }}">▾</span></div>
+            <sc-if value="{{ mn.format.open }}"><div style="position:absolute;top:26px;left:0;z-index:var(--z-popover);min-width:170px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-2);display:flex;flex-direction:column;gap:1px"><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Bold</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>B</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Italic</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>I</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Strikethrough</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⇧X</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Underline</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>U</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Code</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>E</span></div></div></sc-if>
+          </div>
+          <span style="width:1px;height:14px;background:var(--border-subtle);margin:0 var(--space-2)"></span>
+          <span title="Link · {{ modT }}⇧K" style="height:22px;padding:0 var(--space-2);display:flex;align-items:center;border-radius:var(--radius-1);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 6.6a2.9 2.9 0 0 1 0 4.1l-1.6 1.6a2.9 2.9 0 0 1-4.1-4.1l.9-.9"></path><path d="M6.6 9.4a2.9 2.9 0 0 1 0-4.1l1.6-1.6a2.9 2.9 0 0 1 4.1 4.1l-.9.9"></path></svg></span>
+          <span style="width:1px;height:14px;background:var(--border-subtle);margin:0 var(--space-2)"></span>
+          <div style="position:relative">
+            <div title="Blocks" onClick="{{ mn.blocks.click }}" style="height:22px;padding:0 var(--space-2);display:flex;align-items:center;gap:1px;border-radius:var(--radius-1);cursor:pointer;background:{{ mn.blocks.bg }};color:{{ mn.blocks.fg }}" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><path d="M6.2 6.9 4.6 8.5l1.6 1.6"></path><path d="M9.8 6.9l1.6 1.6-1.6 1.6"></path></svg><span style="font-size:8px;color:{{ mn.blocks.caret }}">▾</span></div>
+            <sc-if value="{{ mn.blocks.open }}"><div style="position:absolute;top:26px;left:0;z-index:var(--z-popover);min-width:170px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-2);display:flex;flex-direction:column;gap:1px"><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Code block</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⌥C</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Blockquote</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⇧.</span></div></div></sc-if>
+          </div>
+          <span style="width:1px;height:14px;background:var(--border-subtle);margin:0 var(--space-2)"></span>
+          <div style="position:relative">
+            <div title="Lists" onClick="{{ mn.lists.click }}" style="height:22px;padding:0 var(--space-2);display:flex;align-items:center;gap:1px;border-radius:var(--radius-1);cursor:pointer;background:{{ mn.lists.bg }};color:{{ mn.lists.fg }}" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.2h8"></path><path d="M6 8h8"></path><path d="M6 11.8h8"></path><path d="M3 4.2h.01"></path><path d="M3 8h.01"></path><path d="M3 11.8h.01"></path></svg><span style="font-size:8px;color:{{ mn.lists.caret }}">▾</span></div>
+            <sc-if value="{{ mn.lists.open }}"><div style="position:absolute;top:26px;left:0;z-index:var(--z-popover);min-width:170px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-2);display:flex;flex-direction:column;gap:1px"><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Ordered list</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⇧7</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Bullet list</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⇧8</span></div><div style="display:flex;align-items:center;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-radius:var(--radius-1);cursor:pointer;color:var(--text-primary);white-space:nowrap" style-hover="background:var(--surface-raised)"><span style="flex:1">Task list</span><span style="font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⇧9</span></div></div></sc-if>
+          </div>
+          <span style="width:1px;height:14px;background:var(--border-subtle);margin:0 var(--space-2)"></span>
+          <span title="Insert table" style="height:22px;padding:0 var(--space-2);display:flex;align-items:center;border-radius:var(--radius-1);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><path d="M2 6.4h12"></path><path d="M6.4 6.4V13"></path></svg></span>
+          <span style="flex:1"></span>
+          
+        </div>
+        <sc-if value="{{ plainNote }}" hint-placeholder-val="{{ false }}"><div style="flex:1;overflow:hidden;padding:var(--space-8) var(--space-8) var(--space-7) 38px;display:flex;flex-direction:column;gap:var(--space-6)"><div style="font-size:var(--text-xl);font-weight:var(--weight-bold);letter-spacing:-.01em;line-height:var(--leading-tight);overflow-wrap:anywhere">{{ actTitle }}</div><p style="margin:0;color:{{ actBodyFg }}">{{ actBody }}</p></div></sc-if>
+        <sc-if value="{{ isGuide }}" hint-placeholder-val="{{ false }}"><div style="flex:1;min-height:0;overflow:auto;padding:var(--space-8) var(--space-8) var(--space-8) 38px;display:flex;flex-direction:column;gap:var(--space-6);text-wrap:pretty">
+          <div style="font-size:var(--text-xl);font-weight:var(--weight-bold);letter-spacing:-.01em;line-height:var(--leading-tight)">Markdown guide</div>
+          <p style="margin:0">Inline: <strong>bold</strong>, <em>italic</em>, <strong><em>bold italic</em></strong>, <del style="color:var(--text-muted)">strikethrough</del>, <u>underline</u>, <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-2)">inline code</code>, <mark style="background:var(--doc-2-dim);color:var(--doc-2);border-radius:2px;padding:0 2px">highlight</mark>, an <a href="#">external link</a>, a wiki link <a href="#" style="color:var(--accent);text-decoration:none;border-bottom:var(--border-w) dashed var(--accent)">auth-flow</a> and a footnote<sup style="font-size:var(--text-xs)"><a href="#">1</a></sup>.</p>
+          <div style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight);margin-top:var(--space-4)">Headings</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr);align-items:baseline;gap:var(--space-4)"><span style="font-size:var(--text-xs);color:var(--text-faint)">#</span><span style="font-size:var(--text-xl);font-weight:var(--weight-bold);line-height:var(--leading-tight);letter-spacing:-.01em">Heading 1</span></div>
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr);align-items:baseline;gap:var(--space-4)"><span style="font-size:var(--text-xs);color:var(--text-faint)">##</span><span style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight)">Heading 2</span></div>
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr);align-items:baseline;gap:var(--space-4)"><span style="font-size:var(--text-xs);color:var(--text-faint)">###</span><span style="font-size:var(--text-md);font-weight:var(--weight-bold);line-height:var(--leading-tight)">Heading 3</span></div>
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr);align-items:baseline;gap:var(--space-4)"><span style="font-size:var(--text-xs);color:var(--text-faint)">####</span><span style="font-size:var(--text-base);font-weight:var(--weight-bold);line-height:var(--leading-tight)">Heading 4</span></div>
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr);align-items:baseline;gap:var(--space-4)"><span style="font-size:var(--text-xs);color:var(--text-faint)">#####</span><span style="font-size:12px;font-weight:var(--weight-bold);line-height:var(--leading-tight);color:var(--text-muted)">Heading 5</span></div>
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr);align-items:baseline;gap:var(--space-4)"><span style="font-size:var(--text-xs);color:var(--text-faint)">######</span><span style="font-size:var(--text-sm);font-weight:var(--weight-bold);line-height:var(--leading-tight);color:var(--text-faint);letter-spacing:var(--tracking-wide);text-transform:uppercase">Heading 6</span></div>
+          </div>
+          <div style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight);margin-top:var(--space-4)">Lists</div>
+          <div style="font-size:var(--text-md);font-weight:var(--weight-bold);line-height:var(--leading-tight)">Unordered</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:12px;flex:none;text-align:center;color:var(--text-faint)">•</span><span>Gateway mints tokens</span></div>
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:12px;flex:none;text-align:center;color:var(--text-faint)">•</span><span>Services trust short-lived JWTs</span></div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-left:5px;padding-left:var(--space-6);border-left:var(--border-w) solid var(--border-subtle)">
+              <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:12px;flex:none;text-align:center;color:var(--text-faint)">◦</span><span>15 minute expiry</span></div>
+              <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:12px;flex:none;text-align:center;color:var(--text-faint)">◦</span><span>Refresh on 401</span></div>
+            </div>
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:12px;flex:none;text-align:center;color:var(--text-faint)">•</span><span>Client never sees the secret</span></div>
+          </div>
+          <div style="font-size:var(--text-md);font-weight:var(--weight-bold);line-height:var(--leading-tight)">Ordered</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:18px;flex:none;text-align:right;color:var(--text-faint);font-variant-numeric:tabular-nums">1.</span><span>Open the adapter</span></div>
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:18px;flex:none;text-align:right;color:var(--text-faint);font-variant-numeric:tabular-nums">2.</span><span>Run the contract tests</span></div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-left:5px;padding-left:var(--space-6);border-left:var(--border-w) solid var(--border-subtle)">
+              <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:18px;flex:none;text-align:right;color:var(--text-faint);font-variant-numeric:tabular-nums">a.</span><span>read / write</span></div>
+              <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:18px;flex:none;text-align:right;color:var(--text-faint);font-variant-numeric:tabular-nums">b.</span><span>watch</span></div>
+            </div>
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:18px;flex:none;text-align:right;color:var(--text-faint);font-variant-numeric:tabular-nums">3.</span><span>Ship behind a flag</span></div>
+          </div>
+          <div style="font-size:var(--text-md);font-weight:var(--weight-bold);line-height:var(--leading-tight)">Tasks</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:13px;height:13px;flex:none;align-self:center;border-radius:var(--radius-1);background:var(--accent-dim);border:var(--border-w) solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--accent)">✓</span><del style="color:var(--text-muted)">Draft adapter trait</del></div>
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:13px;height:13px;flex:none;align-self:center;border-radius:var(--radius-1);background:var(--surface-inset);border:var(--border-w) solid var(--border-strong)"></span><span>Benchmark sqlite reads</span></div>
+            <div style="display:flex;gap:var(--space-4);align-items:baseline"><span style="width:13px;height:13px;flex:none;align-self:center;border-radius:var(--radius-1);background:var(--surface-inset);border:var(--border-w) solid var(--border-strong)"></span><span>Write migration notes</span></div>
+          </div>
+          <div style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight);margin-top:var(--space-4)">Table</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2)">
+              <thead><tr style="background:var(--surface-inset)"><th style="text-align:left;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-strong);font-weight:var(--weight-medium);color:var(--text-muted)">adapter</th><th style="text-align:center;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-strong);font-weight:var(--weight-medium);color:var(--text-muted)">status</th><th style="text-align:right;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-strong);font-weight:var(--weight-medium);color:var(--text-muted)">p50 read</th></tr></thead>
+              <tbody>
+                <tr><td style="text-align:left;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle)">sled</td><td style="text-align:center;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle)">stable</td><td style="text-align:right;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle)">0.4 ms</td></tr>
+                <tr><td style="text-align:left;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle)">sqlite</td><td style="text-align:center;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle)">beta</td><td style="text-align:right;padding:var(--space-3) var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle)">1.8 ms</td></tr>
+                <tr><td style="text-align:left;padding:var(--space-3) var(--space-5)">memory</td><td style="text-align:center;padding:var(--space-3) var(--space-5)">test only</td><td style="text-align:right;padding:var(--space-3) var(--space-5)">0.1 ms</td></tr>
+              </tbody>
+            </table>
+            <span style="font-size:var(--text-xs);color:var(--text-faint)">| :--- | :---: | ---: | left · center · right</span>
+          </div>
+          <div style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight);margin-top:var(--space-4)">Code</div>
+          <div style="position:relative">
+            <span style="position:absolute;top:var(--space-3);right:var(--space-4);font-size:var(--text-xs);color:var(--text-faint)">ts</span>
+            <pre style="margin:0;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-5) var(--space-6);font-family:var(--font-mono);font-size:12px;line-height:var(--leading-normal);overflow:auto"><span style="color:var(--doc-3)">export interface</span> <span style="color:var(--doc-4)">Adapter</span> {
+  open(path: <span style="color:var(--doc-4)">string</span>): <span style="color:var(--doc-4)">Promise</span>&lt;<span style="color:var(--doc-4)">Handle</span>&gt;;
+  read(id: <span style="color:var(--doc-4)">DocId</span>): <span style="color:var(--doc-4)">Promise</span>&lt;<span style="color:var(--doc-4)">Doc</span> | <span style="color:var(--doc-3)">null</span>&gt;;
+  watch(fn: (e: <span style="color:var(--doc-4)">Change</span>) =&gt; <span style="color:var(--doc-3)">void</span>): () =&gt; <span style="color:var(--doc-3)">void</span>; <span style="color:var(--text-faint)">// unsubscribe</span>
+}</pre>
+          </div>
+          <div style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight);margin-top:var(--space-4)">Quote</div>
+          <div style="border-left:var(--spine-w) solid var(--border-strong);padding:var(--space-1) 0 var(--space-1) var(--space-5);color:var(--text-muted);display:flex;flex-direction:column;gap:var(--space-4)">
+            <span>Writes go through a single queue so the canvas never observes a half-written doc.</span>
+            <div style="border-left:var(--spine-w) solid var(--border-subtle);padding:var(--space-1) 0 var(--space-1) var(--space-5);color:var(--text-faint)">Nested quote: the queue is per vault, not per adapter.</div>
+          </div>
+          <div style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight);margin-top:var(--space-4)">Image</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="height:140px;border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);background:repeating-linear-gradient(45deg,var(--surface-raised) 0 8px,var(--surface-panel) 8px 16px);display:flex;align-items:center;justify-content:center"><span style="font-size:var(--text-xs);color:var(--text-muted);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:2px var(--space-3)">sequence-diagram.png</span></div>
+            <span style="font-size:var(--text-xs);color:var(--text-faint)">![sequence diagram](sequence-diagram.png) · drop an image into the note to embed it</span>
+          </div>
+          <div style="height:1px;background:var(--border-subtle);margin:var(--space-4) 0"></div>
+          <div style="display:flex;gap:var(--space-4);align-items:baseline;font-size:var(--text-sm);color:var(--text-muted)"><span style="color:var(--text-faint)">1.</span><span>Footnotes collect at the end of the note. <a href="#">↩</a></span></div>
+        </div></sc-if>
+        <sc-if value="{{ isAuth }}" hint-placeholder-val="{{ true }}"><div style="flex:1;overflow:hidden;padding:var(--space-8) var(--space-8) var(--space-7) 38px">
+          <div style="font-size:var(--text-xl);font-weight:var(--weight-bold);letter-spacing:-.01em;line-height:var(--leading-tight);margin-bottom:var(--space-6)"><span style="background:{{ hlBg }};box-shadow:{{ hlRing }};border-radius:2px">Auth</span> Flow</div>
+          <p style="margin:0 0 var(--space-6)">Every request from the desktop client passes through the gateway before it touches a service. Tokens are minted once and cached locally — the storage layer is covered in <a href="#">adapter-design.md</a>.</p>
+          <div style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight);margin:0 0 var(--space-5)">Token exchange</div>
+          <pre style="margin:0 0 var(--space-6);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-5) var(--space-6);font-family:var(--font-mono);font-size:12px;line-height:var(--leading-normal);overflow:hidden"><span style="color:var(--doc-3)">fn</span> exchange(code: &amp;<span style="color:var(--doc-3)">str</span>) -&gt; Result&lt;Token&gt; {
+    <span style="color:var(--doc-3)">let</span> req = TokenRequest::new(code)
+        .with_pkce(verifier);
+    gateway.post(<span style="color:var(--doc-2)">"/o<span style="background:{{ hlBg }};border-radius:2px">auth</span>/token"</span>, req) <span style="color:var(--text-faint)">// single mint</span>
+}</pre>
+          <p style="margin:0 0 var(--space-6)">Session state lives in <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-2)">TokenStore</code> (sled tree <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-2)"><span style="background:{{ hlBg }};border-radius:2px">auth</span>/v2</code>) and is rebuilt on launch.</p>
+          <div style="font-size:var(--text-lg);font-weight:var(--weight-bold);line-height:var(--leading-tight);margin:0 0 var(--space-5)">Open items</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-6)">
+            <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="width:13px;height:13px;flex:none;border-radius:var(--radius-1);background:var(--accent-dim);border:var(--border-w) solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--accent)">✓</span><span style="color:var(--text-muted)">Refresh rotation on 401</span></div>
+            <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="width:13px;height:13px;flex:none;border-radius:var(--radius-1);background:var(--surface-inset);border:var(--border-w) solid var(--border-strong)"></span><span>Offline grace period — 72h?<span style="display:inline-block;width:2px;height:14px;background:var(--accent);vertical-align:-2px;margin-left:1px"></span></span></div>
+            <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="width:13px;height:13px;flex:none;border-radius:var(--radius-1);background:var(--surface-inset);border:var(--border-w) solid var(--border-strong)"></span><span>Revoke on device unlink</span></div>
+          </div>
+          <div style="border-left:var(--spine-w) solid var(--border-strong);padding:var(--space-1) 0 var(--space-1) var(--space-5);color:var(--text-muted)">The gateway is the only component allowed to see the client secret. Everything else gets short-lived JWTs.</div>
+        </div></sc-if>
+      </sc-if>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-6);padding:var(--space-8)">
+          <div style="font-size:var(--text-md);font-weight:var(--weight-medium)">no documents yet</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-4);font-size:var(--text-sm);color:var(--text-muted)">
+            <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-3);font-size:var(--text-xs);color:var(--text-faint);min-width:34px;text-align:center"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>N</span><span>new note</span></div>
+            <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-3);font-size:var(--text-xs);color:var(--text-faint);min-width:34px;text-align:center"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>K</span><span>command palette</span></div>
+            <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-3);font-size:var(--text-xs);color:var(--text-faint);min-width:34px;text-align:center"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>O</span><span>open a folder of .md files</span></div>
+          </div>
+          <button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-6);cursor:pointer" style-hover="filter:brightness(1.1)">new note</button>
+          <div style="font-size:var(--text-xs);color:var(--text-faint)">or drag markdown files anywhere in this window</div>
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{ showBoth }}" hint-placeholder-val="{{ true }}">
+    <div style="width:6px;flex:none;background:var(--bg-base);display:flex;align-items:center;justify-content:center;cursor:col-resize" style-hover="background:var(--accent-dim)" title="drag to resize split">
+      <div style="width:2px;height:28px;border-radius:var(--radius-round);background:var(--border-strong)"></div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ showCanvas }}" hint-placeholder-val="{{ true }}">
+    <div onDoubleClick="{{ cvDbl }}" onDragEnter="{{ cvEnter }}" onDragLeave="{{ cvLeave }}" onDragOver="{{ cvOver }}" onDrop="{{ cvDrop }}" onContextMenu="{{ cvCtx }}" onClick="{{ cvClick }}" style="flex:1;position:relative;min-width:0;background:var(--canvas-bg);background-image:radial-gradient(var(--canvas-dot) 1px,transparent 1px);background-size:22px 22px;overflow:hidden;outline:{{ dropOutline }};outline-offset:-8px">
+      <sc-if value="{{ notEmpty }}" hint-placeholder-val="{{ true }}">
+        <div data-cv="layer" style="position:absolute;inset:0;z-index:var(--z-objects)">
+          <svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 960 916" preserveAspectRatio="xMinYMin slice">
+            <line x1="252" y1="128" x2="342" y2="128" stroke="var(--connector)" stroke-width="1.5"></line>
+            <polygon points="348,128 340,124 340,132" fill="var(--connector)"></polygon>
+            <line x1="512" y1="128" x2="602" y2="128" stroke="var(--connector)" stroke-width="1.5"></line>
+            <polygon points="608,128 600,124 600,132" fill="var(--connector)"></polygon>
+            <line x1="685" y1="158" x2="685" y2="282" stroke="var(--connector)" stroke-width="1.5"></line>
+            <polygon points="685,288 681,280 689,280" fill="var(--connector)"></polygon>
+            <line x1="430" y1="158" x2="430" y2="224" stroke="var(--connector)" stroke-width="1.5"></line>
+            <polygon points="430,228 426,220 434,220" fill="var(--connector)"></polygon>
+            <polygon points="430,232 458,280 402,280" fill="var(--surface-raised)" stroke="var(--border-strong)" stroke-width="1.5"></polygon>
+            <line x1="490" y1="438" x2="472" y2="162" stroke="{{ authColor }}" stroke-width="1.5" stroke-dasharray="4 4" opacity=".8"></line>
+            <circle cx="490" cy="438" r="3.5" fill="{{ authColor }}"></circle>
+            <circle cx="472" cy="162" r="3.5" fill="var(--canvas-bg)" stroke="{{ authColor }}" stroke-width="1.5"></circle>
+            <line x1="780" y1="508" x2="692" y2="360" stroke="{{ adapterColor }}" stroke-width="1.5" stroke-dasharray="4 4" opacity=".8"></line>
+            <circle cx="780" cy="508" r="3.5" fill="{{ adapterColor }}"></circle>
+            <circle cx="692" cy="360" r="3.5" fill="var(--canvas-bg)" stroke="{{ adapterColor }}" stroke-width="1.5"></circle>
+          </svg>
+          <div style="position:absolute;left:110px;top:100px;width:140px;height:56px;background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:var(--radius-3);display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:var(--weight-medium);box-shadow:var(--shadow-1)">client</div>
+          <div style="position:absolute;left:350px;top:100px;width:160px;height:56px;background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:var(--radius-3);display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:var(--weight-medium);box-shadow:var(--shadow-1)">api gateway</div>
+          <div style="position:absolute;left:610px;top:100px;width:150px;height:56px;background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:var(--radius-3);display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:var(--weight-medium);box-shadow:var(--shadow-1)"><span style="background:{{ hlBgCanvas }};border-radius:2px;padding:0 1px">auth</span>&nbsp;service</div>
+          <div style="position:absolute;left:600px;top:290px;width:170px;height:64px;background:var(--surface-raised);border:1.5px solid var(--border-strong);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:var(--weight-medium);box-shadow:var(--shadow-1)">token store</div>
+          <div style="position:absolute;left:402px;top:284px;width:56px;text-align:center;font-size:var(--text-xs);color:var(--text-muted)">retry?</div>
+          <div style="position:absolute;left:440px;top:180px;font-size:var(--text-xs);color:var(--text-faint)">on 401</div>
+          <div style="position:absolute;left:300px;top:58px;font-size:var(--text-sm);color:var(--text-muted)">happy path — v0.3</div>
+          <div style="position:absolute;left:110px;top:480px;width:220px;height:150px;border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);background:repeating-linear-gradient(45deg,var(--surface-raised) 0 8px,var(--canvas-bg) 8px 16px);display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <span style="font-size:var(--text-xs);color:var(--text-muted);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:2px var(--space-3)">sequence-diagram.png</span>
+          </div>
+          <div style="position:absolute;left:366px;top:436px;width:247px;height:119px;transform:rotate({{ nodeRot }});transform-origin:50% 50%">
+            <div style="position:absolute;left:4px;top:4px;width:240px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-1),0 0 0 1px var(--accent)">
+              <div data-tip="1" onMouseEnter="{{ cA.enter }}" onMouseLeave="{{ cA.leave }}" onClick="{{ cA.click }}" title="color" style="position:absolute;left:-5px;top:0;bottom:0;width:12px;padding-left:5px;box-sizing:border-box;cursor:pointer;z-index:1"><div style="width:{{ cA.thick }};height:100%;background:{{ cA.color }};box-shadow:{{ cA.glow }};border-radius:var(--radius-3) 0 0 var(--radius-3);transition:width .1s, box-shadow .1s"></div></div><sc-if value="{{ cA.open }}" hint-placeholder-val="{{ false }}"><div data-tip="1" style="position:absolute;left:0;bottom:calc(100% + 8px);z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap;font-size:var(--text-xs);font-weight:var(--weight-regular);letter-spacing:0;line-height:1;cursor:default"><sc-if value="{{ cA.swOpen }}" hint-placeholder-val="{{ true }}"><div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)"><sc-for list="{{ cA.opts }}" as="o" hint-placeholder-count="9"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for><span onClick="{{ tipCustom }}" onMouseEnter="{{ tipRbHover }}" title="any color · 9" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:conic-gradient(oklch(.74 .13 0), oklch(.74 .13 90), oklch(.74 .13 180), oklch(.74 .13 270), oklch(.74 .13 360));box-shadow:{{ cA.rbRing }};cursor:pointer"></span></div></sc-if><sc-if value="{{ cA.pickOpen }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:var(--space-3)"><span onClick="{{ tipBack }}" title="back · esc" style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);cursor:pointer;border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">‹</span><div onMouseMove="{{ padMove }}" onMouseLeave="{{ padLeave }}" onClick="{{ padPick }}" style="position:relative;width:128px;height:14px;border-radius:var(--radius-1);cursor:crosshair;background:linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0) 50%, rgba(0,0,0,.32)), linear-gradient(to right, oklch(.74 .13 0), oklch(.74 .13 45), oklch(.74 .13 90), oklch(.74 .13 135), oklch(.74 .13 180), oklch(.74 .13 225), oklch(.74 .13 270), oklch(.74 .13 315), oklch(.74 .13 360))"><span style="position:absolute;left:{{ padX }};top:{{ padY }};opacity:{{ padOp }};width:8px;height:8px;margin:-4px 0 0 -4px;box-sizing:border-box;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);background:{{ padColor }};pointer-events:none"></span></div></div></sc-if><span style="min-width:64px;color:var(--text-muted)">{{ tipLabel }}</span></div></sc-if>
+              <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-2)">
+                <div style="display:flex;align-items:center;gap:var(--space-3)"><span style="font-size:var(--text-sm);font-weight:var(--weight-medium)"><span style="background:{{ hlBgCanvas }};border-radius:2px">auth</span>-flow.md</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2)">doc</span></div>
+                <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal)">Every request from the desktop client passes through the gateway before it touches a service…</div>
+                <div style="font-size:var(--text-xs);color:var(--text-faint)">linked → api gateway · edited 2m ago</div>
+              </div>
+            </div>
+            <div style="position:absolute;left:0px;top:0px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+            <div style="position:absolute;left:120px;top:0px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+            <div style="position:absolute;left:240px;top:0px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+            <div style="position:absolute;left:0px;top:56px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+            <div style="position:absolute;left:240px;top:56px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+            <div style="position:absolute;left:0px;top:112px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+            <div style="position:absolute;left:120px;top:112px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+            <div style="position:absolute;left:240px;top:112px;width:7px;height:7px;background:var(--surface-panel);border:var(--border-w) solid var(--accent)"></div>
+            <div style="position:absolute;left:120px;top:-26px;width:7px;height:7px;display:{{ rotVis }}">
+              <div style="position:absolute;left:3px;top:7px;width:1px;height:19px;background:var(--accent);opacity:.6"></div>
+              <div style="position:absolute;inset:-1px;border-radius:var(--radius-round);background:var(--surface-panel);border:var(--border-w) solid var(--accent);cursor:grab"></div>
+            </div>
+          </div>
+          <div style="position:absolute;left:625px;top:420px;display:{{ rotVis }};background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-2) var(--space-4);font-size:var(--text-xs);color:var(--text-primary);z-index:var(--z-objects)">{{ nodeRot }} · ⇧ snaps 15°</div>
+          <div style="position:absolute;left:660px;top:510px;width:240px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-1)" style-hover="border-color:var(--border-strong)">
+            <div data-tip="1" onMouseEnter="{{ cB.enter }}" onMouseLeave="{{ cB.leave }}" onClick="{{ cB.click }}" title="color" style="position:absolute;left:-5px;top:0;bottom:0;width:12px;padding-left:5px;box-sizing:border-box;cursor:pointer;z-index:1"><div style="width:{{ cB.thick }};height:100%;background:{{ cB.color }};box-shadow:{{ cB.glow }};border-radius:var(--radius-3) 0 0 var(--radius-3);transition:width .1s, box-shadow .1s"></div></div><sc-if value="{{ cB.open }}" hint-placeholder-val="{{ false }}"><div data-tip="1" style="position:absolute;left:0;bottom:calc(100% + 8px);z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap;font-size:var(--text-xs);font-weight:var(--weight-regular);letter-spacing:0;line-height:1;cursor:default"><sc-if value="{{ cB.swOpen }}" hint-placeholder-val="{{ true }}"><div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)"><sc-for list="{{ cB.opts }}" as="o" hint-placeholder-count="9"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for><span onClick="{{ tipCustom }}" onMouseEnter="{{ tipRbHover }}" title="any color · 9" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:conic-gradient(oklch(.74 .13 0), oklch(.74 .13 90), oklch(.74 .13 180), oklch(.74 .13 270), oklch(.74 .13 360));box-shadow:{{ cB.rbRing }};cursor:pointer"></span></div></sc-if><sc-if value="{{ cB.pickOpen }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:var(--space-3)"><span onClick="{{ tipBack }}" title="back · esc" style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);cursor:pointer;border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">‹</span><div onMouseMove="{{ padMove }}" onMouseLeave="{{ padLeave }}" onClick="{{ padPick }}" style="position:relative;width:128px;height:14px;border-radius:var(--radius-1);cursor:crosshair;background:linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0) 50%, rgba(0,0,0,.32)), linear-gradient(to right, oklch(.74 .13 0), oklch(.74 .13 45), oklch(.74 .13 90), oklch(.74 .13 135), oklch(.74 .13 180), oklch(.74 .13 225), oklch(.74 .13 270), oklch(.74 .13 315), oklch(.74 .13 360))"><span style="position:absolute;left:{{ padX }};top:{{ padY }};opacity:{{ padOp }};width:8px;height:8px;margin:-4px 0 0 -4px;box-sizing:border-box;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);background:{{ padColor }};pointer-events:none"></span></div></div></sc-if><span style="min-width:64px;color:var(--text-muted)">{{ tipLabel }}</span></div></sc-if>
+            <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-2)">
+              <div style="display:flex;align-items:center;gap:var(--space-3)"><span style="font-size:var(--text-sm);font-weight:var(--weight-medium)">adapter-design.md</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2)">doc</span></div>
+              <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal)">One port trait per storage backend. The sled implementation is canonical; sqlite is a test double…</div>
+              <div style="font-size:var(--text-xs);color:var(--text-faint)">linked → token store · edited 1h ago</div>
+            </div>
+          </div>
+          <sc-for list="{{ imgs }}" as="i" hint-placeholder-count="0">
+            <div data-obj="1" style="position:absolute;left:{{ i.x }};top:{{ i.y }};width:240px;display:flex;flex-direction:column;gap:var(--space-2)">
+              <div style="width:100%;aspect-ratio:{{ i.ar }};background-image:{{ i.bg }};background-size:cover;background-position:center;border-radius:var(--radius-3);border:var(--border-w) solid var(--border-subtle);box-shadow:var(--shadow-1)"></div>
+              <span style="font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ i.name }}</span>
+            </div>
+          </sc-for>
+          <sc-for list="{{ cards }}" as="k" hint-placeholder-count="0">
+            <div data-obj="1" onClick="{{ k.click }}" style="position:absolute;left:{{ k.x }};top:{{ k.y }};width:220px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-1);cursor:pointer" style-hover="border-color:var(--border-strong)">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ k.color }};box-shadow:0 0 8px {{ k.color }};border-radius:var(--radius-3) 0 0 var(--radius-3)"></div>
+              <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-2)">
+                <div style="display:flex;align-items:center;gap:var(--space-3)">
+                  <sc-if value="{{ k.edit }}" hint-placeholder-val="{{ false }}"><input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ cardKey }}" onBlur="{{ commitCard }}" autoFocus="{{ true }}" spellCheck="false" style="flex:1;min-width:0;font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid {{ k.border }};border-radius:var(--radius-1);outline:none;padding:1px var(--space-3)"></sc-if>
+                  <sc-if value="{{ k.notEdit }}" hint-placeholder-val="{{ true }}"><span style="font-size:var(--text-sm);font-weight:var(--weight-medium);overflow-wrap:anywhere">{{ k.label }}</span><span style="flex:1"></span></sc-if>
+                  <span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);flex:none">doc</span>
+                </div>
+                <sc-if value="{{ k.hasErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:var(--text-xs);color:var(--danger)">{{ err }}</span></sc-if>
+                <sc-if value="{{ k.hasEx }}" hint-placeholder-val="{{ false }}"><div style="font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal)">{{ k.ex }}</div></sc-if>
+                <div style="font-size:var(--text-xs);color:var(--text-faint)">{{ k.path }}</div>
+              </div>
+            </div>
+          </sc-for>
+          <div style="position:absolute;right:16px;bottom:14px;width:150px;height:110px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);overflow:hidden" title="minimap">
+            <div style="position:absolute;left:18px;top:16px;width:22px;height:9px;background:var(--border-strong);border-radius:1px"></div>
+            <div style="position:absolute;left:56px;top:16px;width:26px;height:9px;background:var(--border-strong);border-radius:1px"></div>
+            <div style="position:absolute;left:98px;top:16px;width:24px;height:9px;background:var(--border-strong);border-radius:1px"></div>
+            <div style="position:absolute;left:96px;top:46px;width:27px;height:10px;background:var(--border-strong);border-radius:50%"></div>
+            <div style="position:absolute;left:18px;top:77px;width:35px;height:24px;border:1px solid var(--border-strong);border-radius:1px"></div>
+            <div style="position:absolute;left:59px;top:70px;width:38px;height:19px;background:color-mix(in srgb, {{ authColor }} 14%, transparent);border-left:2px solid {{ authColor }};border-radius:1px"></div>
+            <div style="position:absolute;left:106px;top:82px;width:38px;height:18px;background:color-mix(in srgb, {{ adapterColor }} 14%, transparent);border-left:2px solid {{ adapterColor }};border-radius:1px"></div>
+            <div style="position:absolute;left:6px;top:6px;width:112px;height:86px;border:1px solid var(--accent);background:var(--accent-dim);border-radius:2px;opacity:.7"></div>
+            <div style="position:absolute;right:4px;bottom:2px;font-size:var(--text-xs);color:var(--text-faint)">{{ zoom }}</div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:var(--z-objects)">
+          <div style="border:var(--border-w) dashed var(--border-strong);border-radius:var(--radius-3);padding:var(--space-7) var(--space-8);text-align:center;display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="font-size:var(--text-sm);font-weight:var(--weight-medium)">the canvas is a hub</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);max-width:260px;line-height:var(--leading-normal)">create a note, then drag its tab here to pin it as a live reference card</div>
+          </div>
+        </div>
+      </sc-if>
+      <div style="position:absolute;left:14px;top:10px;z-index:var(--z-rail);display:flex;align-items:center;gap:var(--space-3);background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-2) var(--space-4);font-size:var(--text-sm);color:var(--text-muted);box-shadow:var(--shadow-1)">
+        <span data-tree="1" onClick="{{ revealCanvas }}" title="reveal in folders" style="display:flex;align-items:center;gap:var(--space-3);color:var(--text-muted);cursor:pointer;padding:0 var(--space-1);border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)"><sc-if value="{{ cvBar }}" hint-placeholder-val="{{ true }}"><span style="width:var(--spine-w);height:10px;background:{{ canvasFolderColor }}"></span></sc-if>{{ canvasFolder }}</span><span style="color:var(--text-faint)">/</span>
+        <sc-if value="{{ cvMark }}" hint-placeholder-val="{{ false }}"><span title="canvas color" style="width:var(--spine-w);height:10px;flex:none;background:{{ cvColor }}"></span></sc-if>
+        <span style="color:var(--text-primary);font-weight:var(--weight-medium)">{{ canvasName }}</span>
+        <span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2)">▾</span>
+      </div>
+      <sc-if value="{{ cvMenuOn }}" hint-placeholder-val="{{ false }}">
+        <div data-obj="1" style="position:absolute;left:{{ cvMenuX }};top:{{ cvMenuY }};width:220px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-2);font-size:var(--text-sm)">
+          <div onClick="{{ cvMenuNote }}" style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);cursor:pointer" style-hover="background:var(--surface-raised)"><span>new note here</span><span style="color:var(--text-faint);font-size:var(--text-xs)">dbl-click</span></div>
+          <div onClick="{{ cvMenuFolder }}" style="display:flex;justify-content:space-between;padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);cursor:pointer;color:var(--text-muted)" style-hover="background:var(--surface-raised);color:var(--text-primary)"><span>new folder in {{ canvasFolder }}/</span></div>
+        </div>
+      </sc-if>
+      <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:var(--z-rail);display:flex;flex-direction:column;gap:var(--space-1);background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-2);box-shadow:var(--shadow-2)">
+        <div title="Select · V" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);background:var(--accent-dim);color:var(--accent)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 2 L12 8 L8 9 L10 13 L8.5 14 L6.5 10 L4 12 Z"></path></svg></div>
+        <div style="position:relative">
+          <div title="Shapes · R" onClick="{{ toggleShapes }}" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);cursor:pointer;background:{{ shapeBtnBg }};color:{{ shapeBtnFg }}" style-hover="background:var(--surface-overlay)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="{{ shapeIconPath }}"></path></svg>
+            <span style="position:absolute;right:2px;bottom:2px;width:0;height:0;border-left:4px solid transparent;border-bottom:4px solid currentColor"></span>
+          </div>
+          <sc-if value="{{ shapesOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:38px;top:-8px;z-index:var(--z-rail);width:184px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-2);display:flex;flex-direction:column;gap:1px">
+              <div style="padding:var(--space-1) var(--space-3) var(--space-2);font-size:var(--text-xs);color:var(--text-faint);letter-spacing:.04em;text-transform:uppercase">shapes</div>
+              <sc-for list="{{ shapes }}" as="s" hint-placeholder-count="6">
+                <div onClick="{{ s.pick }}" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-2);cursor:pointer;background:{{ s.bg }};color:{{ s.fg }}" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="{{ s.d }}"></path></svg>
+                  <span style="flex:1;font-size:var(--text-sm)">{{ s.name }}</span>
+                  <span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)">{{ s.key }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+        <div style="height:1px;background:var(--border-subtle);margin:var(--space-1) var(--space-2)"></div>
+        <div title="Arrow · A" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--text-muted)" style-hover="background:var(--surface-overlay);color:var(--text-primary)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 13 L12 4 M12 4 H7.5 M12 4 V8.5"></path></svg></div>
+        <div title="Line · L" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--text-muted)" style-hover="background:var(--surface-overlay);color:var(--text-primary)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 13 L13 3"></path></svg></div>
+        <div title="Pen · P" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--text-muted)" style-hover="background:var(--surface-overlay);color:var(--text-primary)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M10.2 2.6 L13.4 5.8 L6.2 13 H3 V9.8 Z M9 3.8 L12.2 7"></path></svg></div>
+        <div title="Text · T" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--text-muted)" style-hover="background:var(--surface-overlay);color:var(--text-primary)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 4 H12 M8 4 V13"></path></svg></div>
+        <div style="height:1px;background:var(--border-subtle);margin:var(--space-1) var(--space-2)"></div>
+        <div title="Frame · F" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-2);color:var(--text-muted)" style-hover="background:var(--surface-overlay);color:var(--text-primary)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M5 2 V14 M11 2 V14 M2 5 H14 M2 11 H14"></path></svg></div>
+      </div>
+      <sc-if value="{{ showTooltip }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;left:58px;top:calc(50% - 88px);z-index:var(--z-rail);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-2) var(--space-4);display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm)">
+          <span>{{ shapeName }}</span><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)">{{ shapeKey }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showToast }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;right:186px;bottom:14px;z-index:var(--z-toast);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-4) var(--space-6);display:flex;align-items:center;gap:var(--space-4);font-size:var(--text-sm)">
+          <span style="color:var(--accent)">✓</span><span>workspace saved</span><span style="color:var(--text-faint);font-size:var(--text-xs)">2s ago</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ dropOn }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:var(--z-toast);pointer-events:none;background:color-mix(in srgb, var(--accent) 5%, transparent);outline:1.5px dashed var(--accent);outline-offset:-10px">
+          <div style="position:absolute;left:0;right:0;top:52px;display:flex;justify-content:center">
+            <div style="display:flex;align-items:center;gap:var(--space-4);background:var(--surface-overlay);border:var(--border-w) solid var(--accent);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-5);font-size:var(--text-sm)">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8"></path><path d="M4.8 7.4 8 10.6l3.2-3.2"></path><path d="M2.5 11.5v2h11v-2"></path></svg>
+              <span>drop to place {{ dropCount }}</span>
+              <span style="color:var(--text-faint);font-size:var(--text-xs)">at cursor · saved to {{ canvasFolder }}/assets</span>
+            </div>
+          </div>
+          <div style="position:absolute;left:{{ ghostX }};top:{{ ghostY }};width:200px;height:132px;margin:-66px 0 0 -100px;box-sizing:border-box;border:var(--border-w) solid var(--accent);border-radius:var(--radius-3);background:repeating-linear-gradient(45deg,var(--accent-dim) 0 8px,transparent 8px 16px);box-shadow:var(--shadow-2);display:flex;align-items:flex-end;padding:var(--space-3)">
+            <span style="font-size:var(--text-xs);color:var(--text-primary);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-3)">{{ dropName }}</span>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{ showGraph }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-width:0;position:relative"><dc-import name="Graph" theme="{{ theme }}" keys="{{ keysMode }}" embedded="{{ true }}" hint-size="100%,100%" style="position:absolute;left:0;top:0;width:100%;height:100%"></dc-import></div>
+    </sc-if>
+  </div>
+  <div style="height:24px;flex:none;display:flex;align-items:center;gap:var(--space-4);padding:0 var(--space-5);background:var(--surface-panel);border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-muted)">
+    <span style="background:var(--accent-dim);color:var(--accent);border-radius:var(--radius-1);padding:0 var(--space-3);font-weight:var(--weight-medium)">MD</span>
+    <span>{{ docLabel }}</span><span style="color:var(--text-faint)">·</span>
+    <span>{{ words }}</span><span style="color:var(--text-faint)">·</span>
+    <span>{{ pos }}</span>
+    <span style="flex:1"></span>
+    <span style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px" title="view mode">
+      <sc-for list="{{ viewModes }}" as="v" hint-placeholder-count="3"><span onClick="{{ v.click }}" style="padding:0 var(--space-3);border-radius:2px;background:{{ v.bg }};color:{{ v.fg }};cursor:pointer">{{ v.label }}</span></sc-for>
+    </span>
+    <span onClick="{{ graphClick }}" title="graph view · {{ modT }}G" style="display:flex;align-items:center;gap:var(--space-2);padding:0 var(--space-3);border-radius:var(--radius-1);border:var(--border-w) solid {{ graphBd }};background:{{ graphBg }};color:{{ graphFg }};cursor:pointer" style-hover="color:var(--text-primary);border-color:var(--border-strong)"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="4" r="2"></circle><circle cx="12" cy="6" r="2"></circle><circle cx="7" cy="12.5" r="2"></circle><path d="M5.8 4.6l4.3 1"></path><path d="M4.7 5.9l1.6 4.7"></path><path d="M10.8 7.6 8.3 11"></path></svg>graph</span>
+    <span style="color:var(--text-faint)">·</span>
+    <span>canvas {{ zoom }}</span><span style="color:var(--text-faint)">·</span>
+    <span style="color:var(--accent)">●</span><span>{{ sync }}</span><span style="color:var(--text-faint)">·</span>
+    <span>◐ {{ theme }}</span>
+  </div>
+  <sc-if value="{{ searchOn }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;top:10px;right:16px;z-index:var(--z-popover);display:flex;align-items:center;gap:var(--space-4);background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-5);font-size:var(--text-sm)">
+      <span style="color:var(--text-faint)">⌕</span>
+      <span style="display:flex;align-items:center">auth<span style="display:inline-block;width:2px;height:13px;background:var(--accent);margin-left:1px"></span></span>
+      <span style="font-size:var(--text-xs);color:var(--text-muted)">{{ matchCount }}</span>
+      <span style="width:1px;height:14px;background:var(--border-subtle)"></span>
+      <div style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:2px;font-size:var(--text-xs)">
+        <sc-for list="{{ scopes }}" as="s" hint-placeholder-count="3">
+          <span style="padding:1px var(--space-4);border-radius:var(--radius-1);background:{{ s.bg }};color:{{ s.fg }};box-shadow:{{ s.shadow }};font-weight:{{ s.weight }};cursor:pointer">{{ s.label }}</span>
+        </sc-for>
+      </div>
+      <span style="width:1px;height:14px;background:var(--border-subtle)"></span>
+      <span style="color:var(--text-muted);cursor:pointer" style-hover="color:var(--text-primary)">‹</span>
+      <span style="color:var(--text-muted);cursor:pointer" style-hover="color:var(--text-primary)">›</span>
+      <span title="Match case" style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);cursor:pointer">Aa</span>
+      <span style="color:var(--text-faint);cursor:pointer" style-hover="color:var(--text-primary)">✕</span>
+    </div>
+  </sc-if>
+  <sc-if value="{{ showPicker }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:var(--scrim);z-index:var(--z-scrim);display:flex;justify-content:center;align-items:flex-start;padding-top:110px">
+      <div style="width:920px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-3);overflow:hidden;z-index:var(--z-popover);display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-base)">
+          <span style="color:var(--text-faint)">open</span>
+          <span style="display:flex;align-items:center">ada<span style="display:inline-block;width:2px;height:15px;background:var(--accent);margin-left:1px"></span></span>
+          <span style="flex:1"></span>
+          <span style="font-size:var(--text-xs);color:var(--text-faint)">3 of 11</span>
+          <span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)">esc</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-3) var(--space-6);border-bottom:var(--border-w) solid var(--border-subtle)">
+          <div style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:2px;font-size:var(--text-sm)">
+            <span style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);background:var(--surface-raised);box-shadow:var(--shadow-1);font-weight:var(--weight-medium)">recent</span>
+            <span style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);color:var(--text-muted);cursor:pointer" style-hover="color:var(--text-primary)">on canvas</span>
+            <span style="padding:var(--space-2) var(--space-5);border-radius:var(--radius-1);color:var(--text-muted);cursor:pointer" style-hover="color:var(--text-primary)">all</span>
+          </div>
+          <span style="flex:1"></span>
+          <span style="font-size:var(--text-xs);color:var(--text-faint)">sorted by edited</span>
+        </div>
+        <div style="display:flex;min-height:352px">
+          <div style="flex:0 0 160px;padding:var(--space-3) var(--space-2);display:flex;flex-direction:column;gap:1px;border-right:var(--border-w) solid var(--border-subtle);background:var(--surface-panel)">
+            <div style="font-size:var(--text-xs);color:var(--text-faint);padding:var(--space-2) var(--space-4) var(--space-3);letter-spacing:var(--tracking-wide);text-transform:uppercase">folders</div>
+            <sc-for list="{{ pickerFolders }}" as="f" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-4);border-radius:var(--radius-1);background:{{ f.bg }};color:{{ f.fg }};font-size:var(--text-sm);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+                <span style="width:var(--spine-w);height:12px;background:{{ f.color }};flex:none"></span><span>{{ f.name }}</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint)">{{ f.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:0 0 430px;padding:var(--space-2);display:flex;flex-direction:column;border-right:var(--border-w) solid var(--border-subtle);overflow:hidden">
+            <sc-for list="{{ pickerDocs }}" as="d" hint-placeholder-count="6">
+              <div style="position:relative;display:flex;align-items:center;gap:var(--space-5);padding:var(--space-4) var(--space-5);border-radius:var(--radius-2);background:{{ d.bg }};cursor:pointer" style-hover="background:var(--surface-raised)">
+                <div style="position:absolute;left:0;top:5px;bottom:5px;width:var(--spine-w);background:{{ d.color }};box-shadow:{{ d.glow }};border-radius:var(--radius-round)"></div>
+                <div style="display:flex;flex-direction:column;gap:var(--space-1);min-width:0;margin-left:var(--space-3)">
+                  <div style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm);color:{{ d.fg }};font-weight:{{ d.weight }}"><span>{{ d.name }}</span><span style="width:5px;height:5px;border-radius:var(--radius-round);background:{{ d.dot }};flex:none"></span></div>
+                  <div style="font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.path }}</div>
+                </div>
+                <span style="flex:1"></span>
+                <span style="font-size:var(--text-xs);color:var(--text-faint);flex:none">{{ d.edited }}</span>
+                <span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);flex:none">{{ d.badge }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-5);margin-top:var(--space-2);border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm);color:var(--text-muted);cursor:pointer" style-hover="color:var(--text-primary)">
+              <span style="color:var(--accent)">+</span><span>new note “ada…” in adapters/</span><span style="flex:1"></span>
+              <span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>N</span>
+            </div>
+          </div>
+          <div style="flex:1;padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-5);background:var(--surface-panel)">
+            <div style="display:flex;align-items:center;gap:var(--space-4)">
+              <span style="width:var(--spine-w);height:16px;background:{{ adapterColor }};box-shadow:0 0 8px {{ adapterColor }};flex:none"></span>
+              <span style="font-size:var(--text-md);font-weight:var(--weight-medium)">adapter-design.md</span>
+            </div>
+            <div style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-5);font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal);flex:1;overflow:hidden">
+              <div style="font-size:var(--text-sm);color:var(--text-primary);font-weight:var(--weight-bold);margin-bottom:var(--space-4)">Storage adapters</div>
+              Every adapter implements open, read, write and watch. The sled adapter is the default; sqlite exists for teams that already run a database, and memory is test-only.<br><br>
+              Writes go through a single queue so the canvas never observes a half-written doc.
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-3);font-size:var(--text-xs);color:var(--text-faint)">
+              <div style="display:flex;gap:var(--space-5)"><span style="width:64px;color:var(--text-muted)">edited</span><span>2h ago · you</span></div>
+              <div style="display:flex;gap:var(--space-5)"><span style="width:64px;color:var(--text-muted)">size</span><span>4.1 kb · 138 lines</span></div>
+              <div style="display:flex;gap:var(--space-5)"><span style="width:64px;color:var(--text-muted)">canvas</span><span>2 cards on “v0.4 planning”</span></div>
+            </div>
+            <div style="display:flex;gap:var(--space-4);justify-content:flex-end">
+              <button style="font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer" style-hover="background:var(--surface-overlay)">split right</button>
+              <button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer" style-hover="filter:brightness(1.1)">open ↵</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-3) var(--space-6);border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-faint)">
+          <span>↑↓ navigate</span><span>↵ open</span><span><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>↵ split right</span><span>⇥ switch scope</span><span style="flex:1"></span><span><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>P</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ showPalette }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:var(--scrim);z-index:var(--z-scrim);display:flex;justify-content:center;align-items:flex-start;padding-top:96px">
+      <div style="width:580px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-3);overflow:hidden;z-index:var(--z-popover)">
+        <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-base)">
+          <span style="color:var(--accent)">›</span><span>theme</span><span style="width:2px;height:15px;background:var(--accent)"></span><span style="flex:1"></span>
+          <span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)">esc</span>
+        </div>
+        <div style="padding:var(--space-2);display:flex;flex-direction:column">
+          <div style="position:relative;display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-5);border-radius:var(--radius-2);background:var(--accent-dim);font-size:var(--text-sm)"><div style="position:absolute;left:0;top:4px;bottom:4px;width:2px;background:var(--accent);border-radius:var(--radius-round)"></div><span style="color:var(--text-faint)">cmd</span><span><span style="color:var(--accent)">theme</span>: switch to light</span><span style="flex:1"></span><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>⇧L</span></div>
+          <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-5);border-radius:var(--radius-2);font-size:var(--text-sm);color:var(--text-muted)"><span style="color:var(--text-faint)">cmd</span><span><span style="color:var(--accent)">theme</span>: toggle dark / light</span></div>
+          <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-5);border-radius:var(--radius-2);font-size:var(--text-sm);color:var(--text-muted)"><span style="color:var(--text-faint)">view</span><span>zoom canvas to fit</span><span style="flex:1"></span><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)">⇧1</span></div>
+          <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-5);border-radius:var(--radius-2);font-size:var(--text-sm);color:var(--text-muted)"><span style="color:var(--text-faint)">doc</span><span>new note</span><span style="flex:1"></span><span style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2);font-size:var(--text-xs);color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>N</span></div>
+          <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-5);border-radius:var(--radius-2);font-size:var(--text-sm);color:var(--text-muted)"><span style="color:var(--text-faint)">canvas</span><span>add doc reference…</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-3) var(--space-6);border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-faint)">
+          <span>↑↓ navigate</span><span>↵ run</span><span>esc dismiss</span><span style="flex:1"></span><span>5 commands</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:940},&quot;keys&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;mac&quot;,&quot;windows&quot;],&quot;default&quot;:&quot;auto&quot;,&quot;tsType&quot;:&quot;'auto'|'mac'|'windows'&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;},&quot;chrome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;macos&quot;,&quot;windows&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;'none'|'macos'|'windows'&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;split&quot;,&quot;notes&quot;,&quot;canvas&quot;,&quot;graph&quot;],&quot;default&quot;:&quot;split&quot;,&quot;tsType&quot;:&quot;'split'|'notes'|'canvas'|'graph'&quot;},&quot;dropping&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;palette&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;picker&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;shapeMenu&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;rotate&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;empty&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;toast&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;search&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;searchScope&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;all&quot;,&quot;notes&quot;,&quot;canvas&quot;],&quot;default&quot;:&quot;all&quot;,&quot;tsType&quot;:&quot;'all'|'notes'|'canvas'&quot;},&quot;tree&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const KEYD = { mac: 'M6 6h4v4H6z M6 6V4.5A1.5 1.5 0 1 0 4.5 6H6 M10 6V4.5A1.5 1.5 0 1 1 11.5 6H10 M10 10v1.5a1.5 1.5 0 1 0 1.5-1.5H10 M6 10v1.5A1.5 1.5 0 1 1 4.5 10H6', windows: 'M4 10 8 5.5l4 4.5' };
+const SW = ['var(--text-faint)', 'var(--doc-1)', 'var(--doc-2)', 'var(--doc-3)', 'var(--doc-4)', 'var(--doc-5)', 'var(--doc-6)', 'var(--doc-7)', 'var(--doc-8)'];
+const SWN = ['folder', 'coral', 'amber', 'violet', 'cyan', 'orange', 'lime', 'blue', 'magenta'];
+const OK = (h, l) => 'oklch(' + l + ' 0.13 ' + h + ')';
+const nm = k => k === 9 ? 'custom' : SWN[k];
+const RING = '0 0 0 1px var(--surface-overlay), 0 0 0 2px var(--text-primary)';
+const PALc = c => c ? 'var(--doc-' + c + ')' : 'var(--text-faint)';
+const pt = e => { const el = e.currentTarget, r = el.getBoundingClientRect(), sc = r.width / el.offsetWidth || 1; return { x: (e.clientX - r.left) / sc, y: (e.clientY - r.top) / sc, w: el.offsetWidth, h: el.offsetHeight }; };
+class Component extends DCLogic {
+  state = { menu: null, cols: { auth: { own: 0 }, adapter: { own: 2 }, roadmap: { own: 0 }, guide: { own: 7 } }, tip: null, tipH: null, tipC: false, tipPad: null, tipHot: null,
+    folders: [
+      { id: 'auth', name: 'auth', parent: null, color: 1 },
+      { id: 'adapters', name: 'adapters', parent: null, color: 4 },
+      { id: 'planning', name: 'planning', parent: null, color: 3 },
+      { id: 'inbox', name: 'inbox', parent: null, color: 0 },
+    ],
+    items: [
+      { id: 'auth', name: 'auth-flow', ext: 'md', folder: 'auth', ex: 'Every request from the desktop client passes through the gateway before it touches a service…' },
+      { id: 'architecture', name: 'architecture', ext: 'canvas', folder: 'auth' },
+      { id: 'adapter', name: 'adapter-design', ext: 'md', folder: 'adapters', ex: 'One port trait per storage backend. The sled implementation is canonical; sqlite is a test double…' },
+      { id: 'adapter-tests', name: 'adapter-tests', ext: 'md', folder: 'adapters', ex: 'Contract tests every adapter has to pass before it ships.' },
+      { id: 'roadmap', name: 'roadmap', ext: 'md', folder: 'planning', ex: 'v0.3 ships auth + adapters; canvas frames land in v0.4.' },
+      { id: 'v04', name: 'v0.4-planning', ext: 'canvas', folder: 'planning' },
+      { id: 'notes', name: 'notes', ext: 'md', folder: 'inbox', ex: 'Loose ends from standup.' },
+      { id: 'guide', name: 'markdown-guide', ext: 'md', folder: 'inbox', ex: 'Every block and inline style the editor renders.' },
+    ],
+    open: ['auth', 'adapter', 'roadmap', 'guide'], active: 'guide', view: null, lastView: 'split', tabHov: null, imgs: [], fileDrag: null, full: false, tree: null, pinned: false,
+    expanded: { auth: 1, adapters: 1, planning: 1 },
+    creating: null, renaming: null, draft: '', err: '', flash: null, cards: [], cardEdit: null, cvMenu: null, dragging: false, n: 1 };
+  rootRef = React.createRef();
+  view() { return this.state.view || (this.props.view ?? 'split'); }
+  componentDidUpdate(pp) { if (pp.view !== this.props.view && this.state.view) this.setState({ view: null }); }
+  closeTab(id) {
+    this.setState(s => { const i = s.open.indexOf(id), open = s.open.filter(x => x !== id); return { open, tabHov: null, active: s.active === id ? (open[Math.min(i, open.length - 1)] || null) : s.active }; });
+  }
+  componentDidMount() {
+    const r = this.rootRef.current, top = document.querySelector('#dc-root > .sc-host');
+    if (r && top && r.parentElement === top) this.setState({ full: true });
+    this._key = (e) => {
+      const tg0 = e.target && e.target.tagName;
+      if (this._hot && (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); this.setTree(!this.treeOpen()); return; }
+      if (e.key === 'Escape' && !this.state.tip && tg0 !== 'INPUT' && (this.state.cvMenu || (this.treeOpen() && !this.state.pinned))) { this.setState({ cvMenu: null }); if (!this.state.pinned) this.setTree(false); return; }
+      const s = this.state, tip = s.tip; if (!tip) return;
+      const tg = e.target && e.target.tagName; if (tg === 'INPUT' || tg === 'TEXTAREA') return;
+      if (s.tipC) {
+        const c = this.raw(tip.id);
+        const cur = s.tipPad || (c.own === 9 ? { h: c.hue, l: c.lt } : { h: 180, l: 0.74 });
+        const mv = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, .03], ArrowDown: [0, -.03] }[e.key];
+        if (mv) { e.preventDefault(); this.setState({ tipPad: { h: (cur.h + mv[0] + 360) % 360, l: Math.round(Math.max(.56, Math.min(.86, cur.l + mv[1])) * 100) / 100 } }); return; }
+        if (e.key === 'Enter') { this.colSet(tip.id, 9, { hue: cur.h, lt: cur.l }); this.tipClose(); return; }
+        if (e.key === 'Escape') { this.setState({ tipC: false, tipPad: null }); return; }
+      }
+      if (/^[0-8]$/.test(e.key)) { this.colSet(tip.id, +e.key); this.tipClose(); return; }
+      if (e.key === '9') { this.setState({ tipC: true, tipH: null }); return; }
+      if (e.key === 'Escape') this.tipClose();
+    };
+    this._md = (e) => {
+      const cl = sel => e.target.closest && e.target.closest(sel);
+      if (this.state.tip && !cl('[data-tip]')) this.tipClose();
+      if (this.treeOpen() && !this.state.pinned && !cl('[data-tree]')) this.setTree(false);
+    };
+    window.addEventListener('keydown', this._key);
+    window.addEventListener('mousedown', this._md);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._key); window.removeEventListener('mousedown', this._md); }
+  tipClose() { this.setState({ tip: null, tipH: null, tipC: false, tipPad: null }); }
+  colSet(id, k, extra) { this.setState(s => ({ cols: { ...s.cols, [id]: { own: k, ...(extra || {}) } } })); }
+  raw(id) { const s = this.state; if (s.cols[id]) return s.cols[id]; if (id.slice(0, 2) === 'f:') { const f = this.folder(id.slice(2)); return { own: f ? f.color : 0 }; } return { own: 0 }; }
+  fOwn(fid) {
+    const s = this.state, key = 'f:' + fid;
+    if (s.tip && s.tip.id === key) { if (s.tipPad) return OK(s.tipPad.h, s.tipPad.l); if (typeof s.tipH === 'number') return s.tipH ? SW[s.tipH] : null; }
+    const c = this.raw(key); return c.own === 9 ? OK(c.hue, c.lt) : c.own ? SW[c.own] : null;
+  }
+  fCss(fid) { let f = this.folder(fid); while (f) { const c = this.fOwn(f.id); if (c) return c; f = this.folder(f.parent); } return 'var(--text-faint)'; }
+  colOf(id) {
+    if (id.slice(0, 2) === 'f:') return this.fCss(id.slice(2));
+    const s = this.state, c = s.cols[id] || { own: 0 };
+    if (s.tip && s.tip.id === id) { if (s.tipPad) return OK(s.tipPad.h, s.tipPad.l); if (typeof s.tipH === 'number') return s.tipH ? SW[s.tipH] : this.inhCol(id); }
+    return c.own === 9 ? OK(c.hue, c.lt) : c.own ? SW[c.own] : this.inhCol(id);
+  }
+  item(id) { return this.state.items.find(x => x.id === id); }
+  folder(id) { return this.state.folders.find(x => x.id === id); }
+  fCol(fid) { let f = this.folder(fid); while (f) { if (f.color) return f.color; f = this.folder(f.parent); } return 0; }
+  inhCol(id) { const it = this.item(id); return it ? this.fCss(it.folder) : 'var(--text-faint)'; }
+  expandTo(exp, fid) { const e = { ...exp }; let f = this.folder(fid); while (f) { e[f.id] = 1; f = this.folder(f.parent); } return e; }
+  uniq(folder, base, ext) { const s = this.state; let n = base, k = 2; while (s.items.some(x => x.folder === folder && x.name === n && x.ext === ext)) n = base + '-' + (k++); return n; }
+  treeOpen() { const t = this.state.tree; return t === null ? !!(this.props.tree ?? false) : t; }
+  setTree(v) { this.setState(s => ({ tree: v, creating: v ? s.creating : null })); }
+  startCreate(folder, kind) { this.setState(s => ({ creating: { folder, kind }, draft: '', err: '', cvMenu: null, tree: true, expanded: this.expandTo(s.expanded, folder) })); }
+  commitCreate() {
+    const s = this.state, c = s.creating; if (!c) return;
+    let name = s.draft.trim().replace(/^\/+|\/+$/g, '');
+    if (!name) { this.setState({ creating: null, err: '' }); return; }
+    if (c.kind === 'folder') {
+      const id = c.folder ? c.folder + '/' + name : name;
+      if (s.folders.some(x => x.id === id)) { this.setState({ err: name + '/ already exists here' }); return; }
+      this.setState({ folders: [...s.folders, { id, name, parent: c.folder, color: 0 }], creating: null, err: '', expanded: { ...this.expandTo(s.expanded, c.folder), [id]: 1 } });
+      return;
+    }
+    let ext = 'md';
+    if (/\.canvas$/.test(name)) { ext = 'canvas'; name = name.replace(/\.canvas$/, ''); } else name = name.replace(/\.md$/, '');
+    if (s.items.some(x => x.folder === c.folder && x.name === name && x.ext === ext)) { this.setState({ err: name + '.' + ext + ' already exists here' }); return; }
+    const id = 'n' + s.n, st = { items: [...s.items, { id, name, ext, folder: c.folder }], n: s.n + 1, creating: null, err: '' };
+    if (ext === 'md') { st.open = [...s.open, id]; st.active = id; }
+    this.setState(st);
+  }
+  renameCore(id, raw, key) {
+    const s = this.state, it = this.item(id);
+    if (!it) { this.setState({ [key]: null }); return; }
+    const name = raw.trim().replace(/\.md$/, '');
+    if (!name || name === it.name) { this.setState({ [key]: null, err: '' }); return; }
+    if (s.items.some(x => x !== it && x.folder === it.folder && x.name === name && x.ext === it.ext)) { this.setState({ err: name + '.' + it.ext + ' already exists' }); return; }
+    this.setState({ items: s.items.map(x => x === it ? { ...x, name } : x), [key]: null, err: '' });
+  }
+  newNote() {
+    const s = this.state, act = this.item(s.active), folder = act ? act.folder : null, name = this.uniq(folder, 'untitled', 'md'), id = 'n' + s.n;
+    this.setState({ items: [...s.items, { id, name, ext: 'md', folder }], n: s.n + 1, open: [...s.open, id], active: id, renaming: id, draft: name, err: '', expanded: this.expandTo(s.expanded, folder) });
+  }
+  openItem(id) {
+    const it = this.item(id); if (!it || it.ext !== 'md') return;
+    this.setState(s => ({ open: s.open.includes(id) ? s.open : [...s.open, id], active: id, tree: s.pinned ? s.tree : false }));
+  }
+  reveal(fid) {
+    clearTimeout(this._fl);
+    this.setState(s => ({ tree: true, expanded: fid ? this.expandTo(s.expanded, fid) : s.expanded, flash: fid }));
+    this._fl = setTimeout(() => this.setState({ flash: null }), 1400);
+  }
+  addCardNote(p) {
+    const s = this.state, b = this.item('architecture'), folder = b ? b.folder : null, name = this.uniq(folder, 'untitled', 'md'), id = 'n' + s.n, cid = 'c' + s.n;
+    this.setState({ items: [...s.items, { id, name, ext: 'md', folder }], cards: [...s.cards, { id: cid, item: id, x: Math.max(60, Math.round(p.x - 110)), y: Math.max(8, Math.round(p.y - 20)) }], n: s.n + 1, cardEdit: cid, draft: name, err: '', cvMenu: null, expanded: this.expandTo(s.expanded, folder) });
+  }
+  treeTip(key, col) {
+    const tg = this.target(key, 'tree');
+    return { lit: tg.lit, thick: tg.thick, glow: tg.lit ? '0 0 8px ' + col : 'none', hitBg: tg.lit ? 'var(--surface-overlay)' : 'transparent', enter: tg.enter, leave: tg.leave,
+      tipClick: e => { e.stopPropagation(); if (tg.open) { this.tipClose(); return; }
+        const h = e.currentTarget.getBoundingClientRect(), p = e.currentTarget.closest('[data-tree]'), pr = p.getBoundingClientRect(), sc = pr.width / p.offsetWidth || 1;
+        this.setState({ tip: { id: key, at: 'tree', x: Math.round((h.right - pr.left) / sc + 4), y: Math.round((h.top - pr.top) / sc - 2) }, tipH: null, tipC: false, tipPad: null }); } };
+  }
+  treeRows() {
+    const s = this.state, out = [], c = s.creating;
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    const walk = (parent, depth) => {
+      const pad = (12 + depth * 14) + 'px';
+      if (c && c.folder === parent) out.push({ inp: true, notInp: false, pad, ph: c.kind === 'folder' ? 'folder name' : 'name · end with .canvas for a board', border: s.err ? 'var(--danger)' : 'var(--accent)', hasErr: !!s.err });
+      s.folders.filter(x => x.parent === parent).sort(byName).forEach(fo => {
+        const open = !!s.expanded[fo.id], col = this.fCss(fo.id), own = !!this.fOwn(fo.id), tg = this.treeTip('f:' + fo.id, col);
+        out.push({ ...tg, notInp: true, inp: false, pad, chev: open ? '▾' : '▸', label: fo.name, ext: '', color: col, op: tg.lit || own ? 1 : (col !== 'var(--text-faint)' ? .45 : .6), mark: '', plus: '+', addTip: 'new note in ' + fo.name,
+          bg: s.flash === fo.id ? 'var(--accent-dim)' : 'transparent', fg: 'var(--text-primary)', drag: false,
+          click: () => this.setState(st => ({ expanded: { ...st.expanded, [fo.id]: open ? 0 : 1 } })),
+          add: e => { e.stopPropagation(); this.startCreate(fo.id, 'note'); } });
+        if (open) walk(fo.id, depth + 1);
+      });
+      s.items.filter(x => x.folder === parent).sort(byName).forEach(it => {
+        const md = it.ext === 'md', on = it.id === s.active || it.id === 'architecture', own = (s.cols[it.id] || {}).own, col = this.colOf(it.id), tg = this.treeTip(it.id, col);
+        out.push({ ...tg, notInp: true, inp: false, pad, chev: '', label: it.name, ext: '.' + it.ext, color: col, op: tg.lit || own ? 1 : .5,
+          mark: md && s.open.includes(it.id) && !on ? '●' : '', plus: '', addTip: '', add: null,
+          bg: on ? 'var(--surface-raised)' : 'transparent', fg: on ? 'var(--text-primary)' : 'var(--text-muted)', drag: md,
+          dragStart: md ? e => { e.dataTransfer.setData('text/plain', it.id); e.dataTransfer.effectAllowed = 'copy'; setTimeout(() => this.setState({ dragging: true }), 0); } : null,
+          click: () => this.openItem(it.id) });
+      });
+    };
+    walk(null, 0);
+    return out;
+  }
+  treeVals() {
+    const s = this.state, open = this.treeOpen(), ov = open && !s.pinned, view = this.view();
+    const act = this.item(s.active), curFolder = act ? act.folder : null;
+    const chain = []; let fo = act ? this.folder(act.folder) : null;
+    while (fo) { chain.unshift(fo); fo = this.folder(fo.parent); }
+    const full = act ? act.name + '.' + act.ext : '', isAuth = !!act && act.id === 'auth', splitName = isAuth && act.name === 'auth-flow';
+    const cv = this.item('architecture'), cvFolder = cv ? cv.folder : null;
+    const ren = !!(act && s.renaming === act.id), menu = s.cvMenu;
+    const cards = s.cards.map(c => {
+      const it = this.item(c.item); if (!it) return null;
+      const edit = s.cardEdit === c.id;
+      return { x: c.x + 'px', y: c.y + 'px', color: this.colOf(it.id), label: it.name + '.md', path: (it.folder || 'vault') + '/', ex: it.ex || '', hasEx: !!it.ex,
+        edit, notEdit: !edit, border: s.err ? 'var(--danger)' : 'var(--accent)', hasErr: edit && !!s.err, click: () => this.openItem(it.id) };
+    }).filter(Boolean);
+    return {
+      treeOn: open, treePos: ov ? 'absolute' : 'relative', treeLeft: ov && view === 'split' ? '34px' : '0px', treeW: ov ? '260px' : '220px',
+      treeShadow: ov ? 'var(--shadow-3)' : 'none', treeZ: ov ? 35 : 'auto',
+      tgBg: open ? 'var(--accent-dim)' : 'transparent', tgFg: open ? 'var(--accent)' : 'var(--text-faint)',
+      toggleTree: () => this.setTree(!this.treeOpen()), hideTree: () => this.setTree(false),
+      pinLabel: s.pinned ? 'unpin' : 'pin', pinColor: s.pinned ? 'var(--accent)' : 'var(--text-muted)', togglePin: () => this.setState(st => ({ pinned: !st.pinned })),
+      treeRows: open ? this.treeRows() : [], curFolder: curFolder || 'vault',
+      tt: s.tip && s.tip.at === 'tree' ? this.target(s.tip.id, 'tree') : { open: false }, ttX: s.tip && s.tip.at === 'tree' ? s.tip.x + 'px' : '0px', ttY: s.tip && s.tip.at === 'tree' ? s.tip.y + 'px' : '0px',
+      addNote: () => this.startCreate(curFolder, 'note'), addFolder: () => this.startCreate(curFolder, 'folder'),
+      draft: s.draft, err: s.err,
+      onDraft: e => this.setState({ draft: e.target.value, err: '' }),
+      createKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.commitCreate(); } else if (e.key === 'Escape') this.setState({ creating: null, err: '' }); },
+      commitCreate: () => this.commitCreate(),
+      fileMark: !!act && this.colOf(act.id) !== this.inhCol(act.id),
+      cvMark: !!cv && this.colOf(cv.id) !== this.inhCol(cv.id), cvColor: cv ? this.colOf(cv.id) : 'transparent', cvBar: !!cvFolder,
+      crumbs: [{ name: 'vault', bar: false, color: 'transparent', op: 0, click: () => this.reveal(null) }].concat(chain.map(x => ({ name: x.name, bar: true, color: this.fCss(x.id), op: this.fOwn(x.id) ? 1 : .45, click: () => this.reveal(x.id) }))),
+      renaming: ren, notRenaming: !ren, renBorder: s.err ? 'var(--danger)' : 'var(--accent)', renErr: ren && !!s.err,
+      renameKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.renameCore(s.renaming, s.draft, 'renaming'); } else if (e.key === 'Escape') this.setState({ renaming: null, err: '' }); },
+      commitRename: () => { const r = this.state.renaming; if (r) this.renameCore(r, this.state.draft, 'renaming'); },
+      startRename: () => act && this.setState({ renaming: act.id, draft: act.name, err: '' }),
+      fileA: splitName ? '' : full, fileB: splitName ? 'auth' : '', fileC: splitName ? '-flow.md' : '',
+      activeUnsaved: !!act && (act.id === 'auth' || act.id === 'roadmap'),
+      isAuth, notAuth: !isAuth, isGuide: !!act && act.id === 'guide', plainNote: !isAuth && !(act && act.id === 'guide'), actTitle: act ? act.name : 'no note open',
+      actBody: act ? (act.ex || 'empty note — start typing.') : '', actBodyFg: act && act.ex ? 'var(--text-primary)' : 'var(--text-faint)',
+      noteColor: act ? this.colOf(act.id) : 'var(--border-subtle)',
+      newNote: () => this.newNote(),
+      cards,
+      cvDbl: e => { const t = e.target; if (!(t === e.currentTarget || (t.getAttribute && t.getAttribute('data-cv') === 'layer') || (t.tagName && t.tagName.toLowerCase() === 'svg'))) return; this.addCardNote(pt(e)); },
+      cvEnter: e => { if (!Array.from(e.dataTransfer.types || []).includes('Files')) return; this._dc = (this._dc || 0) + 1; if (!this.state.fileDrag) { const n = Array.from(e.dataTransfer.items || []).filter(x => x.kind === 'file').length || 1; this.setState({ fileDrag: { n, x: pt(e).x, y: pt(e).y } }); } },
+      cvLeave: () => { if (!this.state.fileDrag) return; this._dc = (this._dc || 1) - 1; if (this._dc <= 0) { this._dc = 0; this.setState({ fileDrag: null }); } },
+      cvOver: e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; const fd = this.state.fileDrag; if (fd) { const p = pt(e); if (Math.abs(p.x - fd.x) + Math.abs(p.y - fd.y) > 3) this.setState({ fileDrag: { ...fd, x: p.x, y: p.y } }); } },
+      cvDrop: e => {
+        e.preventDefault(); this._dc = 0;
+        const files = Array.from(e.dataTransfer.files || []).filter(x => /^image\//.test(x.type));
+        if (files.length) { const p = pt(e); this.setState(st => ({ fileDrag: null, imgs: [...st.imgs, ...files.map((fl, i) => ({ id: 'i' + st.n + '-' + i, src: URL.createObjectURL(fl), name: fl.name, x: Math.round(p.x - 120 + i * 24), y: Math.round(p.y - 60 + i * 24) }))], n: st.n + 1 })); files.forEach((fl, k) => { const im = new Image(); im.onload = () => this.setState(st => ({ imgs: st.imgs.map(x => x.name === fl.name && !x.ar ? { ...x, ar: im.naturalWidth / im.naturalHeight } : x) })); im.src = URL.createObjectURL(fl); }); return; }
+        if (this.state.fileDrag) { this.setState({ fileDrag: null }); return; }
+        const id = e.dataTransfer.getData('text/plain'), it = this.item(id);
+        this.setState({ dragging: false }); if (!it || it.ext !== 'md') return;
+        const p = pt(e); this.setState(st => ({ cards: [...st.cards, { id: 'c' + st.n, item: id, x: Math.max(60, Math.round(p.x - 110)), y: Math.max(8, Math.round(p.y - 20)) }], n: st.n + 1 }));
+      },
+      cvCtx: e => { if (e.target.closest && e.target.closest('[data-obj]')) return; e.preventDefault(); const p = pt(e); this.setState({ cvMenu: { x: Math.round(Math.min(p.x, p.w - 230)), y: Math.round(Math.min(p.y, p.h - 90)) } }); },
+      cvClick: () => this.state.cvMenu && this.setState({ cvMenu: null }),
+      cvMenuOn: !!menu, cvMenuX: menu ? menu.x + 'px' : '0px', cvMenuY: menu ? menu.y + 'px' : '0px',
+      cvMenuNote: () => menu && this.addCardNote({ x: menu.x + 110, y: menu.y + 20 }),
+      cvMenuFolder: () => this.startCreate(cvFolder, 'folder'),
+      dropOutline: s.dragging ? '1px dashed var(--accent)' : 'none',
+      imgs: s.imgs.map(i => ({ ...i, x: i.x + 'px', y: i.y + 'px', bg: 'url("' + i.src + '")', ar: String(i.ar || 1.5) })),
+      cardKey: e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); const c = s.cards.find(x => x.id === s.cardEdit); if (!c) return; if (e.key === 'Escape') this.setState({ cardEdit: null, err: '' }); else this.renameCore(c.item, s.draft, 'cardEdit'); } },
+      commitCard: () => { const st = this.state, c = st.cards.find(x => x.id === st.cardEdit); if (c) this.renameCore(c.item, st.draft, 'cardEdit'); },
+      dragEnd: () => this.state.dragging && this.setState({ dragging: false }),
+      canvasFolder: cvFolder || 'vault', canvasFolderColor: this.fCss(cvFolder), revealCanvas: () => this.reveal(cvFolder),
+      hotOn: () => { this._hot = true; }, hotOff: () => { this._hot = false; },
+      pickerFolders: [{ name: 'all', count: s.items.length, color: 'var(--text-faint)', sel: true }].concat(s.folders.filter(x => !x.parent).map(x => ({ name: x.name + '/', count: s.items.filter(i => i.folder === x.id).length, color: this.fCss(x.id) })))
+        .map(f => ({ ...f, bg: f.sel ? 'var(--surface-raised)' : 'transparent', fg: f.sel ? 'var(--text-primary)' : 'var(--text-muted)' })),
+    };
+  }
+  target(id, at) {
+    const s = this.state, t = s.tip, raw = this.raw(id);
+    const open = !!t && t.id === id && t.at === at, hot = !!s.tipHot && s.tipHot.id === id && s.tipHot.at === at;
+    return { color: this.colOf(id), open, lit: open || hot, swOpen: open && !s.tipC, pickOpen: open && s.tipC,
+      rbRing: raw.own === 9 ? RING : 'none', thick: open || hot ? '4px' : 'var(--spine-w)',
+      enter: () => this.setState({ tipHot: { id, at } }), leave: () => this.setState({ tipHot: null }),
+      click: e => { e.stopPropagation(); if (open) this.tipClose(); else this.setState({ tip: { id, at }, tipH: null, tipC: false, tipPad: null }); },
+      opts: open ? [0, 1, 2, 3, 4, 5, 6, 7, 8].map(k => ({ color: k ? SW[k] : 'transparent', border: k ? 'none' : '1px dashed var(--text-faint)',
+        ring: raw.own === k ? RING : 'none', hover: () => this.setState({ tipH: k }),
+        pick: () => { this.colSet(id, k); this.tipClose(); } })) : [] };
+  }
+  tipVals() {
+    const s = this.state, tip = s.tip, c = tip && this.raw(tip.id);
+    const cur = s.tipPad || (c && c.own === 9 ? { h: c.hue, l: c.lt } : null);
+    const isF = !!tip && tip.id.slice(0, 2) === 'f:', tipFo = isF && this.folder(tip.id.slice(2)), tipIt = tip && !isF && this.item(tip.id);
+    const tipF = isF ? (tipFo && this.folder(tipFo.parent)) : (tipIt && this.folder(tipIt.folder));
+    const lab = k => k ? nm(k) : tipF ? '↑ ' + tipF.name : isF ? 'none' : '↑ folder';
+    const cA = this.target('auth', 'card'), cB = this.target('adapter', 'card');
+    return {
+      authColor: this.colOf('auth'), adapterColor: this.colOf('adapter'), roadmapColor: this.colOf('roadmap'),
+      sideZ: tip && tip.at === 'tab' ? 'var(--z-popover)' : 'var(--z-base)',
+      cA: { ...cA, glow: '0 0 ' + (cA.lit ? 14 : 8) + 'px ' + cA.color }, cB: { ...cB, glow: '0 0 ' + (cB.lit ? 14 : 8) + 'px ' + cB.color },
+      tipLabel: !c ? '' : s.tipPad ? 'h ' + s.tipPad.h + ' · ' + Math.round(s.tipPad.l * 100) : s.tipC ? (c.own === 9 ? 'custom' : 'any color') : s.tipH === 'rb' ? 'any color' : lab(typeof s.tipH === 'number' ? s.tipH : c.own),
+      tipUnhover: () => this.setState({ tipH: null }),
+      tipCustom: () => this.setState({ tipC: true, tipH: null }),
+      tipBack: () => this.setState({ tipC: false, tipPad: null }),
+      tipRbHover: () => this.setState({ tipH: 'rb' }),
+      padX: cur ? (cur.h / 360 * 100) + '%' : '50%', padY: cur ? ((0.86 - cur.l) / 0.30 * 100) + '%' : '50%',
+      padOp: cur ? 1 : 0, padColor: cur ? OK(cur.h, cur.l) : 'transparent',
+      padMove: e => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const fx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), fy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+        this.setState({ tipPad: { h: Math.round(fx * 359), l: Math.round((0.86 - fy * 0.30) * 100) / 100 } });
+      },
+      padLeave: () => this.setState({ tipPad: null }),
+      padPick: () => { const t = this.state.tip, p = this.state.tipPad; if (t && p) { this.colSet(t.id, 9, { hue: p.h, lt: p.l }); this.tipClose(); } },
+    };
+  }
+  mh = null;
+  menuHandlers() {
+    if (this.mh) return this.mh;
+    const mh = {};
+    ['heading', 'format', 'blocks', 'lists'].forEach(k => {
+      mh[k] = (e) => { e.stopPropagation(); this.setState(s => ({ menu: s.menu === k ? null : k })); };
+    });
+    mh.close = () => this.setState({ menu: null });
+    this.mh = mh;
+    return mh;
+  }
+  renderVals() {
+    const mh = this.menuHandlers();
+    const open = this.state.menu;
+    const mn = {};
+    ['heading', 'format', 'blocks', 'lists'].forEach(k => {
+      const a = open === k;
+      mn[k] = {
+        click: mh[k],
+        open: a,
+        bg: a ? 'var(--surface-raised)' : 'transparent',
+        fg: a ? 'var(--text-primary)' : 'var(--text-muted)',
+        caret: a ? 'var(--text-muted)' : 'var(--text-faint)'
+      };
+    });
+    const empty = this.props.empty ?? false;
+    const glow = (c) => `0 0 8px ${c}`;
+    const searchOn = this.props.search ?? false;
+    const scope = this.props.searchScope ?? 'all';
+    const hlBg = searchOn && scope !== 'canvas' ? 'var(--search-hl)' : 'transparent';
+    const hlBgCanvas = searchOn && scope !== 'notes' ? 'var(--search-hl)' : 'transparent';
+    const view = this.view();
+    const SHAPES = [
+      { id: 'rect', name: 'Rectangle', key: 'R', d: 'M2.5 4.5 H13.5 V11.5 H2.5 Z' },
+      { id: 'round', name: 'Rounded rect', key: '⇧R', d: 'M4.5 4.5 H11.5 A2 2 0 0 1 13.5 6.5 V9.5 A2 2 0 0 1 11.5 11.5 H4.5 A2 2 0 0 1 2.5 9.5 V6.5 A2 2 0 0 1 4.5 4.5 Z' },
+      { id: 'ellipse', name: 'Ellipse', key: 'O', d: 'M8 3.5 A5 4.5 0 0 1 8 12.5 A5 4.5 0 0 1 8 3.5 Z' },
+      { id: 'triangle', name: 'Triangle', key: 'Y', d: 'M8 3 L14 13 H2 Z' },
+      { id: 'diamond', name: 'Diamond', key: 'D', d: 'M8 2.5 L13.5 8 L8 13.5 L2.5 8 Z' },
+      { id: 'hex', name: 'Hexagon', key: 'G', d: 'M5.5 3.5 H10.5 L13 8 L10.5 12.5 H5.5 L3 8 Z' },
+    ];
+    const shapeId = this.state.shapeId || 'rect';
+    const shape = SHAPES.find(s => s.id === shapeId) || SHAPES[0];
+    const shapesOpen = this.state.shapesOpen ?? (this.props.shapeMenu ?? false);
+    const chrome = this.props.chrome ?? 'none';
+    const rotate = this.props.rotate ?? false;
+    const km = (this.props.keys ?? 'auto') === 'auto' ? (chrome === 'windows' ? 'windows' : 'mac') : this.props.keys;
+    return {
+      modD: KEYD[km], modT: km === 'windows' ? 'Ctrl+' : '⌘',
+      ...this.tipVals(), ...this.treeVals(),
+      mn: mn, closeMenu: mh.close, menuOpen: !!open,
+      macChrome: chrome === 'macos',
+      winChrome: chrome === 'windows',
+      dirty: !empty,
+      keysMode: (this.props.keys ?? 'auto') === 'auto' ? (chrome === 'windows' ? 'windows' : 'mac') : this.props.keys,
+      rootRef: this.rootRef, rootH: this.state.full ? '100vh' : '100%',
+      showEditor: view === 'notes' || view === 'split',
+      showCanvas: view === 'split' || view === 'canvas',
+      showGraph: view === 'graph',
+      graphClick: () => this.setState(s => view === 'graph' ? { view: s.lastView || 'split' } : { view: 'graph', lastView: view }),
+      graphBg: view === 'graph' ? 'var(--accent-dim)' : 'transparent', graphFg: view === 'graph' ? 'var(--accent)' : 'var(--text-faint)', graphBd: view === 'graph' ? 'var(--accent)' : 'var(--border-subtle)',
+      dropOn: !!this.state.fileDrag || (this.props.dropping ?? false),
+      dropCount: this.state.fileDrag ? (this.state.fileDrag.n > 1 ? this.state.fileDrag.n + ' images' : '1 image') : '1 image',
+      dropName: this.state.fileDrag ? 'image' : 'whiteboard.jpg · 1.4 MB',
+      ghostX: this.state.fileDrag ? this.state.fileDrag.x + 'px' : '58%', ghostY: this.state.fileDrag ? this.state.fileDrag.y + 'px' : '66%',
+      showBoth: view === 'split',
+      sideTabs: view === 'split',
+      topTabs: view === 'notes',
+      sideSpine: view !== 'notes',
+      edFlex: view === 'notes' ? '1 1 auto' : '0 0 600px',
+      viewModes: ['notes', 'split', 'canvas'].map(m => ({ label: m, bg: m === view ? 'var(--surface-raised)' : 'transparent', fg: m === view ? 'var(--text-primary)' : 'var(--text-faint)', click: () => this.setState({ view: m }) })),
+      searchOn,
+      hlBg,
+      hlBgCanvas,
+      matchCount: { all: '7 matches', notes: '5 matches', canvas: '2 matches' }[scope],
+      scopes: [['all', 'all'], ['notes', 'notes'], ['canvas', 'canvas']].map(([k, label]) => ({
+        label,
+        bg: k === scope ? 'var(--surface-raised)' : 'transparent',
+        fg: k === scope ? 'var(--text-primary)' : 'var(--text-faint)',
+        shadow: k === scope ? 'var(--shadow-1)' : 'none',
+        weight: k === scope ? 'var(--weight-medium)' : 'var(--weight-regular)',
+      })),
+      hlRing: searchOn ? '0 0 0 1px var(--search-hl-active)' : 'none',
+      theme: this.props.theme ?? 'dark',
+      showPalette: this.props.palette ?? false,
+      showPicker: this.props.picker ?? false,
+      pickerDocs: [
+        { name: 'adapter-design.md', path: 'adapters/', edited: '2h ago', badge: 'doc', color: this.colOf('adapter'), sel: true },
+        { name: 'adapter-tests.md', path: 'adapters/', edited: 'yesterday', badge: 'doc', color: this.colOf('adapter-tests') },
+        { name: 'auth-flow.md', path: 'auth/', edited: '3h ago', badge: 'open', color: this.colOf('auth') },
+        { name: 'roadmap.md', path: 'planning/', edited: '3d ago', badge: 'doc', color: this.colOf('roadmap'), dirty: true },
+        { name: 'notes.md', path: 'inbox/', edited: '1w ago', badge: 'open', color: this.colOf('notes') },
+        { name: 'v0.4-planning.canvas', path: 'planning/', edited: '5d ago', badge: 'canvas', color: this.colOf('v04') },
+      ].map(d => ({
+        name: d.name, path: d.path, edited: d.edited, badge: d.badge, color: d.color,
+        glow: d.sel ? `0 0 8px ${d.color}` : 'none',
+        bg: d.sel ? 'var(--accent-dim)' : 'transparent',
+        fg: d.sel ? 'var(--text-primary)' : 'var(--text-muted)',
+        weight: d.sel ? 'var(--weight-medium)' : 'var(--weight-regular)',
+        dot: d.dirty ? d.color : 'transparent',
+      })),
+      showToast: this.props.toast ?? false,
+      isEmpty: empty,
+      notEmpty: !empty,
+      nodeRot: rotate ? '-12deg' : '0deg',
+      rotVis: rotate ? 'block' : 'none',
+      showTooltip: !empty && !shapesOpen && !(this.props.picker ?? false) && !(this.props.palette ?? false),
+      shapesOpen,
+      shapeName: shape.name,
+      shapeKey: shape.key,
+      shapeIconPath: shape.d,
+      shapeBtnBg: shapesOpen ? 'var(--surface-overlay)' : 'transparent',
+      shapeBtnFg: shapesOpen ? 'var(--text-primary)' : 'var(--text-muted)',
+      toggleShapes: () => this.setState(s => ({ shapesOpen: !s.shapesOpen })),
+      shapes: SHAPES.map(s => ({
+        name: s.name, key: s.key, d: s.d,
+        bg: s.id === shapeId ? 'var(--accent-dim)' : 'transparent',
+        fg: s.id === shapeId ? 'var(--accent)' : 'var(--text-muted)',
+        pick: () => this.setState({ shapeId: s.id, shapesOpen: false }),
+      })),
+      docs: this.state.open.map(id => this.item(id)).filter(Boolean).map(it => {
+        const on = it.id === this.state.active, full = it.name + '.' + it.ext, sp = it.id === 'auth' && it.name === 'auth-flow';
+        const d = { id: it.id, on, name: full, bg: on ? 'var(--surface-raised)' : 'transparent', fg: on ? 'var(--text-primary)' : 'var(--text-muted)', unsaved: it.id === 'auth' || it.id === 'roadmap',
+          a: sp ? '' : full, b: sp ? 'auth' : '', c: sp ? '-flow.md' : '', hl: sp ? hlBg : 'transparent', go: () => this.setState({ active: it.id }) };
+        const tg = this.target(it.id, 'tab'); const lit = on || tg.lit, hov = this.state.tabHov === it.id; return { ...d, ...tg, op: lit ? 1 : .45, glow: lit ? glow(tg.color) : 'none', showX: hov, dotOn: d.unsaved && !hov, tEnter: () => this.setState({ tabHov: it.id }), tLeave: () => this.setState({ tabHov: null }), close: e => { e.stopPropagation(); this.closeTab(it.id); } };
+      }),
+      canvasName: empty ? 'untitled.canvas' : 'architecture.canvas',
+      docLabel: empty ? '—' : (this.item(this.state.active) ? this.item(this.state.active).name + '.md' : '—'),
+      words: empty ? '0 words' : '412 words',
+      pos: empty ? 'Ln 1, Col 1' : 'Ln 24, Col 18',
+      zoom: empty ? '100%' : '87%',
+      sync: empty ? 'ready' : 'synced',
+    };
+  }
+}
+</script>
+</body>
+</html>

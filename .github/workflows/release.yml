@@ -1,0 +1,128 @@
+name: release
+
+# A `v*` tag CREATES a draft release — nothing is visible until somebody
+# presses publish. The "Run workflow" button does the same build without
+# publishing anything: the .zip lands as a run artifact, which is how this
+# workflow is tested.
+# ⚠️ "without publishing anything" holds even when Run workflow is pointed at a
+# tag — see the condition on the publish step.
+#
+# ⚠️ Windows only, on GitHub's hosted image. The macOS half is built by hand
+# on a Mac with `tools/release-macos.sh`, which carries the exact recipe this
+# file used to run, and the .zip is dropped into the draft before anybody
+# presses publish. Hosted minutes are free on a public repository, so
+# `macos-latest` can go back in a matrix here.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: windows-latest
+    # ⚠️ GitHub's default shell on Windows is `pwsh` — PowerShell 7, a separate
+    # install this box does not have. `powershell` is the 5.1 that ships with
+    # the OS.
+    defaults:
+      run:
+        shell: powershell
+    permissions:
+      contents: write
+    env:
+      ZIP: synapso-windows-x86_64.zip
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # ⚠️ same as ci.yml: `actions-rust-lang/setup-rust-toolchain` is bash
+      # inside, and this box has no bash.
+      - name: rust toolchain
+        run: |
+          if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+            Invoke-WebRequest https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
+            ./rustup-init.exe -y --default-toolchain stable --profile minimal
+            # ⚠️ not Out-File: PowerShell 5.1 writes it with a BOM, and the
+            # runner reads the first line of $GITHUB_PATH with the BOM in it
+            Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.cargo\bin"
+            $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
+          }
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          rustc --version; cargo --version
+
+      - run: cargo test --workspace --release --locked
+      - run: cargo build --release --locked
+
+      - run: Compress-Archive -Force target\release\synapso.exe $env:ZIP
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ env.ZIP }}
+          path: ${{ env.ZIP }}
+
+      # ⚠️ `github.ref` is also `refs/tags/…` in a "Run workflow" pointed at a
+      # tag, and then the run that was supposed to publish nothing would
+      # publish. Only a tag push gets through here.
+      - name: draft release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # the REST API and not `gh`: the CLI is not installed on this box, and
+        # Invoke-RestMethod ships with the OS
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:GITHUB_REF_NAME
+          $repo = $env:GITHUB_REPOSITORY
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept        = 'application/vnd.github+json'
+            'User-Agent'  = 'synapso-release'
+          }
+          # WARNING: every character in this step is ASCII, deliberately.
+          #
+          # Windows PowerShell 5.1 reads a .ps1 with no BOM using the system
+          # ANSI codepage, and the runner writes this block as UTF-8. An em
+          # dash is E2 80 94; byte 94 in CP1252 is U+201D, the closing smart
+          # quote -- which PowerShell accepts as a string delimiter. Three em
+          # dashes in here meant three stray quote characters, an odd number,
+          # and "The string is missing the terminator" reported forty lines
+          # below the real fault. Two releases died on it.
+          #
+          # An array joined instead of a here-string, for a second reason: the
+          # closing '@ of a here-string has to start at column 0, and every
+          # line here is indented by the YAML block that carries it.
+          $notes = @(
+            'Windows only for now -- the macOS build is added to this draft by hand.'
+            ''
+            'Neither binary is signed.'
+            ''
+            '- **macOS**: Gatekeeper blocks the first launch. Right-click -> Open,'
+            '  or `xattr -d com.apple.quarantine Synapso.app`.'
+            '- **Windows**: SmartScreen warns. More info -> Run anyway.'
+          ) -join "`n"
+          # running this again (after a failed upload, say) hits a release that
+          # already exists. Reusing it is fine while it is still a DRAFT; once
+          # somebody has pressed publish, swapping the file the world is
+          # downloading is not something a retry gets to do with no gate at all.
+          $release = $null
+          try {
+            $release = Invoke-RestMethod -Headers $headers "https://api.github.com/repos/$repo/releases/tags/$tag"
+          } catch {
+            if ($_.Exception.Response.StatusCode.value__ -ne 404) { throw }
+          }
+          if ($null -eq $release) {
+            $body = @{ tag_name = $tag; name = $tag; draft = $true; body = $notes } | ConvertTo-Json
+            $release = Invoke-RestMethod -Method Post -Headers $headers -ContentType 'application/json' -Body $body "https://api.github.com/repos/$repo/releases"
+            Write-Host "created draft $tag"
+          } elseif (-not $release.draft) {
+            Write-Error "$tag is already published (draft=false) -- not swapping assets under whoever is downloading them. Check the release by hand."
+          } else {
+            Write-Host "reusing draft $tag"
+            $old = $release.assets | Where-Object { $_.name -eq $env:ZIP }
+            if ($old) { Invoke-RestMethod -Method Delete -Headers $headers $old.url }
+          }
+          # absolute: -InFile goes through .NET, whose working directory is not
+          # necessarily PowerShell's current location
+          $zip = (Resolve-Path $env:ZIP).Path
+          Invoke-RestMethod -Method Post -Headers $headers -ContentType 'application/zip' `
+            -InFile $zip "https://uploads.github.com/repos/$repo/releases/$($release.id)/assets?name=$env:ZIP" | Out-Null
+          Write-Host "uploaded $env:ZIP to draft $tag"

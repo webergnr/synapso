@@ -1,0 +1,240 @@
+{
+  "nodes": [
+    {
+      "id": "rect",
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 200,
+      "height": 90,
+      "text": "caixa colorida com legenda que quebra",
+      "color": "1",
+      "strokeWidth": 3.0
+    },
+    {
+      "id": "elli",
+      "type": "text",
+      "x": 260,
+      "y": 0,
+      "width": 180,
+      "height": 90,
+      "text": "elipse",
+      "color": "4",
+      "shape": "ellipse"
+    },
+    {
+      "id": "tri",
+      "type": "text",
+      "x": 480,
+      "y": 0,
+      "width": 160,
+      "height": 90,
+      "text": "tri",
+      "shape": "triangle"
+    },
+    {
+      "id": "label",
+      "type": "text",
+      "x": 700,
+      "y": 0,
+      "width": 220,
+      "height": 60,
+      "text": "rótulo livre, alinhado à direita, quebrando em duas linhas",
+      "shape": "label",
+      "fontSize": 15.0,
+      "align": "right"
+    },
+    {
+      "id": "frame",
+      "type": "group",
+      "x": -40,
+      "y": 160,
+      "width": 520,
+      "height": 260,
+      "label": "moldura",
+      "color": "3"
+    },
+    {
+      "id": "doc",
+      "type": "file",
+      "x": 0,
+      "y": 200,
+      "width": 260,
+      "height": 180,
+      "file": "scroll-gate.md"
+    },
+    {
+      "id": "sect",
+      "type": "file",
+      "x": 290,
+      "y": 200,
+      "width": 180,
+      "height": 180,
+      "file": "wrap-gate.md",
+      "subpath": "#quebra com decoracao"
+    },
+    {
+      "id": "quote",
+      "type": "file",
+      "x": 520,
+      "y": 200,
+      "width": 240,
+      "height": 140,
+      "file": "table-gate.md",
+      "excerpt": "texto entre os dois blocos."
+    },
+    {
+      "id": "stale",
+      "type": "file",
+      "x": 790,
+      "y": 200,
+      "width": 240,
+      "height": 140,
+      "file": "table-gate.md",
+      "excerpt": "isto nunca esteve na nota"
+    },
+    {
+      "id": "gone",
+      "type": "file",
+      "x": 0,
+      "y": 440,
+      "width": 240,
+      "height": 110,
+      "file": "nao-existe.md"
+    },
+    {
+      "id": "brd",
+      "type": "file",
+      "x": 280,
+      "y": 440,
+      "width": 240,
+      "height": 110,
+      "file": "canvas.canvas"
+    },
+    {
+      "id": "pic",
+      "type": "file",
+      "x": 560,
+      "y": 440,
+      "width": 200,
+      "height": 150,
+      "file": "foto.png"
+    },
+    {
+      "id": "nopic",
+      "type": "file",
+      "x": 790,
+      "y": 440,
+      "width": 200,
+      "height": 150,
+      "file": "sumiu.png"
+    },
+    {
+      "id": "pen",
+      "type": "text",
+      "x": 0,
+      "y": 620,
+      "width": 220,
+      "height": 140,
+      "color": "2",
+      "shape": "draw",
+      "draw": [
+        [
+          0.05000000074505806,
+          0.800000011920929
+        ],
+        [
+          0.20000000298023224,
+          0.20000000298023224
+        ],
+        [
+          0.3499999940395355,
+          0.8999999761581421
+        ],
+        [
+          0.5,
+          0.15000000596046448
+        ],
+        [
+          0.699999988079071,
+          0.8500000238418579
+        ],
+        [
+          0.949999988079071,
+          0.25
+        ]
+      ],
+      "strokeWidth": 3.0,
+      "text": ""
+    },
+    {
+      "id": "turn",
+      "type": "text",
+      "x": 280,
+      "y": 620,
+      "width": 200,
+      "height": 110,
+      "text": "girado 25°",
+      "color": "5",
+      "rotation": 25.0
+    },
+    {
+      "id": "bold",
+      "type": "text",
+      "x": 560,
+      "y": 620,
+      "width": 200,
+      "height": 110,
+      "text": "negrito centrado",
+      "fontWeight": 700,
+      "align": "center",
+      "strokeWidth": 5.0
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "fromNode": "rect",
+      "fromSide": "right",
+      "toNode": "elli",
+      "toSide": "left",
+      "label": "curva"
+    },
+    {
+      "id": "e2",
+      "fromNode": "elli",
+      "fromSide": "bottom",
+      "toNode": "tri",
+      "toSide": "bottom",
+      "label": "elbow tracejado",
+      "route": "elbow",
+      "dash": true
+    },
+    {
+      "id": "e3",
+      "fromNode": "tri",
+      "fromSide": "top",
+      "toNode": "label",
+      "toSide": "left",
+      "toEnd": "none",
+      "fromEnd": "arrow",
+      "color": "2",
+      "route": "straight",
+      "strokeWidth": 5.0
+    },
+    {
+      "id": "e4",
+      "fromNode": "doc",
+      "toNode": "pic",
+      "fromEnd": "arrow",
+      "color": "4",
+      "label": "ida e volta"
+    },
+    {
+      "id": "e5",
+      "fromNode": "pen",
+      "toNode": "turn",
+      "route": "elbow"
+    }
+  ]
+}

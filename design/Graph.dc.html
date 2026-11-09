@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>body{margin:0;background:#131418}a{color:var(--text-link);text-decoration:underline;text-underline-offset:2px}a:hover{color:var(--accent)}::selection{background:var(--selection)}</style>
+</helmet>
+<div data-theme="{{ theme }}" style="width:100%;height:100%;display:flex;flex-direction:column;font-family:var(--font-mono);font-size:var(--text-base);background:var(--bg-base);color:var(--text-primary);overflow:hidden;position:relative;line-height:var(--leading-normal)">
+  <div style="flex:1;display:flex;min-height:0">
+
+    <div style="width:232px;flex:none;background:var(--surface-panel);border-right:var(--border-w) solid var(--border-subtle);display:flex;flex-direction:column;gap:var(--space-6);padding:var(--space-6) var(--space-4);font-size:var(--text-sm);overflow:hidden">
+      <div style="display:flex;flex-direction:column;gap:var(--space-1);padding:0 var(--space-4)">
+        <span style="font-weight:var(--weight-medium)">graph</span>
+        <span style="font-size:var(--text-xs);color:var(--text-faint)">vault · ~/work/sled</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-3);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-3) var(--space-4);color:var(--text-faint)">
+        <span>⌕</span><span style="flex:1">filter notes…</span><span style="font-size:var(--text-xs);border:var(--border-w) solid var(--border-subtle);border-radius:2px;padding:0 4px">/</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-1)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);padding:0 var(--space-4) var(--space-3)">groups</div>
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+          <div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border-radius:var(--radius-2);cursor:pointer" style-hover="background:var(--surface-raised)">
+            <span style="width:var(--spine-w);height:14px;background:{{ g.c }};box-shadow:{{ g.glow }};opacity:{{ g.op }};flex:none"></span>
+            <span style="flex:1;color:{{ g.fg }}">{{ g.label }}</span>
+            <span style="color:var(--text-faint);font-size:var(--text-xs)">{{ g.count }}</span>
+            <span style="width:24px;height:13px;flex:none;border-radius:var(--radius-round);background:{{ g.tbg }};border:var(--border-w) solid {{ g.tbd }};position:relative;box-sizing:border-box"><span style="position:absolute;top:2px;left:{{ g.kx }}px;width:7px;height:7px;border-radius:var(--radius-round);background:{{ g.kc }};transition:left .15s"></span></span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-1)">
+        <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);padding:0 var(--space-4) var(--space-3)">unlinked · {{ orphanCount }}</div>
+        <sc-for list="{{ orphans }}" as="o" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border-radius:var(--radius-2);color:var(--text-muted);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+            <span style="width:5px;height:5px;border-radius:var(--radius-round);border:var(--border-w) solid {{ o.c }};flex:none"></span>
+            <span style="flex:1">{{ o.name }}</span>
+            <span style="font-size:var(--text-xs);color:var(--text-faint)">{{ o.edited }}</span>
+          </div>
+        </sc-for>
+        <div style="font-size:var(--text-xs);color:var(--text-faint);padding:var(--space-3) var(--space-4) 0;line-height:var(--leading-normal)">notes with no links in or out. they stay off the graph until linked.</div>
+      </div>
+      <span style="flex:1"></span>
+      <div style="display:flex;flex-direction:column;gap:var(--space-4);padding:var(--space-5) var(--space-4) 0;border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-muted)">
+        <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="width:18px;height:10px;border:var(--border-w) dashed var(--border-strong);border-radius:50%;flex:none"></span><span>ring = hops from focus</span></div>
+        <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="width:18px;display:flex;justify-content:center;flex:none"><span style="width:5px;height:5px;border-radius:var(--radius-round);background:var(--text-faint)"></span></span><span>dot = beyond depth</span></div>
+        <div style="display:flex;align-items:center;gap:var(--space-4)"><span style="width:18px;display:flex;justify-content:center;flex:none"><span style="width:var(--spine-w);height:12px;background:var(--doc-1)"></span></span><span>spine = group color</span></div>
+      </div>
+    </div>
+
+    <div style="flex:1;position:relative;min-width:0;background:var(--canvas-bg);background-image:radial-gradient(var(--canvas-dot) 1px,transparent 1px);background-size:22px 22px;overflow:hidden">
+      <div style="position:absolute;left:50%;top:52px;width:1040px;height:760px;margin-left:-520px;z-index:var(--z-objects)">
+        <div style="position:absolute;inset:0;pointer-events:none">{{ edgeLayer }}</div>
+        <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="0">
+          <div onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" onClick="{{ n.click }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.scale }});opacity:{{ n.op }};pointer-events:{{ n.pe }};z-index:{{ n.z }};transition:left .6s cubic-bezier(.2,.8,.2,1),top .6s cubic-bezier(.2,.8,.2,1),opacity .25s,transform .3s;cursor:pointer">
+            <sc-if value="{{ n.isFocus }}" hint-placeholder-val="{{ false }}">
+              <div style="position:relative;width:208px;background:var(--surface-raised);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-2),0 0 0 1px {{ n.color }},0 0 32px {{ n.dim }};overflow:hidden">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ n.color }};box-shadow:0 0 8px {{ n.color }}"></div>
+                <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-2)">
+                  <div style="display:flex;align-items:center;gap:var(--space-3)"><span style="font-size:var(--text-sm);font-weight:var(--weight-medium);white-space:nowrap">{{ n.label }}</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--accent);border:var(--border-w) solid var(--accent);border-radius:var(--radius-1);padding:0 var(--space-2)">focus</span></div>
+                  <div style="font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap">{{ n.meta }}</div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ n.isPill }}" hint-placeholder-val="{{ false }}">
+              <div style="position:relative;display:flex;align-items:center;gap:var(--space-3);height:24px;padding:0 var(--space-4) 0 11px;background:var(--surface-raised);border:var(--border-w) solid {{ n.border }};border-radius:var(--radius-2);box-shadow:var(--shadow-1);overflow:hidden;white-space:nowrap;font-size:var(--text-sm);color:{{ n.fg }};transition:border-color .15s">
+                <span style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ n.color }};box-shadow:{{ n.glow }}"></span>
+                <span>{{ n.glyph }}{{ n.label }}</span>
+                <span style="font-size:var(--text-xs);color:var(--text-faint)">{{ n.deg }}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ n.isDot }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-2);padding:var(--space-2)">
+                <span style="width:7px;height:7px;border-radius:var(--radius-round);background:var(--canvas-bg);border:1.5px solid {{ n.color }};box-sizing:border-box"></span>
+                <sc-if value="{{ n.showLabel }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:{{ n.ly }}px;font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap">{{ n.label }}</span></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ hc.show }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:{{ hc.x }}px;top:{{ hc.y }}px;width:260px;z-index:30;background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);overflow:hidden;pointer-events:none">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ hc.color }};box-shadow:0 0 8px {{ hc.color }}"></div>
+            <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-2)">
+              <div style="display:flex;align-items:center;gap:var(--space-3)"><span style="font-size:var(--text-sm);font-weight:var(--weight-medium)">{{ hc.name }}</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2)">{{ hc.hop }}</span></div>
+              <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal)">{{ hc.excerpt }}</div>
+              <div style="display:flex;gap:var(--space-4);font-size:var(--text-xs);color:var(--text-faint)"><span>click · focus</span><span><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>click · open</span><span style="flex:1"></span><span>{{ hc.edited }}</span></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="position:absolute;left:14px;top:10px;z-index:var(--z-rail);display:flex;align-items:center;gap:var(--space-3);background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-2) var(--space-4);font-size:var(--text-sm);color:var(--text-muted);box-shadow:var(--shadow-1)">
+        <span onClick="{{ back }}" title="Back · {{ modT }}[" style="cursor:pointer;padding:0 var(--space-2);border-radius:var(--radius-1);color:{{ backFg }}" style-hover="background:var(--surface-raised)">‹</span>
+        <span style="color:var(--text-faint)">graph /</span>
+        <span style="width:var(--spine-w);height:12px;background:{{ focusColor }};box-shadow:0 0 6px {{ focusColor }}"></span>
+        <span style="color:var(--text-primary);font-weight:var(--weight-medium)">{{ focusName }}</span>
+      </div>
+      <div style="position:absolute;right:14px;top:10px;z-index:var(--z-rail);display:flex;align-items:center;gap:var(--space-4);background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);box-shadow:var(--shadow-1)">
+        <div style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:2px">
+          <sc-for list="{{ layouts }}" as="s" hint-placeholder-count="2">
+            <span onClick="{{ s.click }}" style="padding:1px var(--space-4);border-radius:var(--radius-1);background:{{ s.bg }};color:{{ s.fg }};box-shadow:{{ s.shadow }};cursor:pointer">{{ s.label }}</span>
+          </sc-for>
+        </div>
+        <span style="width:1px;height:14px;background:var(--border-subtle)"></span>
+        <span style="font-size:var(--text-xs);color:var(--text-faint)">depth</span>
+        <div style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:2px">
+          <sc-for list="{{ depths }}" as="s" hint-placeholder-count="3">
+            <span onClick="{{ s.click }}" style="padding:1px var(--space-4);border-radius:var(--radius-1);background:{{ s.bg }};color:{{ s.fg }};box-shadow:{{ s.shadow }};cursor:pointer">{{ s.label }}</span>
+          </sc-for>
+        </div>
+        <span style="width:1px;height:14px;background:var(--border-subtle)"></span>
+        <span style="display:flex;align-items:center;gap:var(--space-3);color:var(--text-muted);cursor:pointer;padding:0 var(--space-2)" style-hover="color:var(--text-primary)"><span>⌕ find node</span><span style="font-size:10px;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:2px;padding:0 4px;color:var(--text-faint)"><svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex:none"><path d="{{ modD }}"></path></svg>K</span></span>
+      </div>
+
+      <sc-if value="{{ showHistory }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;left:14px;right:14px;bottom:12px;z-index:var(--z-rail);display:flex;align-items:center;gap:var(--space-6);background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:var(--space-4) var(--space-6)">
+          <button onClick="{{ play }}" title="Replay vault history" style="width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:var(--text-xs);background:{{ playBg }};color:{{ playFg }};border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);cursor:pointer" style-hover="background:var(--surface-overlay)">{{ playIcon }}</button>
+          <div style="display:flex;flex-direction:column;gap:var(--space-1);width:118px;flex:none">
+            <span style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint)">vault history</span>
+            <span style="font-size:var(--text-sm);font-weight:var(--weight-medium)">{{ tLabel }}</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-2);min-width:0">
+            <div style="display:flex;align-items:flex-end;gap:2px;height:30px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="26">
+                <div onClick="{{ b.click }}" title="{{ b.title }}" style="flex:1;height:100%;display:flex;align-items:flex-end;cursor:pointer" style-hover="opacity:.75">
+                  <div style="width:100%;height:{{ b.h }}px;background:{{ b.bg }};border-radius:1px;box-shadow:{{ b.glow }};transition:background .15s"></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="position:relative;height:12px;font-size:var(--text-xs);color:var(--text-faint)">
+              <sc-for list="{{ months }}" as="m" hint-placeholder-count="6"><span style="position:absolute;left:{{ m.left }}">{{ m.label }}</span></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-1);flex:none;font-size:var(--text-xs);color:var(--text-muted)">
+            <span>{{ shownCount }} notes · {{ linkCount }} links</span>
+            <span style="color:var(--text-faint)">{{ newCount }}</span>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="width:320px;flex:none;background:var(--surface-panel);border-left:var(--border-w) solid var(--border-subtle);display:flex;flex-direction:column;overflow:hidden;position:relative">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ focusColor }};box-shadow:0 0 10px {{ focusColor }};opacity:.9"></div>
+      <div style="height:34px;flex:none;display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-6);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm);color:var(--text-muted)">
+        <span style="color:var(--text-faint)">inspector /</span>
+        <span style="color:var(--text-primary);font-weight:var(--weight-medium)">{{ focusName }}</span>
+        <span style="flex:1"></span>
+        <span style="font-size:var(--text-xs);color:var(--text-faint);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px var(--space-2)">{{ focusGroup }}</span>
+      </div>
+      <div style="flex:1;overflow:hidden;padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-6)">
+        <div style="background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-5);font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal)">{{ focusExcerpt }}</div>
+        <div style="display:flex;gap:var(--space-5);font-size:var(--text-xs);color:var(--text-muted)">
+          <span><span style="color:var(--text-primary)">{{ inN }}</span> in</span>
+          <span><span style="color:var(--text-primary)">{{ outN }}</span> out</span>
+          <span style="flex:1"></span>
+          <span style="color:var(--text-faint)">{{ reachLabel }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);padding-bottom:var(--space-2)">backlinks · {{ inN }}</div>
+          <sc-for list="{{ backlinks }}" as="b" hint-placeholder-count="3">
+            <div onClick="{{ b.click }}" onMouseEnter="{{ b.enter }}" onMouseLeave="{{ b.leave }}" style="position:relative;display:flex;flex-direction:column;gap:var(--space-1);padding:var(--space-3) var(--space-4) var(--space-3) 14px;border-radius:var(--radius-2);cursor:pointer" style-hover="background:var(--surface-raised)">
+              <span style="position:absolute;left:4px;top:7px;bottom:7px;width:var(--spine-w);background:{{ b.c }};border-radius:var(--radius-round)"></span>
+              <span style="font-size:var(--text-sm);color:var(--text-primary)">{{ b.name }}</span>
+              <span style="font-size:var(--text-xs);color:var(--text-muted);line-height:var(--leading-normal)">…{{ b.before }}<span style="color:var(--text-link)">{{ b.target }}</span>{{ b.after }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);padding-bottom:var(--space-2)">outgoing · {{ outN }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-3)">
+            <sc-for list="{{ outgoing }}" as="o" hint-placeholder-count="3">
+              <span onClick="{{ o.click }}" onMouseEnter="{{ o.enter }}" onMouseLeave="{{ o.leave }}" style="position:relative;display:flex;align-items:center;height:22px;padding:0 var(--space-4) 0 10px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);font-size:var(--text-xs);color:var(--text-muted);cursor:pointer;overflow:hidden" style-hover="color:var(--text-primary);border-color:var(--border-strong)"><span style="position:absolute;left:0;top:0;bottom:0;width:var(--spine-w);background:{{ o.c }}"></span>{{ o.name }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <sc-if value="{{ hasMentions }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+            <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--text-faint);padding-bottom:var(--space-2)">mentioned, not linked · {{ mentionCount }}</div>
+            <sc-for list="{{ mentions }}" as="m" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border:var(--border-w) dashed var(--border-strong);border-radius:var(--radius-2)">
+                <div style="flex:1;display:flex;flex-direction:column;gap:var(--space-1);min-width:0">
+                  <span style="font-size:var(--text-xs);color:var(--text-muted)">{{ m.before }}<span style="background:var(--search-hl);border-radius:2px;color:var(--text-primary)">{{ m.match }}</span>{{ m.after }}</span>
+                  <span style="font-size:var(--text-xs);color:var(--text-faint)">→ {{ m.name }}</span>
+                </div>
+                <button onClick="{{ m.link }}" style="font-family:var(--font-mono);font-size:var(--text-xs);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-1);padding:1px var(--space-4);cursor:pointer;flex:none" style-hover="background:var(--accent-dim);border-color:var(--accent);color:var(--accent)">link</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <div style="flex:none;display:flex;gap:var(--space-4);justify-content:flex-end;padding:var(--space-5) var(--space-6);border-top:var(--border-w) solid var(--border-subtle)">
+        <button style="font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-raised);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer" style-hover="background:var(--surface-overlay)">pin to canvas</button>
+        <button style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border:none;border-radius:var(--radius-2);padding:var(--space-3) var(--space-5);cursor:pointer" style-hover="filter:brightness(1.1)">open note ↵</button>
+      </div>
+    </div>
+  </div>
+  <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}">
+  <div style="height:24px;flex:none;display:flex;align-items:center;gap:var(--space-4);padding:0 var(--space-5);background:var(--surface-panel);border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-muted)">
+    <span style="background:var(--accent-dim);color:var(--accent);border-radius:var(--radius-1);padding:0 var(--space-3);font-weight:var(--weight-medium)">GRAPH</span>
+    <span>{{ focusName }}</span><span style="color:var(--text-faint)">·</span>
+    <span>{{ shownCount }} notes</span><span style="color:var(--text-faint)">·</span>
+    <span>{{ linkCount }} links</span><span style="color:var(--text-faint)">·</span>
+    <span>{{ orphanCount }} unlinked</span>
+    <span style="flex:1"></span>
+    <span style="display:inline-flex;background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:1px" title="view mode">
+      <sc-for list="{{ viewModes }}" as="v" hint-placeholder-count="4"><span style="padding:0 var(--space-3);border-radius:2px;background:{{ v.bg }};color:{{ v.fg }};cursor:pointer">{{ v.label }}</span></sc-for>
+    </span>
+    <span style="color:var(--text-faint)">·</span>
+    <span style="color:var(--accent)">●</span><span>synced</span><span style="color:var(--text-faint)">·</span>
+    <span>◐ {{ theme }}</span>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:940},&quot;keys&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;mac&quot;,&quot;windows&quot;],&quot;default&quot;:&quot;mac&quot;,&quot;tsType&quot;:&quot;'mac'|'windows'&quot;},&quot;embedded&quot;:{&quot;editor&quot;:null,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;},&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;orbit&quot;,&quot;branch&quot;],&quot;default&quot;:&quot;orbit&quot;,&quot;tsType&quot;:&quot;'orbit'|'branch'&quot;},&quot;depth&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;min&quot;:1,&quot;max&quot;:3,&quot;step&quot;:1,&quot;default&quot;:2,&quot;tsType&quot;:&quot;number&quot;},&quot;focus&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auth-flow&quot;,&quot;adapter-design&quot;,&quot;roadmap&quot;,&quot;token-store&quot;,&quot;v04&quot;,&quot;sync-0912&quot;],&quot;default&quot;:&quot;auth-flow&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;history&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const KEYD = { mac: 'M6 6h4v4H6z M6 6V4.5A1.5 1.5 0 1 0 4.5 6H6 M10 6V4.5A1.5 1.5 0 1 1 11.5 6H10 M10 10v1.5a1.5 1.5 0 1 0 1.5-1.5H10 M6 10v1.5A1.5 1.5 0 1 1 4.5 10H6', windows: 'M4 10 8 5.5l4 4.5' };
+class Component extends DCLogic {
+  state = {};
+  static G = {
+    auth: { label: 'auth', c: 'var(--doc-1)', dim: 'var(--doc-1-dim)' },
+    storage: { label: 'storage', c: 'var(--doc-2)', dim: 'var(--doc-2-dim)' },
+    planning: { label: 'planning', c: 'var(--doc-3)', dim: 'var(--doc-3-dim)' },
+    canvas: { label: 'canvases', c: 'var(--connector)', dim: 'rgba(120,130,150,.12)' },
+    journal: { label: 'journal', c: 'var(--doc-4)', dim: 'var(--doc-4-dim)' },
+  };
+  static GO = ['auth', 'storage', 'planning', 'canvas', 'journal'];
+  static N = [
+    ['auth-flow', 'auth-flow.md', 'auth', 3, '2m ago', 'Every request from the desktop client passes through the gateway before it touches a service. Tokens are minted once and cached locally.'],
+    ['gateway', 'gateway.md', 'auth', 2, '3d ago', 'The only component allowed to see the client secret. Everything downstream gets short-lived JWTs.'],
+    ['pkce', 'pkce.md', 'auth', 6, '2w ago', 'Proof key for code exchange. The verifier is generated per login and never leaves the device.'],
+    ['token-store', 'token-store.md', 'auth', 5, '1d ago', 'TokenStore wraps a sled tree at auth/v2. It is rebuilt from disk on every launch.'],
+    ['jwt', 'jwt-claims.md', 'auth', 8, '5d ago', 'Access tokens expire after 15 minutes. Audience is scoped per service.'],
+    ['device-unlink', 'device-unlink.md', 'auth', 17, '6d ago', 'Unlinking a device revokes every token bound to its id and clears the local store.'],
+    ['offline-grace', 'offline-grace.md', 'auth', 21, '4h ago', 'How long a cached token stays valid with no network. Proposals range from 24h to 72h.'],
+    ['adapter-design', 'adapter-design.md', 'storage', 4, '2h ago', 'One port trait per storage backend. The sled implementation is canonical; sqlite is a test double.'],
+    ['adapter-tests', 'adapter-tests.md', 'storage', 20, 'yesterday', 'A single contract suite runs against every adapter in CI.'],
+    ['sled', 'sled-internals.md', 'storage', 1, '3w ago', 'Tree layout, flush ordering and compaction in sled.'],
+    ['sqlite', 'sqlite-double.md', 'storage', 9, '1w ago', 'An in-process sqlite adapter for tests and for teams that already run a database.'],
+    ['write-queue', 'write-queue.md', 'storage', 12, '4d ago', 'Writes go through a single queue so the canvas never observes a half-written doc.'],
+    ['roadmap', 'roadmap.md', 'planning', 0, '3d ago', 'v0.3 ships auth and adapters. Canvas frames land in v0.4.'],
+    ['v03', 'release-v0.3.md', 'planning', 10, '2w ago', 'Released Jul 1. Auth flow, sled and sqlite adapters, token refresh.'],
+    ['v04', 'release-v0.4.md', 'planning', 19, '2d ago', 'Canvas frames, offline grace period, device unlink. Target: Oct 20.'],
+    ['planning-canvas', 'v0.4-planning.canvas', 'canvas', 18, '5d ago', '14 cards, 3 frames. Scope board for the v0.4 release.'],
+    ['arch-canvas', 'architecture.canvas', 'canvas', 7, '1h ago', 'System diagram: client, api gateway, auth service, token store.'],
+    ['notes', 'notes.md', 'journal', 0, '1w ago', 'Running scratchpad and weekly review.'],
+    ['sync-0912', 'sync-2026-09-12.md', 'journal', 22, '2w ago', 'Team sync. Offline grace, device unlink and v0.4 scope.'],
+    ['ideas', 'ideas.md', 'journal', 14, '1mo ago', 'Loose ideas.'],
+    ['reading', 'reading-list.md', 'journal', 11, '2mo ago', 'Papers and posts to read.'],
+    ['scratch', 'scratch.md', 'journal', 23, '3d ago', 'Paste buffer.'],
+  ];
+  static LK = [
+    ['auth-flow', 'gateway', 'every request passes through the ', ' before it touches a service'],
+    ['auth-flow', 'token-store', 'tokens are cached locally in ', ', rebuilt on launch'],
+    ['auth-flow', 'pkce', 'the exchange uses ', ' so the verifier stays put'],
+    ['auth-flow', 'adapter-design', 'the storage layer is covered in ', '.'],
+    ['gateway', 'jwt', 'downstream services only get ', ''],
+    ['token-store', 'sled', 'backed by a tree in ', ', key auth/v2'],
+    ['token-store', 'adapter-design', 'implements the port from ', ''],
+    ['jwt', 'token-store', 'refresh tokens persist in ', ''],
+    ['adapter-design', 'sled', 'canonical implementation: ', ''],
+    ['adapter-design', 'sqlite', 'test double described in ', ''],
+    ['adapter-design', 'write-queue', 'all writes serialize through ', ''],
+    ['adapter-tests', 'adapter-design', 'contract suite for every port in ', ''],
+    ['adapter-tests', 'sqlite', 'runs against ', ' in CI'],
+    ['roadmap', 'v03', 'shipped in ', ': auth + adapters'],
+    ['roadmap', 'v04', 'next up, ', ': canvas frames'],
+    ['v03', 'auth-flow', 'headline feature: ', ''],
+    ['v03', 'adapter-design', 'also ships ', ''],
+    ['v04', 'planning-canvas', 'scope mapped out on ', ''],
+    ['v04', 'offline-grace', 'blocked on a decision in ', ''],
+    ['planning-canvas', 'device-unlink', 'card: ', ''],
+    ['planning-canvas', 'write-queue', 'card: ', ''],
+    ['arch-canvas', 'auth-flow', 'pinned card: ', ''],
+    ['arch-canvas', 'adapter-design', 'card: ', ''],
+    ['arch-canvas', 'gateway', 'box "api gateway" → ', ''],
+    ['notes', 'roadmap', 'weekly review against ', ''],
+    ['notes', 'auth-flow', 'thinking about 401 handling in ', ''],
+    ['sync-0912', 'v04', 'agreed to cut frames from ', '?'],
+    ['sync-0912', 'offline-grace', 'Ana wants 24h, see ', ''],
+    ['sync-0912', 'device-unlink', 'action item: finish ', ''],
+    ['device-unlink', 'token-store', 'deletes rows in ', ''],
+    ['offline-grace', 'jwt', 'depends on expiry in ', ''],
+    ['sled', 'write-queue', 'flush ordering handled by ', ''],
+  ];
+  static MEN = {
+    'auth-flow': [['offline-grace', '', 'Offline grace', ' period — 72h?'], ['device-unlink', 'Revoke on ', 'device unlink', '']],
+    'v04': [['device-unlink', 'ships ', 'device unlink', ' behind a flag']],
+  };
+  static HIST = [3, 5, 4, 8, 6, 7, 5, 9, 6, 4, 12, 7, 6, 8, 5, 4, 6, 7, 10, 9, 8, 6, 11, 9, 7, 13];
+
+  componentWillUnmount() { clearInterval(this.timer); }
+  componentDidUpdate(p) {
+    const s = {};
+    if (p.layout !== this.props.layout) s.mode = undefined;
+    if (p.depth !== this.props.depth) s.depth = undefined;
+    if (p.focus !== this.props.focus) { s.focus = undefined; s.hist = []; }
+    if (Object.keys(s).length) this.setState(s);
+  }
+  curFocus() { return this.state.focus ?? this.props.focus ?? 'auth-flow'; }
+  setFocus(id) {
+    this.setState(s => {
+      const cur = s.focus ?? this.props.focus ?? 'auth-flow';
+      if (cur === id) return null;
+      return { focus: id, hist: (s.hist || []).concat(cur).slice(-20), hover: null };
+    });
+  }
+  back() {
+    this.setState(s => {
+      const h = (s.hist || []).slice();
+      if (!h.length) return null;
+      return { focus: h.pop(), hist: h, hover: null };
+    });
+  }
+  play() {
+    clearInterval(this.timer);
+    if (this.state.playing) { this.setState({ playing: false }); return; }
+    this.setState({ t: 0, playing: true });
+    this.timer = setInterval(() => {
+      const t = (this.state.t ?? 25) + 1;
+      if (t >= 25) { clearInterval(this.timer); this.setState({ t: 25, playing: false }); }
+      else this.setState({ t });
+    }, 170);
+  }
+  fmt(w) {
+    const d = new Date(2026, 3, 8 + w * 7);
+    return ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][d.getMonth()] + ' ' + String(d.getDate()).padStart(2, '0');
+  }
+
+  renderVals() {
+    const K = this.constructor, st = this.state, h = React.createElement;
+    const theme = this.props.theme ?? 'dark';
+    const mode = st.mode ?? this.props.layout ?? 'orbit';
+    const L = Math.max(1, Math.min(3, st.depth ?? this.props.depth ?? 2));
+    const t = st.t ?? 25;
+    const hiddenG = st.hiddenG || {};
+    const byId = {}; K.N.forEach(n => { byId[n[0]] = n; });
+    const links = K.LK.concat(st.added || []);
+    const deg = {};
+    links.forEach(l => { deg[l[0]] = (deg[l[0]] || 0) + 1; deg[l[1]] = (deg[l[1]] || 0) + 1; });
+    const vis = id => byId[id][3] <= t && !hiddenG[byId[id][2]] && deg[id] > 0;
+    const vl = links.filter(l => vis(l[0]) && vis(l[1]));
+    const adj = {}; K.N.forEach(n => { adj[n[0]] = new Set(); });
+    vl.forEach(l => { adj[l[0]].add(l[1]); adj[l[1]].add(l[0]); });
+    let focus = this.curFocus();
+    if (!vis(focus)) {
+      const c = K.N.filter(n => vis(n[0])).sort((a, b) => adj[b[0]].size - adj[a[0]].size)[0];
+      focus = c ? c[0] : null;
+    }
+    const dist = {};
+    if (focus) {
+      dist[focus] = 0; const q = [focus];
+      while (q.length) { const u = q.shift(); adj[u].forEach(v => { if (dist[v] === undefined) { dist[v] = dist[u] + 1; q.push(v); } }); }
+    }
+    const shown = K.N.map(n => n[0]).filter(vis);
+    let maxD = 0;
+    shown.forEach(id => { if (dist[id] === undefined) dist[id] = 99; else if (dist[id] < 99) maxD = Math.max(maxD, dist[id]); });
+    const TAU = Math.PI * 2, ang = {};
+    const gi = id => K.GO.indexOf(byId[id][2]);
+    const relax = (ids, want, cap) => {
+      const n = ids.length; if (!n) return;
+      const top = -Math.PI / 2;
+      const a = ids.map(id => { let v = Math.atan2(Math.sin(want[id]), Math.cos(want[id])); if (v < top) v += TAU; return { id, v }; });
+      a.push({ id: null, v: top, fixed: true });
+      a.sort((x, y) => x.v - y.v);
+      const m = a.length, sep = Math.min(TAU / m * 0.92, cap), gap = Math.min(0.34, TAU / m * 0.8);
+      for (let it = 0; it < 120; it++) for (let i = 0; i < m; i++) {
+        const A = a[i], B = a[(i + 1) % m]; let d = B.v - A.v; if (i === m - 1) d += TAU;
+        const s = (A.fixed || B.fixed) ? gap : sep;
+        if (d < s) {
+          const p = s - d;
+          if (A.fixed) B.v += p; else if (B.fixed) A.v -= p; else { A.v -= p / 2; B.v += p / 2; }
+        }
+      }
+      a.forEach(x => { if (!x.fixed) ang[x.id] = x.v; });
+    };
+    const lvl = k => shown.filter(id => dist[id] === k);
+    const l1 = lvl(1).sort((a, b) => gi(a) - gi(b) || adj[b].size - adj[a].size);
+    l1.forEach((id, i) => { ang[id] = -Math.PI / 2 + (i + 0.5) * TAU / l1.length; });
+    for (let k = 2; k <= maxD; k++) {
+      const ids = lvl(k), want = {};
+      ids.forEach(id => {
+        let sx = 0, sy = 0; adj[id].forEach(v => { if (dist[v] === k - 1 && ang[v] !== undefined) { sx += Math.cos(ang[v]); sy += Math.sin(ang[v]); } });
+        want[id] = Math.atan2(sy, sx);
+      });
+      relax(ids, want, 0.9);
+    }
+    const horizon = shown.filter(id => dist[id] > L);
+    const hw = {}; horizon.forEach((id, i) => { hw[id] = ang[id] !== undefined ? ang[id] : i; });
+    relax(horizon, hw, 0.5);
+
+    const cx = 520, cy = 380, pos = {};
+    if (focus) pos[focus] = { x: cx, y: cy };
+    const rxK = k => 380 * Math.pow(k / L, 0.7);
+    const xK = k => (L === 1 ? 300 : 190 + (k - 1) * 240 / (L - 1));
+    if (mode === 'orbit') {
+      shown.forEach(id => {
+        const d = dist[id]; if (!d) return;
+        const rx = d > L ? 460 : rxK(d), ry = d > L ? 330 : rx * 0.7;
+        pos[id] = { x: cx + rx * Math.cos(ang[id]), y: cy + ry * Math.sin(ang[id]) };
+      });
+    } else {
+      const buckets = {};
+      shown.forEach(id => {
+        const d = dist[id]; if (!d) return;
+        const key = (Math.cos(ang[id]) < 0 ? -1 : 1) + ':' + (d > L ? 'h' : d);
+        (buckets[key] = buckets[key] || []).push(id);
+      });
+      Object.keys(buckets).forEach(key => {
+        const [side, lv] = key.split(':');
+        const ids = buckets[key].sort((a, b) => Math.sin(ang[a]) - Math.sin(ang[b]));
+        const m = ids.length, sp = lv === 'h' ? Math.min(44, 640 / m) : Math.min(64, 660 / m);
+        ids.forEach((id, i) => { pos[id] = { x: cx + (+side) * (lv === 'h' ? 492 : xK(+lv)), y: cy + (i - (m - 1) / 2) * sp }; });
+      });
+    }
+    const boxW = id => id === focus ? 208 : dist[id] > L ? 12 : byId[id][1].length * 6.6 + (byId[id][2] === 'canvas' ? 13 : 0) + 34;
+    const boxH = id => id === focus ? 58 : dist[id] > L ? 12 : 24;
+    const placed = shown.filter(id => pos[id]);
+    for (let it = 0; it < 80; it++) {
+      let moved = false;
+      for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) {
+        const A = placed[i], B = placed[j], pa = pos[A], pb = pos[B];
+        const dx = pb.x - pa.x, dy = pb.y - pa.y;
+        const ox = (boxW(A) + boxW(B)) / 2 + 10 - Math.abs(dx), oy = (boxH(A) + boxH(B)) / 2 + 6 - Math.abs(dy);
+        if (ox <= 0 || oy <= 0) continue;
+        moved = true;
+        const useY = mode === 'branch' || oy < ox;
+        const sA = A === focus ? 0 : B === focus ? 1 : 0.5, sB = 1 - sA;
+        if (useY) { const s = dy >= 0 ? 1 : -1, p = oy + 0.5; pa.y -= s * p * sA; pb.y += s * p * sB; }
+        else { const s = dx >= 0 ? 1 : -1, p = ox + 0.5; pa.x -= s * p * sA; pb.x += s * p * sB; }
+      }
+      placed.forEach(id => { const p = pos[id], w = boxW(id) / 2; p.x = Math.max(w + 4, Math.min(1036 - w, p.x)); p.y = Math.max(20, Math.min(740, p.y)); });
+      if (!moved) break;
+    }
+    if (focus) pos[focus] = { x: cx, y: cy };
+
+    const act = st.hover && shown.includes(st.hover) ? st.hover : null;
+    const hot = act || focus;
+    const color = id => K.G[byId[id][2]].c;
+    const inAll = id => vl.filter(l => l[1] === id).length;
+    const outAll = id => vl.filter(l => l[0] === id).length;
+    const setHover = id => () => this.setState({ hover: id });
+    const clrHover = id => () => this.setState(s => (s.hover === id ? { hover: null } : null));
+
+    const nodes = K.N.map(n => {
+      const id = n[0], on = shown.includes(id);
+      const p = pos[id] || pos[focus] || { x: cx, y: cy };
+      const d = dist[id];
+      const kind = !on ? 'pill' : id === focus ? 'focus' : d > L ? 'dot' : 'pill';
+      const near = !act || id === act || id === focus || adj[act].has(id);
+      const isHot = id === act;
+      return {
+        x: Math.round(p.x), y: Math.round(p.y),
+        op: !on ? 0 : !near ? 0.28 : 1,
+        scale: on ? 1 : 0.4,
+        pe: on ? 'auto' : 'none',
+        z: kind === 'focus' ? 3 : isHot ? 4 : kind === 'dot' ? 1 : 2,
+        isFocus: kind === 'focus', isPill: kind === 'pill', isDot: kind === 'dot',
+        showLabel: mode === 'orbit' && kind === 'dot' && !shown.some(o => {
+          if (o === id || dist[o] > L || !pos[o]) return false;
+          const lw = n[1].length * 6, lcy = p.y + (Math.sin(ang[id] || 0) < 0 ? -12 : 20);
+          return Math.abs(pos[o].x - p.x) < (lw + boxW(o)) / 2 + 10 && Math.abs(pos[o].y - lcy) < (14 + boxH(o)) / 2 + 4;
+        }),
+        ly: Math.sin(ang[id] || 0) < 0 ? -14 : 18,
+        label: n[1], glyph: n[2] === 'canvas' ? '◇ ' : '',
+        color: color(id), dim: K.G[n[2]].dim,
+        deg: adj[id].size,
+        border: isHot ? color(id) : 'var(--border-subtle)',
+        glow: isHot ? '0 0 8px ' + color(id) : 'none',
+        fg: isHot ? 'var(--text-primary)' : d === 1 ? 'var(--text-primary)' : 'var(--text-muted)',
+        meta: inAll(id) + ' in · ' + outAll(id) + ' out · edited ' + n[4],
+        enter: setHover(id), leave: clrHover(id),
+        click: () => this.setFocus(id),
+      };
+    });
+
+    const P = v => v.toFixed(1);
+    const edgeEls = vl.map(l => {
+      const a = pos[l[0]], b = pos[l[1]]; if (!a || !b) return null;
+      const hz = dist[l[0]] > L || dist[l[1]] > L;
+      let c1, c2;
+      if (mode === 'orbit') {
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        const f = (l[0] === focus || l[1] === focus) ? 0 : 0.3;
+        const qx = mx + (cx - mx) * f, qy = my + (cy - my) * f;
+        c1 = [a.x + (qx - a.x) * 2 / 3, a.y + (qy - a.y) * 2 / 3];
+        c2 = [b.x + (qx - b.x) * 2 / 3, b.y + (qy - b.y) * 2 / 3];
+      } else {
+        const mx = (a.x + b.x) / 2; c1 = [mx, a.y]; c2 = [mx, b.y];
+      }
+      const dd = 'M' + P(a.x) + ',' + P(a.y) + ' C' + P(c1[0]) + ',' + P(c1[1]) + ' ' + P(c2[0]) + ',' + P(c2[1]) + ' ' + P(b.x) + ',' + P(b.y);
+      const isHot = l[0] === hot || l[1] === hot;
+      const other = l[0] === hot ? l[1] : l[0];
+      return { key: l[0] + '>' + l[1], isHot, el: h('path', {
+        key: l[0] + '>' + l[1], d: dd, fill: 'none',
+        strokeDasharray: hz ? '2 4' : null,
+        style: {
+          d: 'path("' + dd + '")',
+          stroke: isHot ? color(other) : 'var(--connector)',
+          strokeWidth: isHot ? 1.5 : 1,
+          opacity: isHot ? 0.9 : (act ? 0.12 : (hz ? 0.35 : 0.55)),
+          transition: 'd .6s cubic-bezier(.2,.8,.2,1), opacity .2s, stroke .2s',
+        },
+      }) };
+    }).filter(Boolean).sort((x, y) => (x.isHot ? 1 : 0) - (y.isHot ? 1 : 0)).map(e => e.el);
+
+    const txt = (x, y, s, anchor) => h('text', { x, y, textAnchor: anchor || 'middle', style: { font: '10px ' + 'var(--font-mono)', fill: 'var(--text-faint)', stroke: 'var(--canvas-bg)', strokeWidth: 4, paintOrder: 'stroke', letterSpacing: '.04em' } }, s);
+    const guides = [];
+    if (mode === 'orbit') {
+      for (let k = 1; k <= L; k++) {
+        const rx = rxK(k), ry = rx * 0.7;
+        guides.push(h('ellipse', { key: 'r' + k, cx, cy, rx, ry, fill: 'none', strokeDasharray: '2 5', style: { rx: rx + 'px', ry: ry + 'px', stroke: 'var(--border-strong)', opacity: 0.7, transition: 'rx .6s, ry .6s' } }));
+        guides.push(h('g', { key: 'rt' + k }, txt(cx, cy - ry - 8, k === 1 ? '1 hop' : k + ' hops')));
+      }
+      if (horizon.length) {
+        guides.push(h('ellipse', { key: 'rh', cx, cy, rx: 460, ry: 330, fill: 'none', strokeDasharray: '1 7', style: { stroke: 'var(--border-strong)', opacity: 0.6 } }));
+        guides.push(h('g', { key: 'rht' }, txt(cx, cy - 330 - 8, 'beyond · ' + horizon.length)));
+      }
+    } else {
+      for (let k = 1; k <= L; k++) {
+        [-1, 1].forEach(s => {
+          const x = cx + s * xK(k);
+          guides.push(h('line', { key: 'g' + k + s, x1: x, x2: x, y1: 40, y2: 720, strokeDasharray: '2 5', style: { stroke: 'var(--border-strong)', opacity: 0.6 } }));
+          guides.push(h('g', { key: 'gt' + k + s }, txt(x, 28, k === 1 ? '1 hop' : k + ' hops')));
+        });
+      }
+      if (horizon.length) [-1, 1].forEach(s => {
+        const x = cx + s * 480;
+        guides.push(h('line', { key: 'gh' + s, x1: x, x2: x, y1: 40, y2: 720, strokeDasharray: '1 7', style: { stroke: 'var(--border-strong)', opacity: 0.5 } }));
+        guides.push(h('g', { key: 'ght' + s }, txt(x, 28, 'beyond')));
+      });
+    }
+    const edgeLayer = h('svg', { width: 1040, height: 760, viewBox: '0 0 1040 760', style: { position: 'absolute', inset: 0, overflow: 'visible' } }, h('g', { key: 'guides' }, guides), h('g', { key: 'edges' }, edgeEls));
+
+    let hc = { show: false };
+    if (act && act !== focus) {
+      const p = pos[act], n = byId[act];
+      hc = {
+        show: true,
+        x: Math.round(p.x > 740 ? p.x - 276 : p.x + 16),
+        y: Math.round(p.y > 560 ? p.y - 120 : p.y + 18),
+        name: n[1], color: color(act), excerpt: n[5], edited: 'edited ' + n[4],
+        hop: dist[act] >= 99 ? 'unreached' : dist[act] === 1 ? '1 hop' : dist[act] + ' hops',
+      };
+    }
+
+    const fN = focus ? byId[focus] : K.N[0];
+    const backlinks = vl.filter(l => l[1] === focus).map(l => ({
+      name: byId[l[0]][1], c: color(l[0]), before: l[2], after: l[3],
+      target: '[[' + byId[focus][1].replace(/\.md$/, '') + ']]',
+      click: () => this.setFocus(l[0]), enter: setHover(l[0]), leave: clrHover(l[0]),
+    }));
+    const outgoing = vl.filter(l => l[0] === focus).map(l => ({
+      name: byId[l[1]][1], c: color(l[1]),
+      click: () => this.setFocus(l[1]), enter: setHover(l[1]), leave: clrHover(l[1]),
+    }));
+    const linked = (a, b) => links.some(l => (l[0] === a && l[1] === b) || (l[0] === b && l[1] === a));
+    const mentions = (K.MEN[focus] || []).filter(m => !linked(focus, m[0]) && vis(m[0])).map(m => ({
+      name: byId[m[0]][1], before: m[1], match: m[2], after: m[3],
+      link: () => this.setState(s => ({ added: (s.added || []).concat([[focus, m[0], m[1], m[3]]]) })),
+    }));
+    const reach = shown.filter(id => dist[id] > 0 && dist[id] <= L).length;
+
+    const seg = (on, click, label) => ({
+      label, click,
+      bg: on ? 'var(--surface-raised)' : 'transparent',
+      fg: on ? 'var(--text-primary)' : 'var(--text-faint)',
+      shadow: on ? 'var(--shadow-1)' : 'none',
+    });
+    const orphans = K.N.filter(n => !deg[n[0]]);
+    const months = [];
+    K.HIST.forEach((_, w) => {
+      const m = new Date(2026, 3, 8 + w * 7).getMonth(), pm = new Date(2026, 3, 8 + (w - 1) * 7).getMonth();
+      if (w === 0 || m !== pm) months.push({ label: this.fmt(w).slice(0, 3), left: (w / K.HIST.length * 100).toFixed(2) + '%' });
+    });
+    const newThisWeek = K.N.filter(n => n[3] === t && deg[n[0]]).map(n => n[1]);
+
+    return {
+      modD: KEYD[this.props.keys === 'windows' ? 'windows' : 'mac'], modT: this.props.keys === 'windows' ? 'Ctrl+' : '⌘',
+      theme, showBar: !(this.props.embedded ?? false),
+      edgeLayer, nodes, hc,
+      focusName: fN[1], focusColor: color(fN[0]), focusGroup: K.G[fN[2]].label, focusExcerpt: fN[5],
+      inN: backlinks.length, outN: outgoing.length,
+      reachLabel: reach + ' within ' + L + (L === 1 ? ' hop' : ' hops'),
+      backlinks, outgoing, mentions, hasMentions: mentions.length > 0, mentionCount: mentions.length,
+      back: () => this.back(),
+      backFg: (st.hist || []).length ? 'var(--text-primary)' : 'var(--text-faint)',
+      layouts: [['orbit', '◎ orbit'], ['branch', '⊢ branch']].map(([k, lb]) => seg(mode === k, () => this.setState({ mode: k }), lb)),
+      depths: [1, 2, 3].map(k => seg(L === k, () => this.setState({ depth: k }), String(k))),
+      groups: K.GO.map(g => {
+        const off = !!hiddenG[g];
+        return {
+          label: K.G[g].label, c: K.G[g].c,
+          count: K.N.filter(n => n[2] === g && deg[n[0]]).length,
+          op: off ? 0.3 : 1, glow: off ? 'none' : '0 0 6px ' + K.G[g].c,
+          fg: off ? 'var(--text-faint)' : 'var(--text-primary)',
+          tbg: off ? 'var(--surface-inset)' : 'var(--accent)',
+          tbd: off ? 'var(--border-strong)' : 'var(--accent)',
+          kx: off ? 2 : 13, kc: off ? 'var(--text-faint)' : 'var(--on-accent)',
+          toggle: () => this.setState(s => ({ hiddenG: Object.assign({}, s.hiddenG, { [g]: !(s.hiddenG || {})[g] }) })),
+        };
+      }),
+      orphans: orphans.map(n => ({ name: n[1], edited: n[4], c: K.G[n[2]].c })),
+      orphanCount: orphans.length,
+      showHistory: this.props.history ?? true,
+      play: () => this.play(),
+      playIcon: st.playing ? '❚❚' : '▶',
+      playBg: st.playing ? 'var(--accent-dim)' : 'var(--surface-raised)',
+      playFg: st.playing ? 'var(--accent)' : 'var(--text-primary)',
+      tLabel: t === 25 ? 'today · ' + this.fmt(t) : 'week of ' + this.fmt(t),
+      bars: K.HIST.map((v, i) => ({
+        h: Math.round(4 + v * 2),
+        bg: i === t ? 'var(--accent)' : i < t ? 'var(--border-strong)' : 'var(--surface-raised)',
+        glow: i === t ? '0 0 6px var(--accent)' : 'none',
+        title: this.fmt(i) + ' · ' + v + ' edits',
+        click: () => { clearInterval(this.timer); this.setState({ t: i, playing: false }); },
+      })),
+      months,
+      newCount: newThisWeek.length ? '+ ' + newThisWeek.join(', ') : 'no new notes this week',
+      shownCount: shown.length, linkCount: vl.length,
+      viewModes: ['notes', 'split', 'canvas', 'graph'].map(m => ({ label: m, bg: m === 'graph' ? 'var(--surface-raised)' : 'transparent', fg: m === 'graph' ? 'var(--text-primary)' : 'var(--text-faint)' })),
+    };
+  }
+}
+</script>
+</body>
+</html>

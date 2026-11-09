@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <title>Synapso — mark A, the S as a straight-segment connector</title>
+  <!-- Colors are vars so the same file renders on dark, light or flat black.
+       Defaults are the dark theme from design/tokens.css. -->
+  <g transform="translate(0 2)">
+    <path d="M48 15 H23 L15 23 L23 31 H41 L49 39 L41 47 H22"
+          stroke="var(--ink, #4FD08A)" stroke-width="4" stroke-linejoin="miter"/>
+    <!-- arrowhead: 8 long, 8 wide — the proportion board.rs draws -->
+    <path d="M14 47 L22 43 L22 51 Z" fill="var(--tip, #56C8D8)" stroke="none"/>
+    <!-- anchors: hollow squares, like the 7x7 resize handles on a selected node -->
+    <g fill="var(--bg, #131418)" stroke="var(--ink, #4FD08A)" stroke-width="2.5">
+      <rect x="42.5" y="9.5" width="11" height="11"/>
+      <rect x="9.5" y="17.5" width="11" height="11"/>
+      <rect x="43.5" y="33.5" width="11" height="11"/>
+    </g>
+  </g>
+</svg>

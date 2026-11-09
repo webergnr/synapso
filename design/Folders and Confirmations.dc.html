@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>body{margin:0;background:#0C0D10;color:#D6D9E0;font-family:'JetBrains Mono',ui-monospace,monospace}a{color:#56C8D8}a:hover{color:#4FD08A}input::placeholder{color:#5B6270}</style>
+</helmet>
+<section data-screen-label="04 color click + rainbow" style="background:#0C0D10;padding:48px 48px 24px;display:flex;flex-direction:column;gap:28px;max-width:1900px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-size:15px;font-weight:500;color:#D6D9E0">color · click the line, any color from the rainbow</div>
+    <div style="font-size:12px;color:#8A91A0;line-height:1.6;max-width:820px;text-wrap:pretty">same tooltip as <a href="#3a">3a</a>–<a href="#3c">3c</a>, opened by a click. hovering the line only announces it: the line thickens, glows and the cursor becomes a pointer. the last swatch is the rainbow: click it and the swatches swap for a small strip, hue left to right, lightness top to bottom. hover previews, click applies. chroma stays locked to the palette's, so a custom color sits well next to coral, amber, violet and cyan. keyboard: 5 opens the strip, arrows move, ↵ applies, esc goes back.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+    <div id="4a" style="display:flex;flex-direction:column;gap:10px;width:460px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">4a</span><span style="font-size:12px;color:#D6D9E0">tabs</span></div>
+      <div data-theme="dark" style="height:240px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="height:34px;display:flex;background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle);border-radius:8px 8px 0 0">
+          <sc-for list="{{ uTabs }}" as="d" hint-placeholder-count="3">
+            <div style="position:relative;display:flex;align-items:center;padding:0 var(--space-6);background:{{ d.bg }};color:{{ d.fg }};font-size:var(--text-sm);border-right:var(--border-w) solid var(--border-subtle)">
+              <div data-tip="1" onMouseEnter="{{ d.enter }}" onMouseLeave="{{ d.leave }}" onClick="{{ d.click }}" title="color" style="position:absolute;left:0;right:0;top:0;height:8px;cursor:pointer;z-index:1"><div style="height:{{ d.thick }};background:{{ d.color }};box-shadow:{{ d.glow }};transition:height .1s, box-shadow .1s"></div></div>
+              <span>{{ d.name }}</span>
+              <sc-if value="{{ d.open }}" hint-placeholder-val="{{ false }}">
+                <div data-tip="1" style="position:absolute;left:6px;top:10px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap">
+                  <sc-if value="{{ d.swOpen }}" hint-placeholder-val="{{ true }}">
+                    <div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)">
+                      <sc-for list="{{ d.opts }}" as="o" hint-placeholder-count="5"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for>
+                      <span onClick="{{ tipCustom }}" onMouseEnter="{{ tipRbHover }}" title="any color · 5" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:conic-gradient(oklch(.74 .13 0), oklch(.74 .13 90), oklch(.74 .13 180), oklch(.74 .13 270), oklch(.74 .13 360));box-shadow:{{ d.rbRing }};cursor:pointer"></span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ d.pickOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:var(--space-3)">
+                      <span onClick="{{ tipBack }}" title="back · esc" style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);color:var(--text-faint);cursor:pointer;border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">‹</span>
+                      <div onMouseMove="{{ padMove }}" onMouseLeave="{{ padLeave }}" onClick="{{ padPick }}" style="position:relative;width:128px;height:14px;border-radius:var(--radius-1);cursor:crosshair;background:linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0) 50%, rgba(0,0,0,.32)), linear-gradient(to right, oklch(.74 .13 0), oklch(.74 .13 45), oklch(.74 .13 90), oklch(.74 .13 135), oklch(.74 .13 180), oklch(.74 .13 225), oklch(.74 .13 270), oklch(.74 .13 315), oklch(.74 .13 360))"><span style="position:absolute;left:{{ padX }};top:{{ padY }};opacity:{{ padOp }};width:8px;height:8px;margin:-4px 0 0 -4px;box-sizing:border-box;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);background:{{ padColor }};pointer-events:none"></span></div>
+                    </div>
+                  </sc-if>
+                  <span style="min-width:64px;font-size:var(--text-xs);color:var(--text-muted)">{{ tipLabel }}</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <span style="position:absolute;right:12px;bottom:10px;font-size:var(--text-xs);color:var(--text-faint)">click a tab's top line</span>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">hover: the line goes from 2px to 4px and glows in its own color. click opens, a second click or a click anywhere else closes.</div>
+    </div>
+
+    <div id="4b" style="display:flex;flex-direction:column;gap:10px;width:480px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">4b</span><span style="font-size:12px;color:#D6D9E0">canvas cards</span></div>
+      <div data-theme="dark" style="height:240px;position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--border-subtle);background-color:var(--canvas-bg);background-image:radial-gradient(var(--border-subtle) 1px, transparent 1px);background-size:16px 16px;font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <sc-for list="{{ uCards }}" as="c" hint-placeholder-count="2">
+          <div style="position:absolute;left:{{ c.x }};top:{{ c.y }};width:220px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-1)">
+            <div data-tip="1" onMouseEnter="{{ c.enter }}" onMouseLeave="{{ c.leave }}" onClick="{{ c.click }}" title="color" style="position:absolute;left:-5px;top:0;bottom:0;width:12px;padding-left:5px;box-sizing:border-box;cursor:pointer;z-index:1"><div style="width:{{ c.thick }};height:100%;background:{{ c.color }};box-shadow:{{ c.glow }};border-radius:var(--radius-3) 0 0 var(--radius-3);transition:width .1s, box-shadow .1s"></div></div>
+            <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-2)">
+              <span style="font-size:var(--text-sm);font-weight:var(--weight-medium);display:flex;gap:var(--space-3)"><span style="color:var(--text-faint);font-weight:400">{{ c.icon }}</span>{{ c.name }}</span>
+              <span style="font-size:var(--text-xs);color:var(--text-faint)">{{ c.path }}</span>
+            </div>
+            <sc-if value="{{ c.open }}" hint-placeholder-val="{{ false }}">
+              <div data-tip="1" style="position:absolute;right:calc(100% + 10px);top:4px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap">
+                <span style="min-width:64px;text-align:right;font-size:var(--text-xs);color:var(--text-muted)">{{ tipLabel }}</span>
+                <sc-if value="{{ c.swOpen }}" hint-placeholder-val="{{ true }}">
+                  <div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)">
+                    <sc-for list="{{ c.opts }}" as="o" hint-placeholder-count="5"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for>
+                    <span onClick="{{ tipCustom }}" onMouseEnter="{{ tipRbHover }}" title="any color · 5" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:conic-gradient(oklch(.74 .13 0), oklch(.74 .13 90), oklch(.74 .13 180), oklch(.74 .13 270), oklch(.74 .13 360));box-shadow:{{ c.rbRing }};cursor:pointer"></span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ c.pickOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:var(--space-3)">
+                    <span onClick="{{ tipBack }}" title="back · esc" style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);color:var(--text-faint);cursor:pointer;border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">‹</span>
+                    <div onMouseMove="{{ padMove }}" onMouseLeave="{{ padLeave }}" onClick="{{ padPick }}" style="position:relative;width:128px;height:14px;border-radius:var(--radius-1);cursor:crosshair;background:linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0) 50%, rgba(0,0,0,.32)), linear-gradient(to right, oklch(.74 .13 0), oklch(.74 .13 45), oklch(.74 .13 90), oklch(.74 .13 135), oklch(.74 .13 180), oklch(.74 .13 225), oklch(.74 .13 270), oklch(.74 .13 315), oklch(.74 .13 360))"><span style="position:absolute;left:{{ padX }};top:{{ padY }};opacity:{{ padOp }};width:8px;height:8px;margin:-4px 0 0 -4px;box-sizing:border-box;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);background:{{ padColor }};pointer-events:none"></span></div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">the card edge widens and its glow brightens on hover. the tooltip still opens outside the card.</div>
+    </div>
+
+    <div id="4c" style="display:flex;flex-direction:column;gap:10px;width:420px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">4c</span><span style="font-size:12px;color:#D6D9E0">lists, ⌘P and folders</span></div>
+      <div data-theme="dark" style="height:300px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;left:20px;right:20px;top:20px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-3);display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ uRows }}" as="r" hint-placeholder-count="7">
+            <div style="position:relative;display:flex;align-items:center;gap:var(--space-3);height:26px;padding:0 var(--space-4) 0 {{ r.pad }};border-radius:var(--radius-1);font-size:var(--text-sm);color:{{ r.fg }}">
+              <span data-tip="1" onMouseEnter="{{ r.enter }}" onMouseLeave="{{ r.leave }}" onClick="{{ r.click }}" title="color" style="width:14px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;border-radius:var(--radius-1);background:{{ r.hitBg }}"><span style="width:{{ r.thick }};height:16px;background:{{ r.color }};box-shadow:{{ r.glow }};transition:width .1s, box-shadow .1s"></span></span>
+              <span style="color:var(--text-faint);width:12px;flex:none">{{ r.icon }}</span><span>{{ r.name }}</span><span style="flex:1"></span>
+              <span style="font-size:var(--text-xs);color:{{ r.tagFg }}">{{ r.tag }}</span>
+              <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                <div data-tip="1" style="position:absolute;left:calc({{ r.pad }} + 18px);top:-1px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap">
+                  <sc-if value="{{ r.swOpen }}" hint-placeholder-val="{{ true }}">
+                    <div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)">
+                      <sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="5"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for>
+                      <span onClick="{{ tipCustom }}" onMouseEnter="{{ tipRbHover }}" title="any color · 5" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:conic-gradient(oklch(.74 .13 0), oklch(.74 .13 90), oklch(.74 .13 180), oklch(.74 .13 270), oklch(.74 .13 360));box-shadow:{{ r.rbRing }};cursor:pointer"></span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ r.pickOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:var(--space-3)">
+                      <span onClick="{{ tipBack }}" title="back · esc" style="width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);color:var(--text-faint);cursor:pointer;border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">‹</span>
+                      <div onMouseMove="{{ padMove }}" onMouseLeave="{{ padLeave }}" onClick="{{ padPick }}" style="position:relative;width:128px;height:14px;border-radius:var(--radius-1);cursor:crosshair;background:linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0) 50%, rgba(0,0,0,.32)), linear-gradient(to right, oklch(.74 .13 0), oklch(.74 .13 45), oklch(.74 .13 90), oklch(.74 .13 135), oklch(.74 .13 180), oklch(.74 .13 225), oklch(.74 .13 270), oklch(.74 .13 315), oklch(.74 .13 360))"><span style="position:absolute;left:{{ padX }};top:{{ padY }};opacity:{{ padOp }};width:8px;height:8px;margin:-4px 0 0 -4px;box-sizing:border-box;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);background:{{ padColor }};pointer-events:none"></span></div>
+                    </div>
+                  </sc-if>
+                  <span style="min-width:64px;font-size:var(--text-xs);color:var(--text-muted)">{{ tipLabel }}</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">in dense lists the line also gets a faint hit box on hover, so it reads as a button. a custom color on a folder is inherited like any other.</div>
+    </div>
+  </div>
+</section>
+<section data-screen-label="03 color tooltip" style="background:#0C0D10;padding:48px 48px 24px;display:flex;flex-direction:column;gap:28px;max-width:1900px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-size:15px;font-weight:500;color:#D6D9E0">color · a tooltip on the line</div>
+    <div style="font-size:12px;color:#8A91A0;line-height:1.6;max-width:820px;text-wrap:pretty">one control everywhere: the colored line is the trigger. hover it (or click) and a tooltip with five swatches opens from it, styled like the canvas rail tooltips. the first slot is <span style="color:#D6D9E0">↑</span>, use the folder's color, drawn as the folder color in outline. hovering a swatch previews it, click applies, moving away cancels, 0–4 work while it's open. same seven items as <a href="#2a">2a</a>–<a href="#2d">2d</a>.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+    <div id="3a" style="display:flex;flex-direction:column;gap:10px;width:460px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">3a</span><span style="font-size:12px;color:#D6D9E0">tabs</span></div>
+      <div data-theme="dark" style="height:240px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="height:34px;display:flex;background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle);border-radius:8px 8px 0 0">
+          <sc-for list="{{ tTabs }}" as="d" hint-placeholder-count="3">
+            <div style="position:relative;display:flex;align-items:center;padding:0 var(--space-6);background:{{ d.bg }};color:{{ d.fg }};font-size:var(--text-sm);border-right:var(--border-w) solid var(--border-subtle)">
+              <div onMouseEnter="{{ d.enter }}" onMouseLeave="{{ d.leave }}" onClick="{{ d.click }}" style="position:absolute;left:0;right:0;top:0;height:8px;cursor:pointer;z-index:1"><div style="height:{{ d.thick }};background:{{ d.color }};transition:height .1s"></div></div>
+              <span>{{ d.name }}</span>
+              <sc-if value="{{ d.open }}" hint-placeholder-val="{{ false }}">
+                <div onMouseEnter="{{ tipKeep }}" onMouseLeave="{{ tipOut }}" style="position:absolute;left:6px;top:10px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap">
+                  <div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)">
+                    <sc-for list="{{ d.opts }}" as="o" hint-placeholder-count="5"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for>
+                  </div>
+                  <span style="min-width:64px;font-size:var(--text-xs);color:var(--text-muted)">{{ tipLabel }}</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <span style="position:absolute;right:12px;bottom:10px;font-size:var(--text-xs);color:var(--text-faint)">hover a tab's top line</span>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">the line on top of each tab gets an 8px hit area. after ~0.2s of hover it thickens and the swatches drop from it. moving to the next tab's line swaps the tooltip without the delay.</div>
+    </div>
+
+    <div id="3b" style="display:flex;flex-direction:column;gap:10px;width:460px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">3b</span><span style="font-size:12px;color:#D6D9E0">canvas cards</span></div>
+      <div data-theme="dark" style="height:240px;position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--border-subtle);background-color:var(--canvas-bg);background-image:radial-gradient(var(--border-subtle) 1px, transparent 1px);background-size:16px 16px;font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <sc-for list="{{ tCards }}" as="c" hint-placeholder-count="2">
+          <div style="position:absolute;left:{{ c.x }};top:{{ c.y }};width:220px;background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-1)">
+            <div onMouseEnter="{{ c.enter }}" onMouseLeave="{{ c.leave }}" onClick="{{ c.click }}" style="position:absolute;left:-5px;top:0;bottom:0;width:12px;padding-left:5px;box-sizing:border-box;cursor:pointer;z-index:1"><div style="width:{{ c.thick }};height:100%;background:{{ c.color }};box-shadow:0 0 8px {{ c.color }};border-radius:var(--radius-3) 0 0 var(--radius-3);transition:width .1s"></div></div>
+            <div style="padding:var(--space-4) var(--space-5) var(--space-4) 14px;display:flex;flex-direction:column;gap:var(--space-2)">
+              <span style="font-size:var(--text-sm);font-weight:var(--weight-medium);display:flex;gap:var(--space-3)"><span style="color:var(--text-faint);font-weight:400">{{ c.icon }}</span>{{ c.name }}</span>
+              <span style="font-size:var(--text-xs);color:var(--text-faint)">{{ c.path }}</span>
+            </div>
+            <sc-if value="{{ c.open }}" hint-placeholder-val="{{ false }}">
+              <div onMouseEnter="{{ tipKeep }}" onMouseLeave="{{ tipOut }}" style="position:absolute;right:calc(100% + 10px);top:4px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap">
+                <span style="min-width:64px;text-align:right;font-size:var(--text-xs);color:var(--text-muted)">{{ tipLabel }}</span>
+                <div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)">
+                  <sc-for list="{{ c.opts }}" as="o" hint-placeholder-count="5"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">the glowing edge of the card. the tooltip opens outside the card, on the line's side, so it never covers the content you're looking at.</div>
+    </div>
+
+    <div id="3c" style="display:flex;flex-direction:column;gap:10px;width:420px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">3c</span><span style="font-size:12px;color:#D6D9E0">lists, ⌘P and folders</span></div>
+      <div data-theme="dark" style="height:300px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;left:20px;right:20px;top:20px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-3);display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ tRows }}" as="r" hint-placeholder-count="7">
+            <div style="position:relative;display:flex;align-items:center;gap:var(--space-3);height:26px;padding:0 var(--space-4) 0 {{ r.pad }};border-radius:var(--radius-1);font-size:var(--text-sm);color:{{ r.fg }}">
+              <span onMouseEnter="{{ r.enter }}" onMouseLeave="{{ r.leave }}" onClick="{{ r.click }}" style="width:14px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="width:{{ r.thick }};height:16px;background:{{ r.color }};transition:width .1s"></span></span>
+              <span style="color:var(--text-faint);width:12px;flex:none">{{ r.icon }}</span><span>{{ r.name }}</span><span style="flex:1"></span>
+              <span style="font-size:var(--text-xs);color:{{ r.tagFg }}">{{ r.tag }}</span>
+              <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                <div onMouseEnter="{{ tipKeep }}" onMouseLeave="{{ tipOut }}" style="position:absolute;left:calc({{ r.pad }} + 18px);top:-1px;z-index:var(--z-popover);background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);display:flex;align-items:center;gap:var(--space-4);white-space:nowrap">
+                  <div onMouseLeave="{{ tipUnhover }}" style="display:flex;gap:var(--space-3)">
+                    <sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="5"><span onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="box-sizing:border-box;width:14px;height:14px;border-radius:var(--radius-1);background:{{ o.color }};border:{{ o.border }};box-shadow:{{ o.ring }};cursor:pointer"></span></sc-for>
+                  </div>
+                  <span style="min-width:64px;font-size:var(--text-xs);color:var(--text-muted)">{{ tipLabel }}</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">same line, same tooltip, sitting right beside the line. on a folder, the swatch preview recolors every note inside that hasn't picked its own color.</div>
+    </div>
+  </div>
+</section>
+<section data-screen-label="02 colors" style="background:#0C0D10;padding:48px 48px 24px;display:flex;flex-direction:column;gap:28px;max-width:1900px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:16px"><span style="font-size:15px;font-weight:500;color:#D6D9E0">colors · notes, canvases, folders</span><span onClick="{{ colReset }}" style="font-size:11px;color:#5B6270;cursor:pointer" style-hover="color:#D6D9E0">reset</span></div>
+    <div style="font-size:12px;color:#8A91A0;line-height:1.6;max-width:820px;text-wrap:pretty">four colors from the tokens plus <span style="color:#D6D9E0">↑</span> (use the folder's). a note or canvas without its own color takes its folder's, which is also my proposal for graph nodes: own color, else folder. all four frames edit the same seven items, so a change in one shows up in the others.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+    <div id="2a" style="display:flex;flex-direction:column;gap:10px;width:400px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">2a</span><span style="font-size:12px;color:#D6D9E0">drag the spine</span></div>
+      <div data-theme="dark" style="height:320px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal);user-select:none">
+        <div style="position:absolute;left:20px;right:20px;top:20px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-3);display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ sRows }}" as="r" hint-placeholder-count="7">
+            <div style="position:relative;display:flex;align-items:center;gap:var(--space-3);height:26px;padding:0 var(--space-4) 0 {{ r.pad }};border-radius:var(--radius-1);background:{{ r.bg }};font-size:var(--text-sm);color:{{ r.fg }}">
+              <span onMouseDown="{{ r.scrub }}" title="drag up or down" style="width:14px;height:22px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;flex:none;border-radius:var(--radius-1)" style-hover="background:var(--surface-raised)"><span style="width:{{ r.spineW }};height:16px;background:{{ r.color }}"></span></span>
+              <span style="color:var(--text-faint);width:12px;flex:none">{{ r.icon }}</span><span>{{ r.name }}</span><span style="flex:1"></span>
+              <span style="font-size:var(--text-xs);color:{{ r.tagFg }}">{{ r.tag }}</span>
+              <sc-if value="{{ r.scrubbing }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:{{ r.stripLeft }};top:calc(50% - {{ r.stripOff }});display:flex;flex-direction:column;gap:2px;padding:2px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-2);box-shadow:var(--shadow-2);z-index:var(--z-popover)">
+                  <sc-for list="{{ r.strip }}" as="o" hint-placeholder-count="5">
+                    <div style="display:flex;align-items:center;gap:var(--space-3);height:16px;padding:0 var(--space-4) 0 var(--space-2);border-radius:2px;background:{{ o.bg }}">
+                      <span style="box-sizing:border-box;width:6px;height:12px;background:{{ o.color }};border:{{ o.border }}"></span>
+                      <span style="font-size:var(--text-xs);color:{{ o.fg }}">{{ o.name }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">the spine is the handle. press on it and drag up or down through the five options; the note (or a whole folder) recolors live and commits on release. nothing to open, nothing to aim at.</div>
+    </div>
+
+    <div id="2b" style="display:flex;flex-direction:column;gap:10px;width:440px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">2b</span><span style="font-size:12px;color:#D6D9E0">number keys on the focused row</span></div>
+      <div ref="{{ colKRef }}" data-theme="dark" style="height:320px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;left:20px;right:20px;top:20px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-3);display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ kRows }}" as="r" hint-placeholder-count="7">
+            <div onClick="{{ r.focus }}" style="display:flex;align-items:center;gap:var(--space-4);height:24px;padding:0 var(--space-4) 0 {{ r.pad }};border-radius:var(--radius-1);background:{{ r.bg }};border:var(--border-w) solid {{ r.ring }};font-size:var(--text-sm);color:{{ r.fg }};cursor:pointer">
+              <span style="width:var(--spine-w);height:14px;background:{{ r.color }};flex:none;margin-left:6px"></span>
+              <span style="color:var(--text-faint);width:12px;flex:none">{{ r.icon }}</span><span>{{ r.name }}</span><span style="flex:1"></span>
+              <span style="font-size:var(--text-xs);color:{{ r.tagFg }}">{{ r.tag }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="position:absolute;left:20px;right:20px;bottom:16px;display:flex;flex-direction:column;gap:var(--space-3)">
+          <span style="font-size:var(--text-xs);color:var(--text-faint)">{{ kHint }}</span>
+          <div style="display:flex;gap:var(--space-3)">
+            <sc-for list="{{ kKeys }}" as="k" hint-placeholder-count="5">
+              <span onClick="{{ k.set }}" style="flex:1;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-2);border:var(--border-w) solid {{ k.border }};background:{{ k.bg }};font-size:var(--text-xs);color:{{ k.fg }};cursor:pointer" style-hover="color:var(--text-primary)">
+                <span style="border:var(--border-w) solid currentColor;border-radius:2px;padding:0 3px;line-height:1.3">{{ k.key }}</span><span style="width:var(--spine-w);height:10px;background:{{ k.color }};flex:none"></span><span>{{ k.name }}</span>
+              </span>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">click a row (or ↑ ↓ to it), press 0–4. 0 gives the color back to the folder. the same keys work on a multi-selection and on the highlighted row in ⌘P.</div>
+    </div>
+
+    <div id="2c" style="display:flex;flex-direction:column;gap:10px;width:480px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">2c</span><span style="font-size:12px;color:#D6D9E0">flick ring on the canvas</span></div>
+      <div ref="{{ colRingRef }}" onMouseMove="{{ ringMove }}" onClick="{{ ringClick }}" onMouseUp="{{ ringUp }}" onContextMenu="{{ ringCtx }}" data-theme="dark" style="height:320px;position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--border-subtle);background-color:var(--canvas-bg);background-image:radial-gradient(var(--border-subtle) 1px, transparent 1px);background-size:16px 16px;font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal);user-select:none">
+        <sc-for list="{{ ringCards }}" as="c" hint-placeholder-count="3">
+          <div onContextMenu="{{ c.open }}" style="position:absolute;left:{{ c.x }};top:{{ c.y }};width:176px;background:var(--surface-raised);border:var(--border-w) solid {{ c.border }};border-radius:var(--radius-2);display:flex;overflow:hidden;cursor:context-menu;box-shadow:var(--shadow-1)">
+            <span style="width:var(--spine-w);background:{{ c.color }};flex:none"></span>
+            <div style="padding:var(--space-4) var(--space-5);display:flex;flex-direction:column;gap:2px;min-width:0">
+              <span style="font-size:var(--text-sm);display:flex;gap:var(--space-3)"><span style="color:var(--text-faint)">{{ c.icon }}</span>{{ c.name }}</span>
+              <span style="font-size:var(--text-xs);color:var(--text-faint)">{{ c.path }}</span>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ ringOn }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:{{ ringX }};top:{{ ringY }};width:0;height:0;z-index:var(--z-popover);pointer-events:none">
+            <span style="position:absolute;left:-46px;top:-46px;width:92px;height:92px;box-sizing:border-box;border-radius:50%;border:var(--border-w) solid var(--border-strong);background:var(--surface-overlay);box-shadow:var(--shadow-2)"></span>
+            <sc-for list="{{ ringDots }}" as="d" hint-placeholder-count="5">
+              <span style="position:absolute;left:{{ d.x }};top:{{ d.y }};width:{{ d.s }};height:{{ d.s }};margin:{{ d.m }};box-sizing:border-box;border-radius:50%;background:{{ d.color }};border:{{ d.border }};box-shadow:{{ d.ring }};transition:width .08s,height .08s,margin .08s"></span>
+            </sc-for>
+            <span style="position:absolute;left:-24px;width:48px;top:-8px;text-align:center;font-size:var(--text-xs);color:{{ ringLabelFg }}">{{ ringLabel }}</span>
+          </div>
+        </sc-if>
+        <span style="position:absolute;right:12px;bottom:10px;font-size:var(--text-xs);color:var(--text-faint)">right-click a card</span>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">a ring opens under the cursor. flick toward a color and release, or move then click. letting go in the middle cancels. the top slot is always "back to folder", drawn as the folder's color in outline so you see what you'd get.</div>
+    </div>
+
+    <div id="2d" style="display:flex;flex-direction:column;gap:10px;width:440px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">2d</span><span style="font-size:12px;color:#D6D9E0">drop paint on folders</span></div>
+      <div data-theme="dark" style="height:320px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;left:20px;right:20px;top:20px;display:flex;gap:var(--space-3)">
+          <sc-for list="{{ pDrops }}" as="o" hint-placeholder-count="5">
+            <span draggable="true" onDragStart="{{ o.start }}" onDragEnd="{{ pEnd }}" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-4);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);background:var(--surface-panel);font-size:var(--text-xs);color:var(--text-muted);cursor:grab" style-hover="border-color:var(--border-strong);color:var(--text-primary)">
+              <span style="box-sizing:border-box;width:10px;height:10px;border-radius:2px;background:{{ o.color }};border:{{ o.border }}"></span>{{ o.name }}
+            </span>
+          </sc-for>
+        </div>
+        <div onDragLeave="{{ pLeave }}" style="position:absolute;left:20px;right:20px;top:58px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-3);display:flex;flex-direction:column;gap:1px">
+          <sc-for list="{{ pRows }}" as="r" hint-placeholder-count="7">
+            <div onDragOver="{{ r.over }}" onDrop="{{ r.drop }}" style="display:flex;align-items:center;gap:var(--space-4);height:24px;padding:0 var(--space-4) 0 {{ r.pad }};border-radius:var(--radius-1);background:{{ r.bg }};outline:{{ r.outline }};font-size:var(--text-sm);color:{{ r.fg }}">
+              <span style="width:var(--spine-w);height:14px;background:{{ r.color }};flex:none;margin-left:6px"></span>
+              <span style="color:var(--text-faint);width:12px;flex:none">{{ r.icon }}</span><span>{{ r.name }}</span><span style="flex:1"></span>
+              <span style="font-size:var(--text-xs);color:{{ r.tagFg }}">{{ r.tag }}</span>
+              <sc-if value="{{ r.pinned }}" hint-placeholder-val="{{ false }}">
+                <span onClick="{{ r.clear }}" title="use folder color" style="font-size:var(--text-xs);color:var(--text-faint);cursor:pointer;padding:0 var(--space-2);border-radius:var(--radius-1)" style-hover="color:var(--text-primary);background:var(--surface-raised)">×</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">drag a chip onto a folder and everything inside that hasn't picked its own color follows, previewed while you hover. dropping on a note pins it; × hands it back to the folder.</div>
+    </div>
+  </div>
+</section>
+<section data-screen-label="01 folders + confirmations" style="background:#0C0D10;padding:48px 48px 96px;display:flex;flex-direction:column;gap:28px;max-width:1720px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-size:15px;font-weight:500;color:#D6D9E0">folders · confirmations without modals</div>
+    <div style="font-size:12px;color:#8A91A0;line-height:1.6;max-width:820px;text-wrap:pretty">graph groups = top-level folder. folder color is the spine those notes get in the graph. every frame is live: create folders, delete notes, undo. folders you create show up in all three folder frames.</div>
+  </div>
+
+  <div style="font-size:11px;letter-spacing:.08em;color:#6A7180;margin-top:8px">folders — pick and create</div>
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+    <div id="1a" style="display:flex;flex-direction:column;gap:10px;width:480px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">1a</span><span style="font-size:12px;color:#D6D9E0">folder chip inside "new note"</span><span style="flex:1"></span><span onClick="{{ resetA }}" style="font-size:11px;color:#5B6270;cursor:pointer" style-hover="color:#D6D9E0">reset</span></div>
+      <div data-theme="dark" style="height:430px;position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="height:32px;display:flex;align-items:center;gap:var(--space-4);padding:0 var(--space-5);background:var(--surface-panel);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm)">
+          <span style="width:var(--spine-w);height:14px;background:var(--doc-1)"></span><span style="color:var(--text-muted)">auth-flow.md</span><span style="flex:1"></span>
+          <span onClick="{{ toggleNew }}" style="display:flex;align-items:center;gap:var(--space-3);padding:2px var(--space-4);border-radius:var(--radius-1);background:var(--surface-raised);border:var(--border-w) solid var(--border-strong);cursor:pointer">+ new<span style="font-size:var(--text-xs);color:var(--text-faint)">⌘N</span></span>
+        </div>
+        <sc-if value="{{ aShow }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;top:40px;right:12px;width:316px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-4);z-index:var(--z-popover)">
+            <span style="position:absolute;top:-5px;right:34px;width:8px;height:8px;background:var(--surface-overlay);border-left:var(--border-w) solid var(--border-strong);border-top:var(--border-w) solid var(--border-strong);transform:rotate(45deg)"></span>
+            <div style="display:flex;align-items:center;gap:var(--space-3);background:var(--surface-inset);border:var(--border-w) solid var(--accent);border-radius:var(--radius-2);padding:var(--space-3) var(--space-4);box-shadow:var(--shadow-focus)">
+              <input value="{{ aName }}" onChange="{{ onAName }}" onKeyDown="{{ onANameKey }}" spellCheck="false" placeholder="name or path/to/name" style="flex:1;min-width:0;font-family:var(--font-mono);font-size:var(--text-base);background:transparent;color:var(--text-primary);border:none;outline:none;padding:0">
+              <span style="font-size:var(--text-sm);color:var(--text-faint)">.md</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-4)">
+              <span style="font-size:var(--text-xs);color:var(--text-faint);width:14px">in</span>
+              <span onClick="{{ toggleAList }}" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-4);border-radius:var(--radius-2);background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);font-size:var(--text-sm);cursor:pointer" style-hover="border-color:var(--border-strong)">
+                <span style="width:var(--spine-w);height:12px;background:{{ aChipColor }}"></span><span>{{ aChip }}</span><span style="color:var(--text-faint)">▾</span>
+              </span>
+            </div>
+            <sc-if value="{{ aOpen }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-2);padding:var(--space-2)">
+                <sc-for list="{{ aFolders }}" as="f" hint-placeholder-count="6">
+                  <div onClick="{{ f.pick }}" style="display:flex;align-items:center;gap:var(--space-3);padding:3px var(--space-4) 3px {{ f.indent }};border-radius:var(--radius-1);background:{{ f.bg }};color:{{ f.fg }};font-size:var(--text-sm);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+                    <span style="width:var(--spine-w);height:12px;background:{{ f.color }};flex:none"></span><span>{{ f.name }}</span><span style="flex:1"></span><span style="color:var(--accent);font-size:var(--text-xs)">{{ f.check }}</span>
+                  </div>
+                </sc-for>
+                <div style="height:1px;background:var(--border-subtle);margin:var(--space-2)"></div>
+                <sc-if value="{{ aCreating }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:var(--space-3);padding:2px var(--space-4)">
+                    <span style="color:var(--accent);font-size:var(--text-sm)">+</span>
+                    <input value="{{ aNew }}" onChange="{{ onANew }}" onKeyDown="{{ onANewKey }}" autoFocus="{{ true }}" spellCheck="false" placeholder="folder or a/b/c" style="flex:1;min-width:0;font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--accent);border-radius:var(--radius-1);outline:none;padding:1px var(--space-3)">
+                    <span style="font-size:var(--text-xs);color:var(--text-faint)">↵</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ aNotCreating }}" hint-placeholder-val="{{ true }}">
+                  <div onClick="{{ startACreate }}" style="display:flex;align-items:center;gap:var(--space-3);padding:3px var(--space-4);border-radius:var(--radius-1);font-size:var(--text-sm);color:var(--text-muted);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)"><span style="color:var(--accent)">+</span><span>new folder</span></div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ aAuto }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-xs);color:var(--accent)"><span>+</span><span>also creates {{ aAutoPath }}</span></div>
+            </sc-if>
+            <div style="display:flex;align-items:center;gap:var(--space-4);padding-top:var(--space-2);border-top:var(--border-w) solid var(--border-subtle)">
+              <span style="font-size:var(--text-xs);color:{{ aFootColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">{{ aFoot }}</span>
+              <span onClick="{{ createA }}" style="font-size:var(--text-sm);font-weight:var(--weight-medium);background:var(--accent);color:var(--on-accent);border-radius:var(--radius-2);padding:2px var(--space-4);cursor:pointer;flex:none" style-hover="filter:brightness(1.1)">create ↵</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">replaces the new-note modal with a popover under the button. typing a <span style="color:#D6D9E0">/</span> in the name creates the folders on the way. ⌘N starts in the current note's folder.</div>
+    </div>
+
+    <div id="1b" style="display:flex;flex-direction:column;gap:10px;width:580px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">1b</span><span style="font-size:12px;color:#D6D9E0">folder column in the picker (⌘P)</span></div>
+      <div data-theme="dark" style="height:430px;position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;inset:20px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-3);display:flex;flex-direction:column;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-5);border-bottom:var(--border-w) solid var(--border-subtle);font-size:var(--text-base)">
+            <span style="color:var(--text-faint)">⌕</span>
+            <span style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-sm);background:var(--surface-raised);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-3)"><span style="width:var(--spine-w);height:10px;background:{{ bColor }}"></span>{{ bFolder }}/</span>
+            <span style="color:var(--text-faint)">filter…</span><span style="flex:1"></span>
+            <span style="font-size:var(--text-xs);color:var(--text-faint);background:var(--surface-inset);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-1);padding:0 var(--space-2)">esc</span>
+          </div>
+          <div style="flex:1;display:grid;grid-template-columns:172px minmax(0,1fr);min-height:0">
+            <div style="border-right:var(--border-w) solid var(--border-subtle);background:var(--surface-panel);padding:var(--space-3);display:flex;flex-direction:column;gap:1px;overflow:auto">
+              <sc-for list="{{ bFolders }}" as="f" hint-placeholder-count="6">
+                <div onClick="{{ f.pick }}" style="display:flex;align-items:center;gap:var(--space-3);padding:3px var(--space-4) 3px {{ f.indent }};border-radius:var(--radius-1);background:{{ f.bg }};color:{{ f.fg }};font-size:var(--text-sm);cursor:pointer" style-hover="color:var(--text-primary)">
+                  <span style="width:var(--spine-w);height:12px;background:{{ f.color }};flex:none"></span><span>{{ f.name }}</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint)">{{ f.count }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ bCreating }}" hint-placeholder-val="{{ false }}">
+                <input value="{{ bNew }}" onChange="{{ onBNew }}" onKeyDown="{{ onBNewKey }}" autoFocus="{{ true }}" spellCheck="false" placeholder="name or a/b" style="margin:2px var(--space-2);font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--accent);border-radius:var(--radius-1);outline:none;padding:1px var(--space-3)">
+              </sc-if>
+              <sc-if value="{{ bNotCreating }}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{ startBCreate }}" style="display:flex;align-items:center;gap:var(--space-3);padding:3px var(--space-4);border-radius:var(--radius-1);font-size:var(--text-sm);color:var(--text-faint);cursor:pointer" style-hover="color:var(--text-primary)"><span style="color:var(--accent)">+</span>folder</div>
+              </sc-if>
+            </div>
+            <div style="padding:var(--space-3);display:flex;flex-direction:column;gap:1px;overflow:auto">
+              <sc-for list="{{ bDocs }}" as="d" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);background:{{ d.bg }};font-size:var(--text-sm);cursor:pointer" style-hover="background:var(--surface-raised)">
+                  <span style="width:var(--spine-w);height:14px;background:{{ d.color }};flex:none"></span><span>{{ d.file }}</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint)">{{ d.meta }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ bEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:var(--space-6) var(--space-4);font-size:var(--text-xs);color:var(--text-faint)">empty folder · ⌘N creates a note here</div>
+              </sc-if>
+            </div>
+          </div>
+          <div style="display:flex;gap:var(--space-6);padding:var(--space-3) var(--space-5);border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-faint)"><span>← → folders / files</span><span>⌘⇧N new folder</span><span>↵ open</span></div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">the app has no file tree today, so folders live where you already go to find notes. picking a folder scopes the filter; ⌘N from here creates inside it.</div>
+    </div>
+
+    <div id="1c" style="display:flex;flex-direction:column;gap:10px;width:480px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">1c</span><span style="font-size:12px;color:#D6D9E0">per-resource destinations from the status bar</span></div>
+      <div data-theme="dark" style="height:430px;position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <sc-if value="{{ cOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;left:12px;bottom:32px;width:330px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2);z-index:var(--z-popover)">
+            <div style="font-size:var(--text-xs);color:var(--text-faint);padding:0 var(--space-3) var(--space-2)">new things go to</div>
+            <sc-for list="{{ cRows }}" as="r" hint-placeholder-count="3">
+              <div onClick="{{ r.pick }}" style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-2) var(--space-3);border-radius:var(--radius-1);background:{{ r.bg }};font-size:var(--text-sm);cursor:pointer" style-hover="background:var(--surface-raised)">
+                <span style="width:14px;color:var(--text-faint);text-align:center">{{ r.icon }}</span><span style="color:{{ r.fg }}">{{ r.label }}</span><span style="flex:1"></span>
+                <span style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-xs);color:var(--text-primary);background:var(--surface-inset);border:var(--border-w) solid {{ r.border }};border-radius:var(--radius-1);padding:0 var(--space-3)"><span style="width:var(--spine-w);height:10px;background:{{ r.color }}"></span>{{ r.path }}/</span>
+              </div>
+            </sc-for>
+            <div style="height:1px;background:var(--border-subtle);margin:var(--space-3) 0"></div>
+            <div style="font-size:var(--text-xs);color:var(--text-faint);padding:0 var(--space-3) var(--space-2)">pick a folder for {{ cResLabel }}</div>
+            <sc-for list="{{ cFolders }}" as="f" hint-placeholder-count="6">
+              <div onClick="{{ f.pick }}" style="display:flex;align-items:center;gap:var(--space-3);padding:2px var(--space-3) 2px {{ f.indent }};border-radius:var(--radius-1);background:{{ f.bg }};color:{{ f.fg }};font-size:var(--text-sm);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+                <span style="width:var(--spine-w);height:12px;background:{{ f.color }};flex:none"></span><span>{{ f.name }}</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint);letter-spacing:.2em">{{ f.marks }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ cCreating }}" hint-placeholder-val="{{ false }}">
+              <input value="{{ cNew }}" onChange="{{ onCNew }}" onKeyDown="{{ onCNewKey }}" autoFocus="{{ true }}" spellCheck="false" placeholder="folder or a/b" style="margin:2px var(--space-3);font-family:var(--font-mono);font-size:var(--text-sm);background:var(--surface-inset);color:var(--text-primary);border:var(--border-w) solid var(--accent);border-radius:var(--radius-1);outline:none;padding:1px var(--space-3)">
+            </sc-if>
+            <sc-if value="{{ cNotCreating }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ startCCreate }}" style="display:flex;align-items:center;gap:var(--space-3);padding:2px var(--space-3);font-size:var(--text-sm);color:var(--text-faint);cursor:pointer" style-hover="color:var(--text-primary)"><span style="color:var(--accent)">+</span>new folder</div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:24px;display:flex;align-items:center;gap:var(--space-5);padding:0 var(--space-4);background:var(--surface-panel);border-top:var(--border-w) solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-muted)">
+          <span onClick="{{ toggleC }}" style="display:flex;align-items:center;gap:var(--space-4);padding:1px var(--space-3);border-radius:var(--radius-1);background:{{ cChipBg }};cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">
+            <sc-for list="{{ cRows }}" as="r" hint-placeholder-count="3"><span style="display:flex;align-items:center;gap:var(--space-2)"><span style="color:var(--text-faint)">{{ r.icon }}</span>{{ r.path }}/</span></sc-for>
+          </span>
+          <span style="flex:1"></span><span style="color:var(--accent)">●</span><span>synced</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">each resource has its own default folder: notes, canvases and pasted images can each land somewhere different. the status bar always shows where they'll go. same control sits in config → storage.</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;letter-spacing:.08em;color:#6A7180;margin-top:24px">confirm without a modal</div>
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+    <div id="1d" style="display:flex;flex-direction:column;gap:10px;width:540px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">1d</span><span style="font-size:12px;color:#D6D9E0">anchored popover with the consequence</span><span style="flex:1"></span><span onClick="{{ resetD }}" style="font-size:11px;color:#5B6270;cursor:pointer" style-hover="color:#D6D9E0">reset</span></div>
+      <div data-theme="dark" style="height:300px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;left:20px;top:20px;width:240px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-3)">
+          <sc-for list="{{ dRows }}" as="r" hint-placeholder-count="3">
+            <div style="position:relative;display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);background:{{ r.bg }};font-size:var(--text-sm)">
+              <span style="width:var(--spine-w);height:14px;background:{{ r.color }};flex:none"></span><span>{{ r.file }}</span><span style="flex:1"></span>
+              <span onClick="{{ r.ask }}" title="delete" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:{{ r.trashFg }};background:{{ r.trashBg }};cursor:pointer;font-size:var(--text-xs)" style-hover="color:var(--danger);background:var(--danger-dim)">⌫</span>
+              <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:calc(100% + 14px);top:-10px;width:212px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-3);box-shadow:var(--shadow-2);padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-4);z-index:var(--z-popover)">
+                  <span style="position:absolute;left:-5px;top:20px;width:8px;height:8px;background:var(--surface-overlay);border-left:var(--border-w) solid var(--border-strong);border-bottom:var(--border-w) solid var(--border-strong);transform:rotate(45deg)"></span>
+                  <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+                    <span style="font-size:var(--text-sm);font-weight:var(--weight-medium)">delete {{ r.file }}?</span>
+                    <span style="font-size:var(--text-xs);color:var(--text-muted);text-wrap:pretty">{{ r.consequence }}</span>
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;gap:var(--space-3)">
+                    <span onClick="{{ closeD }}" style="font-size:var(--text-sm);color:var(--text-muted);padding:2px var(--space-4);border-radius:var(--radius-2);cursor:pointer" style-hover="background:var(--surface-raised);color:var(--text-primary)">cancel</span>
+                    <span onClick="{{ r.confirm }}" style="font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--danger);background:var(--danger-dim);border:var(--border-w) solid var(--danger);padding:1px var(--space-4);border-radius:var(--radius-2);cursor:pointer" style-hover="background:var(--danger);color:var(--bg-base)">delete ↵</span>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ dAllGone }}" hint-placeholder-val="{{ false }}"><div style="padding:var(--space-5) var(--space-4);font-size:var(--text-xs);color:var(--text-faint)">nothing left · reset</div></sc-if>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">opens next to the button you clicked, says what breaks (incoming links), ↵ confirms, esc or a click outside cancels. no scrim, the rest of the app stays usable. for actions undo can't reverse.</div>
+    </div>
+
+    <div id="1e" style="display:flex;flex-direction:column;gap:10px;width:380px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">1e</span><span style="font-size:12px;color:#D6D9E0">hold to confirm</span><span style="font-size:11px;color:#4FD08A">✓ picked</span><span style="flex:1"></span><span onClick="{{ resetE }}" style="font-size:11px;color:#5B6270;cursor:pointer" style-hover="color:#D6D9E0">reset</span></div>
+      <div data-theme="dark" style="height:300px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;left:20px;right:20px;top:20px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);overflow:hidden">
+          <div style="display:flex;align-items:center;padding:var(--space-3) var(--space-5);font-size:var(--text-xs);color:var(--text-faint);border-bottom:var(--border-w) solid var(--border-subtle)"><span>trash</span><span style="flex:1"></span><span>{{ eCount }}</span></div>
+          <div style="padding:var(--space-3);display:flex;flex-direction:column;gap:1px">
+            <sc-for list="{{ eRows }}" as="r" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:var(--text-muted);opacity:{{ r.op }}">
+                <span style="width:var(--spine-w);height:14px;background:{{ r.color }};flex:none;opacity:.6"></span><span style="text-decoration:line-through;text-decoration-color:var(--text-faint)">{{ r.file }}</span><span style="flex:1"></span><span style="font-size:var(--text-xs);color:var(--text-faint)">{{ r.when }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ eDone }}" hint-placeholder-val="{{ false }}"><div style="padding:var(--space-5) var(--space-4);font-size:var(--text-xs);color:var(--text-faint)">trash is empty</div></sc-if>
+          </div>
+          <div style="padding:var(--space-4) var(--space-5);border-top:var(--border-w) solid var(--border-subtle);display:flex;align-items:center;gap:var(--space-4)">
+            <span style="font-size:var(--text-xs);color:var(--text-faint);flex:1">{{ eHint }}</span>
+            <sc-if value="{{ eNotDone }}" hint-placeholder-val="{{ true }}">
+              <span onMouseDown="{{ eDown }}" onMouseUp="{{ eUp }}" onMouseLeave="{{ eUp }}" style="position:relative;overflow:hidden;user-select:none;font-size:var(--text-sm);font-weight:var(--weight-medium);color:{{ eFg }};border:var(--border-w) solid var(--danger);border-radius:var(--radius-2);padding:2px var(--space-5);cursor:pointer;background:var(--danger-dim)">
+                <span style="position:absolute;left:0;top:0;bottom:0;width:{{ eFill }};background:var(--danger)"></span>
+                <span style="position:relative">hold to empty</span>
+              </span>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">no second step at all: the button fills while pressed ({{ holdLabel }}) and lets go if you release early. good for bulk and irreversible actions like emptying the trash. keyboard: hold ⌫.</div>
+    </div>
+
+    <div id="1f" style="display:flex;flex-direction:column;gap:10px;width:380px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">1f</span><span style="font-size:12px;color:#D6D9E0">act now, undo toast</span><span style="flex:1"></span><span onClick="{{ resetF }}" style="font-size:11px;color:#5B6270;cursor:pointer" style-hover="color:#D6D9E0">reset</span></div>
+      <div data-theme="dark" style="height:300px;position:relative;overflow:hidden;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;left:20px;right:20px;top:20px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-3)">
+          <sc-for list="{{ fRows }}" as="r" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);font-size:var(--text-sm)" style-hover="background:var(--surface-raised)">
+              <span style="width:var(--spine-w);height:14px;background:{{ r.color }};flex:none"></span><span>{{ r.file }}</span><span style="flex:1"></span>
+              <span onClick="{{ r.del }}" title="move to trash" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint);cursor:pointer;font-size:var(--text-xs)" style-hover="color:var(--danger);background:var(--danger-dim)">⌫</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ fAllGone }}" hint-placeholder-val="{{ false }}"><div style="padding:var(--space-5) var(--space-4);font-size:var(--text-xs);color:var(--text-faint)">nothing left · reset</div></sc-if>
+        </div>
+        <sc-if value="{{ fToastOn }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:20px;right:20px;bottom:16px;background:var(--surface-overlay);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);box-shadow:var(--shadow-2);overflow:hidden;z-index:var(--z-toast)">
+            <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-5);font-size:var(--text-sm)">
+              <span style="color:var(--text-faint)">⌫</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ fToast }}</span>
+              <span onClick="{{ undoF }}" style="display:flex;align-items:center;gap:var(--space-3);font-size:var(--text-xs);color:var(--text-primary);border:var(--border-w) solid var(--border-strong);border-radius:var(--radius-1);padding:1px var(--space-3);cursor:pointer" style-hover="border-color:var(--accent);color:var(--accent)">undo<span style="color:var(--text-faint)">⌘Z</span></span>
+            </div>
+            <div style="height:2px;background:var(--surface-inset)"><div style="height:2px;width:{{ fBar }};background:var(--accent)"></div></div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">the default for anything reversible: it happens immediately and the toast holds undo for {{ undoLabel }}. several deletes stack into one toast ("3 notes moved to trash"). ⌘Z works after the toast is gone too.</div>
+    </div>
+
+    <div id="1g" style="display:flex;flex-direction:column;gap:10px;width:380px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#0C1F14;background:#4FD08A;border-radius:3px;padding:1px 6px">1g</span><span style="font-size:12px;color:#D6D9E0">row turns into the question</span><span style="flex:1"></span><span onClick="{{ resetG }}" style="font-size:11px;color:#5B6270;cursor:pointer" style-hover="color:#D6D9E0">reset</span></div>
+      <div data-theme="dark" style="height:300px;position:relative;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-base);font-family:var(--font-mono);color:var(--text-primary);line-height:var(--leading-normal)">
+        <div style="position:absolute;left:20px;right:20px;top:20px;background:var(--surface-panel);border:var(--border-w) solid var(--border-subtle);border-radius:var(--radius-3);padding:var(--space-3)">
+          <sc-for list="{{ gRows }}" as="r" hint-placeholder-count="3">
+            <div style="position:relative;display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-4);border-radius:var(--radius-1);background:{{ r.bg }};font-size:var(--text-sm);height:24px">
+              <span style="width:var(--spine-w);height:14px;background:{{ r.color }};flex:none"></span>
+              <sc-if value="{{ r.armed }}" hint-placeholder-val="{{ false }}">
+                <span style="color:var(--danger)">delete {{ r.file }}?</span><span style="flex:1"></span>
+                <span onClick="{{ r.yes }}" style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--danger);cursor:pointer;padding:1px var(--space-3);border-radius:var(--radius-1)" style-hover="background:var(--danger);color:var(--bg-base)"><span style="border:var(--border-w) solid currentColor;border-radius:2px;padding:0 3px">y</span>yes</span>
+                <span onClick="{{ disarmG }}" style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--text-muted);cursor:pointer;padding:1px var(--space-3);border-radius:var(--radius-1)" style-hover="background:var(--surface-raised);color:var(--text-primary)"><span style="border:var(--border-w) solid currentColor;border-radius:2px;padding:0 3px">n</span>no</span>
+              </sc-if>
+              <sc-if value="{{ r.calm }}" hint-placeholder-val="{{ true }}">
+                <span>{{ r.file }}</span><span style="flex:1"></span>
+                <span onClick="{{ r.arm }}" title="delete" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-1);color:var(--text-faint);cursor:pointer;font-size:var(--text-xs)" style-hover="color:var(--danger);background:var(--danger-dim)">⌫</span>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ gAllGone }}" hint-placeholder-val="{{ false }}"><div style="padding:var(--space-5) var(--space-4);font-size:var(--text-xs);color:var(--text-faint)">nothing left · reset</div></sc-if>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8A91A0;line-height:1.6;text-wrap:pretty">nothing opens: the row itself asks, y / n answers. pressing ⌫ twice on a row deletes it. keeps your eyes where they were, works well in lists and the picker.</div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;holdMs&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:400,&quot;max&quot;:2000,&quot;step&quot;:100,&quot;unit&quot;:&quot;ms&quot;,&quot;default&quot;:800,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Confirmations&quot;},&quot;undoSeconds&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:2,&quot;max&quot;:10,&quot;step&quot;:1,&quot;unit&quot;:&quot;s&quot;,&quot;default&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Confirmations&quot;}}">
+const FOLDERS = [
+  { path: 'assets', color: 'var(--text-faint)' },
+  { path: 'canvas', color: 'var(--doc-3)' },
+  { path: 'journal', color: 'var(--doc-2)' },
+  { path: 'notes', color: 'var(--doc-4)' },
+  { path: 'specs', color: 'var(--doc-1)' },
+  { path: 'specs/auth', color: 'var(--doc-1)' },
+];
+const DOCS = {
+  assets: [{ file: 'diagram-01.png', color: 'var(--text-faint)', meta: '2d ago' }],
+  canvas: [{ file: 'auth-board.canvas', color: 'var(--doc-3)', meta: '1h ago' }, { file: 'roadmap-board.canvas', color: 'var(--doc-3)', meta: '43d ago' }],
+  journal: [{ file: '2026-10-06.md', color: 'var(--doc-2)', meta: 'yesterday' }, { file: '2026-10-07.md', color: 'var(--doc-2)', meta: 'today' }],
+  notes: [{ file: 'notes.md', color: 'var(--doc-4)', meta: '6d ago' }, { file: 'inbox.md', color: 'var(--doc-4)', meta: '2h ago' }],
+  specs: [{ file: 'adapter-design.md', color: 'var(--doc-1)', meta: '3d ago' }, { file: 'api-v2.md', color: 'var(--doc-3)', meta: '12d ago' }],
+  'specs/auth': [{ file: 'auth-flow.md', color: 'var(--doc-1)', meta: '2h ago' }, { file: 'tokens.md', color: 'var(--doc-4)', meta: '5d ago' }],
+};
+const ROWS = [
+  { id: 'auth', file: 'auth-flow.md', color: 'var(--doc-1)', consequence: '5 notes link here. those links turn into plain text.' },
+  { id: 'road', file: 'roadmap.md', color: 'var(--doc-3)', consequence: '3 notes and 1 canvas card point here. the card becomes a broken reference.' },
+  { id: 'notes', file: 'notes.md', color: 'var(--doc-4)', consequence: 'nothing links here.' },
+];
+const TRASH = [
+  { file: 'old-auth.md', color: 'var(--doc-1)', when: '43d ago' },
+  { file: 'scratch.canvas', color: 'var(--doc-3)', when: '12d ago' },
+  { file: 'todo-v1.md', color: 'var(--doc-2)', when: '6d ago' },
+];
+const RES = [
+  { key: 'notes', icon: '¶', label: 'notes' },
+  { key: 'canvas', icon: '◇', label: 'canvases' },
+  { key: 'attachments', icon: '⎘', label: 'pasted images' },
+];
+const PALETTE = ['var(--doc-1)', 'var(--doc-2)', 'var(--doc-3)', 'var(--doc-4)'];
+const SW = ['var(--text-faint)', 'var(--doc-1)', 'var(--doc-2)', 'var(--doc-3)', 'var(--doc-4)'];
+const SWN = ['folder', 'coral', 'amber', 'violet', 'cyan'];
+const ICON = { folder: '▾', note: '¶', canvas: '◇' };
+const COL_ITEMS = [
+  { id: 'f-specs', kind: 'folder', name: 'specs', own: 1 },
+  { id: 'n-auth', kind: 'note', name: 'auth-flow.md', parent: 'f-specs', own: 0 },
+  { id: 'n-api', kind: 'note', name: 'api-v2.md', parent: 'f-specs', own: 3 },
+  { id: 'f-journal', kind: 'folder', name: 'journal', own: 2 },
+  { id: 'n-day', kind: 'note', name: '2026-10-07.md', parent: 'f-journal', own: 0 },
+  { id: 'f-canvas', kind: 'folder', name: 'canvas', own: 0 },
+  { id: 'c-board', kind: 'canvas', name: 'auth-board.canvas', parent: 'f-canvas', own: 4 },
+];
+const OK = (h, l) => 'oklch(' + l + ' 0.13 ' + h + ')';
+const colOf = (it) => !it || !it.own ? 'var(--text-faint)' : it.own === 5 ? OK(it.hue, it.lt) : SW[it.own];
+const nm = (k) => k === 5 ? 'custom' : SWN[k];
+const srcIn = (list, it) => (it.own || it.kind === 'folder') ? it : (list.find(x => x.id === it.parent) || it);
+const CARDS = [{ id: 'n-auth', x: 28, y: 32 }, { id: 'c-board', x: 250, y: 96 }, { id: 'n-day', x: 60, y: 190 }];
+
+class Component extends DCLogic {
+  state = {
+    folders: FOLDERS,
+    aShow: true, aOpen: true, aFolder: 'specs/auth', aCreating: false, aNew: '', aName: 'adapter-tests', aFlash: '',
+    bFolder: 'specs', bCreating: false, bNew: '',
+    cOpen: true, cRes: 'notes', cDef: { notes: 'notes', canvas: 'canvas', attachments: 'assets' }, cCreating: false, cNew: '',
+    dDel: [], dOpen: null,
+    eHold: 0, eHolding: false, eDone: false,
+    fDel: [], fToast: null, fT: 0,
+    gDel: [], gArmed: null,
+    colItems: COL_ITEMS, colScrub: null, colFocus: 'n-auth', colFlash: '', colRing: null, colOver: null, colDrag: null, tip: null, tipH: null, tipC: false, tipPad: null, tipHot: null,
+  };
+  colKRef = React.createRef();
+  colRingRef = React.createRef();
+
+  componentDidMount() {
+    this._key = (e) => {
+      const t = e.target && e.target.tagName;
+      if (t === 'INPUT' || t === 'TEXTAREA') return;
+      if (this.state.tip) {
+        const s = this.state, tip = s.tip;
+        if (s.tipC) {
+          const it = s.colItems.find(x => x.id === tip.id);
+          const cur = s.tipPad || (it.own === 5 ? { h: it.hue, l: it.lt } : { h: 180, l: 0.74 });
+          const mv = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, .03], ArrowDown: [0, -.03] }[e.key];
+          if (mv) { e.preventDefault(); this.setState({ tipPad: { h: (cur.h + mv[0] + 360) % 360, l: Math.round(Math.max(.56, Math.min(.86, cur.l + mv[1])) * 100) / 100 } }); return; }
+          if (e.key === 'Enter') { this.colSet(tip.id, 5, { hue: cur.h, lt: cur.l }); this.tipClose(); return; }
+          if (e.key === 'Escape') { this.setState({ tipC: false, tipPad: null }); return; }
+        }
+        if (/^[0-4]$/.test(e.key)) { this.colSet(tip.id, +e.key); this.tipClose(); return; }
+        if (e.key === '5') { this.setState({ tipC: true, tipH: null }); return; }
+        if (e.key === 'Escape') { this.tipClose(); return; }
+      }
+      if (this.state.colRing && e.key === 'Escape') { this.setState({ colRing: null }); return; }
+      if (this.state.colFocus) {
+        if (/^[0-4]$/.test(e.key)) { this.colSet(this.state.colFocus, +e.key); return; }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          const ids = this.state.colItems.map(x => x.id), i = ids.indexOf(this.state.colFocus);
+          const n = Math.max(0, Math.min(ids.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)));
+          e.preventDefault(); this.setState({ colFocus: ids[n] }); return;
+        }
+      }
+      if (this.state.gArmed) {
+        if (e.key === 'y' || e.key === 'Enter' || e.key === 'Backspace') this.setState(s => ({ gDel: [...s.gDel, s.gArmed], gArmed: null }));
+        else if (e.key === 'n' || e.key === 'Escape') this.setState({ gArmed: null });
+      }
+      if (this.state.dOpen) {
+        if (e.key === 'Enter') this.setState(s => ({ dDel: [...s.dDel, s.dOpen], dOpen: null }));
+        else if (e.key === 'Escape') this.setState({ dOpen: null });
+      }
+    };
+    window.addEventListener('keydown', this._key);
+    this._mm = (e) => {
+      const sc = this.state.colScrub; if (!sc) return;
+      const idx = Math.max(0, Math.min(4, sc.base + Math.round((e.clientY - sc.y0) / 18)));
+      if (idx !== sc.idx) this.setState({ colScrub: { ...sc, idx } });
+    };
+    this._mu = () => { const sc = this.state.colScrub; if (!sc) return; this.colSet(sc.id, sc.idx); this.setState({ colScrub: null }); };
+    this._md = (e) => { const t = this.state.tip; if (t && t.click && !(e.target.closest && e.target.closest('[data-tip]'))) this.tipClose(); const el = this.colKRef.current; if (this.state.colFocus && el && !el.contains(e.target)) this.setState({ colFocus: null }); };
+    window.addEventListener('mousemove', this._mm);
+    window.addEventListener('mouseup', this._mu);
+    window.addEventListener('mousedown', this._md);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this._key);
+    window.removeEventListener('mousemove', this._mm); window.removeEventListener('mouseup', this._mu); window.removeEventListener('mousedown', this._md);
+    clearTimeout(this._colF); clearTimeout(this._tipO); clearTimeout(this._tipC);
+    clearInterval(this._eT); clearInterval(this._fT);
+  }
+
+  addFolder(raw) {
+    const path = (raw || '').trim().replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
+    if (!path) return null;
+    const parts = path.split('/');
+    const fs = [...this.state.folders];
+    for (let i = 1; i <= parts.length; i++) {
+      const p = parts.slice(0, i).join('/');
+      if (fs.find(f => f.path === p)) continue;
+      const parent = fs.find(f => f.path === parts.slice(0, i - 1).join('/'));
+      const tops = fs.filter(f => !f.path.includes('/')).length;
+      fs.push({ path: p, color: parent ? parent.color : PALETTE[tops % 4] });
+    }
+    fs.sort((a, b) => a.path.localeCompare(b.path));
+    this.setState({ folders: fs });
+    return path;
+  }
+
+  folderRows(selected, pick, extra) {
+    return this.state.folders.map(f => {
+      const depth = f.path.split('/').length - 1;
+      const on = f.path === selected;
+      return {
+        name: f.path.split('/').pop(), color: f.color,
+        indent: (8 + depth * 14) + 'px',
+        bg: on ? 'var(--surface-raised)' : 'transparent',
+        fg: on ? 'var(--text-primary)' : 'var(--text-muted)',
+        check: on ? '✓' : '',
+        pick: () => pick(f.path),
+        ...(extra ? extra(f) : {}),
+      };
+    });
+  }
+
+  colorOf(path) { const f = this.state.folders.find(x => x.path === path); return f ? f.color : 'var(--text-faint)'; }
+
+  inputKey(field, creatingField, onDone) {
+    return (e) => {
+      if (e.key === 'Enter') { const p = this.addFolder(this.state[field]); this.setState({ [field]: '', [creatingField]: false }); if (p) onDone(p); }
+      else if (e.key === 'Escape') this.setState({ [field]: '', [creatingField]: false });
+    };
+  }
+
+  tickE() {
+    if (this._eT) return;
+    const ms = this.props.holdMs ?? 800;
+    this._eT = setInterval(() => {
+      this.setState(s => {
+        let h = s.eHolding ? s.eHold + 16 / ms : s.eHold - 16 / 220;
+        if (h >= 1) { clearInterval(this._eT); this._eT = null; return { eHold: 0, eHolding: false, eDone: true }; }
+        if (h <= 0 && !s.eHolding) { clearInterval(this._eT); this._eT = null; h = 0; }
+        return { eHold: Math.max(0, h) };
+      });
+    }, 16);
+  }
+
+  deleteF(id) {
+    const secs = this.props.undoSeconds ?? 5;
+    this.setState(s => {
+      const fDel = [...s.fDel, id];
+      const pending = s.fToast ? s.fToast.ids.concat(id) : [id];
+      return { fDel, fToast: { ids: pending }, fT: 1 };
+    });
+    clearInterval(this._fT);
+    this._fT = setInterval(() => {
+      this.setState(s => {
+        const t = s.fT - 0.05 / secs;
+        if (t <= 0) { clearInterval(this._fT); return { fT: 0, fToast: null }; }
+        return { fT: t };
+      });
+    }, 50);
+  }
+
+  colSet(id, i, extra) {
+    const it = this.state.colItems.find(x => x.id === id); if (!it) return;
+    this.setState(s => ({ colItems: s.colItems.map(x => x.id === id ? { ...x, own: i, ...(extra || {}) } : x),
+      colFlash: it.name + ' → ' + (i ? nm(i) : it.kind === 'folder' ? 'no color' : 'folder color') }));
+    clearTimeout(this._colF); clearTimeout(this._tipO); clearTimeout(this._tipC); this._colF = setTimeout(() => this.setState({ colFlash: '' }), 1800);
+  }
+  ringLocal(e) {
+    const el = this.colRingRef.current; if (!el) return null;
+    const r = el.getBoundingClientRect(), k = (r.width / el.offsetWidth) || 1;
+    return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k, w: el.offsetWidth, h: el.offsetHeight };
+  }
+  openRing(id, e) {
+    e.preventDefault(); e.stopPropagation();
+    const p = this.ringLocal(e); if (!p) return;
+    this.setState({ colRing: { id, x: Math.max(50, Math.min(p.w - 50, p.x)), y: Math.max(50, Math.min(p.h - 50, p.y)), idx: null, moved: false } });
+  }
+  tipSoon(ctx, id) {
+    clearTimeout(this._tipC); const t = this.state.tip;
+    if (t && t.ctx === ctx && t.id === id) return;
+    clearTimeout(this._tipO);
+    this._tipO = setTimeout(() => this.setState({ tip: { ctx, id }, tipH: null, tipC: false, tipPad: null }), t ? 0 : 220);
+  }
+  tipNow(ctx, id, click) { clearTimeout(this._tipO); clearTimeout(this._tipC); this.setState({ tip: { ctx, id, click: !!click }, tipH: null, tipC: false, tipPad: null }); }
+  tipClose() { clearTimeout(this._tipO); clearTimeout(this._tipC); this.setState({ tip: null, tipH: null, tipC: false, tipPad: null }); }
+  tipLeave() { clearTimeout(this._tipO); clearTimeout(this._tipC); this._tipC = setTimeout(() => this.tipClose(), 180); }
+  tipVals() {
+    const s = this.state, items = s.colItems, tip = s.tip;
+    const tv = !tip ? items : s.tipPad ? items.map(x => x.id === tip.id ? { ...x, own: 5, hue: s.tipPad.h, lt: s.tipPad.l } : x)
+      : typeof s.tipH === 'number' ? items.map(x => x.id === tip.id ? { ...x, own: s.tipH } : x) : items;
+    const label = (it, k) => k ? nm(k) : it.kind === 'folder' ? 'none' : '↑ ' + (items.find(x => x.id === it.parent) || {}).name;
+    const RING = '0 0 0 1px var(--surface-overlay), 0 0 0 2px var(--text-primary)';
+    const make = (ctx, id, click) => {
+      const it = tv.find(x => x.id === id), raw = items.find(x => x.id === id), p = items.find(x => x.id === it.parent);
+      const open = !!tip && tip.ctx === ctx && tip.id === id, inh = it.kind !== 'folder' && !it.own;
+      const hot = !!click && !!s.tipHot && s.tipHot.ctx === ctx && s.tipHot.id === id;
+      const color = colOf(srcIn(tv, it));
+      return { id, name: it.name, icon: ICON[it.kind], path: (p ? p.name : '') + '/', color,
+        pad: it.kind === 'folder' ? '4px' : '22px', fg: it.kind === 'folder' ? 'var(--text-primary)' : 'var(--text-muted)',
+        tag: it.kind === 'folder' ? (it.own ? nm(it.own) : 'none') : inh ? '↑ ' + p.name : nm(it.own),
+        tagFg: inh ? 'var(--text-faint)' : 'var(--text-muted)',
+        open, thick: open || hot ? '4px' : 'var(--spine-w)',
+        glow: open || hot ? '0 0 8px ' + color : 'none', hitBg: hot && !open ? 'var(--surface-raised)' : 'transparent',
+        swOpen: open && !s.tipC, pickOpen: open && s.tipC, rbRing: raw.own === 5 ? RING : 'none',
+        enter: click ? () => this.setState({ tipHot: { ctx, id } }) : () => this.tipSoon(ctx, id),
+        leave: click ? () => this.setState({ tipHot: null }) : () => this.tipLeave(),
+        click: e => { e.stopPropagation(); if (click && open) this.tipClose(); else this.tipNow(ctx, id, click); },
+        opts: open ? [0, 1, 2, 3, 4].map(k => ({
+          color: k ? SW[k] : 'transparent',
+          border: k ? 'none' : it.kind === 'folder' ? '1px dashed var(--text-faint)' : '2px solid ' + colOf(p),
+          ring: raw.own === k ? RING : 'none',
+          hover: () => this.setState({ tipH: k }),
+          pick: () => { this.colSet(id, k); this.tipClose(); },
+        })) : [] };
+    };
+    const tIt = tip && items.find(x => x.id === tip.id);
+    const cur = s.tipPad || (tIt && tIt.own === 5 ? { h: tIt.hue, l: tIt.lt } : null);
+    return {
+      uTabs: ['n-auth', 'n-api', 'n-day'].map((id, n) => ({ ...make('utab', id, true), bg: n === 0 ? 'var(--bg-base)' : 'transparent', fg: n === 0 ? 'var(--text-primary)' : 'var(--text-muted)' })),
+      uCards: [{ id: 'c-board', x: 254, y: 36 }, { id: 'n-api', x: 254, y: 140 }].map(c => ({ ...make('ucard', c.id, true), x: c.x + 'px', y: c.y + 'px' })),
+      uRows: items.map(x => make('urow', x.id, true)),
+      tipCustom: () => this.setState({ tipC: true, tipH: null }),
+      tipBack: () => this.setState({ tipC: false, tipPad: null }),
+      tipRbHover: () => this.setState({ tipH: 'rb' }),
+      padX: cur ? (cur.h / 360 * 100) + '%' : '50%', padY: cur ? ((0.86 - cur.l) / 0.30 * 100) + '%' : '50%',
+      padOp: cur ? 1 : 0, padColor: cur ? OK(cur.h, cur.l) : 'transparent',
+      padMove: e => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const fx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), fy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+        this.setState({ tipPad: { h: Math.round(fx * 359), l: Math.round((0.86 - fy * 0.30) * 100) / 100 } });
+      },
+      padLeave: () => this.setState({ tipPad: null }),
+      padPick: () => { const t = this.state.tip, p = this.state.tipPad; if (t && p) { this.colSet(t.id, 5, { hue: p.h, lt: p.l }); this.tipClose(); } },
+      tTabs: ['n-auth', 'n-api', 'n-day'].map((id, n) => ({ ...make('tab', id), bg: n === 0 ? 'var(--bg-base)' : 'transparent', fg: n === 0 ? 'var(--text-primary)' : 'var(--text-muted)' })),
+      tCards: [{ id: 'c-board', x: 200, y: 36 }, { id: 'n-api', x: 200, y: 140 }].map(c => ({ ...make('card', c.id), x: c.x + 'px', y: c.y + 'px' })),
+      tRows: items.map(x => make('row', x.id)),
+      tipLabel: !tIt ? '' : s.tipPad ? 'h ' + s.tipPad.h + ' · ' + Math.round(s.tipPad.l * 100) : s.tipC ? (tIt.own === 5 ? 'custom' : 'any color') : s.tipH === 'rb' ? 'any color' : label(tIt, typeof s.tipH === 'number' ? s.tipH : tIt.own),
+      tipKeep: () => clearTimeout(this._tipC),
+      tipOut: () => this.tipLeave(),
+      tipUnhover: () => this.setState({ tipH: null }),
+    };
+  }
+  colorVals() {
+    const s = this.state, items = s.colItems;
+    const prev = (id, i) => items.map(x => x.id === id ? { ...x, own: i } : x);
+    const idxIn = (list, it) => it.own || (it.kind === 'folder' ? 0 : ((list.find(x => x.id === it.parent) || {}).own || 0));
+    const optName = (kind, i) => i ? SWN[i] : kind === 'folder' ? 'none' : '↑ folder';
+    const base = (list) => list.map(it => {
+      const i = idxIn(list, it), p = list.find(x => x.id === it.parent), inh = it.kind !== 'folder' && !it.own;
+      return { id: it.id, kind: it.kind, own: it.own, name: it.name, icon: ICON[it.kind],
+        pad: it.kind === 'folder' ? '4px' : '22px', color: colOf(srcIn(list, it)),
+        tag: it.kind === 'folder' ? (it.own ? nm(it.own) : 'none') : inh ? '↑ ' + p.name : nm(it.own),
+        tagFg: inh ? 'var(--text-faint)' : 'var(--text-muted)',
+        fg: it.kind === 'folder' ? 'var(--text-primary)' : 'var(--text-muted)' };
+    });
+    // 2a
+    const sc = s.colScrub;
+    const sRows = base(sc ? prev(sc.id, sc.idx) : items).map(r => {
+      const on = !!sc && sc.id === r.id;
+      return { ...r, scrubbing: on, spineW: on ? '6px' : 'var(--spine-w)', bg: on ? 'var(--surface-raised)' : 'transparent',
+        stripLeft: 'calc(' + r.pad + ' + 20px)', stripOff: on ? (sc.base * 18 + 11) + 'px' : '0px',
+        strip: on ? [0, 1, 2, 3, 4].map(i => ({ name: optName(r.kind, i), color: i ? SW[i] : 'transparent',
+          border: i ? 'none' : '1px dashed var(--text-faint)',
+          bg: i === sc.idx ? 'var(--surface-raised)' : 'transparent', fg: i === sc.idx ? 'var(--text-primary)' : 'var(--text-faint)' })) : [],
+        scrub: e => { e.preventDefault(); this.setState({ colScrub: { id: r.id, y0: e.clientY, base: Math.min(r.own, 4), idx: r.own } }); } };
+    });
+    // 2b
+    const fIt = items.find(x => x.id === s.colFocus);
+    const kRows = base(items).map(r => { const on = r.id === s.colFocus;
+      return { ...r, bg: on ? 'var(--surface-raised)' : 'transparent', ring: on ? 'var(--accent)' : 'transparent', focus: () => this.setState({ colFocus: r.id }) }; });
+    const kKeys = [0, 1, 2, 3, 4].map(i => { const on = !!fIt && fIt.own === i;
+      return { key: String(i), name: optName(fIt ? fIt.kind : 'note', i).replace('↑ ', ''), color: i ? SW[i] : 'var(--text-faint)',
+        bg: on ? 'var(--surface-raised)' : 'transparent', border: on ? 'var(--border-strong)' : 'var(--border-subtle)',
+        fg: on ? 'var(--text-primary)' : 'var(--text-muted)', set: () => { if (fIt) this.colSet(fIt.id, i); } }; });
+    // 2c
+    const ring = s.colRing;
+    const cardItems = ring && ring.idx != null ? prev(ring.id, ring.idx) : items;
+    const ringCards = CARDS.map(c => {
+      const it = cardItems.find(x => x.id === c.id), p = cardItems.find(x => x.id === it.parent), i = idxIn(cardItems, it);
+      return { name: it.name, icon: ICON[it.kind], path: p.name + '/', x: c.x + 'px', y: c.y + 'px', color: colOf(srcIn(cardItems, it)),
+        border: ring && ring.id === c.id ? 'var(--border-strong)' : 'var(--border-subtle)', open: e => this.openRing(c.id, e) };
+    });
+    const rIt = ring && items.find(x => x.id === ring.id);
+    const rP = rIt && items.find(x => x.id === rIt.parent);
+    const ringDots = ring ? [0, 1, 2, 3, 4].map(i => {
+      const a = (-90 + i * 72) * Math.PI / 180, sz = ring.idx === i ? 20 : 12;
+      return { x: Math.round(Math.cos(a) * 31) + 'px', y: Math.round(Math.sin(a) * 31) + 'px', s: sz + 'px', m: (-sz / 2) + 'px 0 0 ' + (-sz / 2) + 'px',
+        color: i ? SW[i] : 'transparent', border: i ? 'none' : '2px solid ' + colOf(rP),
+        ring: rIt.own === i ? '0 0 0 2px var(--surface-overlay), 0 0 0 3px var(--text-muted)' : 'none' };
+    }) : [];
+    const commitRing = () => { const r = this.state.colRing; if (!r) return; if (r.idx != null) this.colSet(r.id, r.idx); this.setState({ colRing: null }); };
+    // 2d
+    const dv = s.colOver && s.colDrag != null ? prev(s.colOver, s.colDrag) : items;
+    const pRows = base(dv).map(r => { const over = s.colOver === r.id;
+      return { ...r, bg: over ? 'var(--surface-raised)' : 'transparent',
+        outline: over ? '1px dashed ' + (s.colDrag ? SW[s.colDrag] : 'var(--text-muted)') : '1px solid transparent',
+        pinned: r.kind !== 'folder' && !!r.own, clear: () => this.colSet(r.id, 0),
+        over: e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; if (this.state.colOver !== r.id) this.setState({ colOver: r.id }); },
+        drop: e => { e.preventDefault(); const i = this.state.colDrag; if (i != null) this.colSet(r.id, i); this.setState({ colOver: null, colDrag: null }); } }; });
+    const pDrops = [0, 1, 2, 3, 4].map(i => ({ name: i ? SWN[i] : '↑ folder', color: i ? SW[i] : 'transparent', border: i ? 'none' : '1px dashed var(--text-muted)',
+      start: e => { e.dataTransfer.setData('text/plain', String(i)); e.dataTransfer.effectAllowed = 'copy'; this.setState({ colDrag: i }); } }));
+    return {
+      colReset: () => this.setState({ tip: null, tipC: false, tipPad: null, colItems: COL_ITEMS, colScrub: null, colFocus: 'n-auth', colFlash: '', colRing: null, colOver: null, colDrag: null }),
+      sRows, colKRef: this.colKRef, kRows, kKeys,
+      kHint: s.colFlash || (fIt ? fIt.name + ' · press 0–4' : 'click a row, then 0–4'),
+      colRingRef: this.colRingRef, ringCards, ringDots, ringOn: !!ring,
+      ringX: ring ? ring.x + 'px' : '0px', ringY: ring ? ring.y + 'px' : '0px',
+      ringLabel: ring ? (ring.idx == null ? 'esc' : optName(rIt.kind, ring.idx).replace('↑ ', '')) : '',
+      ringLabelFg: ring && ring.idx != null ? 'var(--text-primary)' : 'var(--text-faint)',
+      ringMove: e => {
+        const r = this.state.colRing; if (!r) return; const p = this.ringLocal(e); if (!p) return;
+        const dx = p.x - r.x, dy = p.y - r.y; let idx = null;
+        if (Math.hypot(dx, dy) > 14) idx = Math.round(((Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360) / 72) % 5;
+        if (idx !== r.idx) this.setState({ colRing: { ...r, idx, moved: r.moved || idx != null } });
+      },
+      ringClick: commitRing,
+      ringUp: e => { const r = this.state.colRing; if (e.button === 2 && r && r.moved) commitRing(); },
+      ringCtx: e => { e.preventDefault(); if (this.state.colRing) commitRing(); },
+      pRows, pDrops,
+      pEnd: () => this.setState({ colDrag: null, colOver: null }),
+      pLeave: e => { if (!e.currentTarget.contains(e.relatedTarget)) this.setState({ colOver: null }); },
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const holdMs = this.props.holdMs ?? 800;
+    const undoSeconds = this.props.undoSeconds ?? 5;
+
+    // 1a
+    const nameParts = s.aName.split('/').filter(Boolean);
+    const sub = nameParts.slice(0, -1).join('/');
+    const fileName = (nameParts[nameParts.length - 1] || 'untitled').replace(/\.md$/, '');
+    const fullPath = [s.aFolder, sub, fileName + '.md'].filter(Boolean).join('/');
+    const aAuto = !!sub && !s.folders.find(f => f.path === s.aFolder + '/' + sub);
+    const createA = () => {
+      if (sub) this.addFolder(s.aFolder + '/' + sub);
+      this.setState({ aFlash: '✓ created ' + fullPath, aName: '' });
+      clearTimeout(this._aF); this._aF = setTimeout(() => this.setState({ aFlash: '' }), 2400);
+    };
+
+    // 1b
+    const bDocs = (DOCS[s.bFolder] || []).map((d, i) => ({ ...d, bg: i === 0 ? 'var(--surface-raised)' : 'transparent' }));
+
+    // 1c
+    const cRows = RES.map(r => {
+      const on = r.key === s.cRes;
+      return { icon: r.icon, label: r.label, path: s.cDef[r.key], color: this.colorOf(s.cDef[r.key]),
+        bg: on ? 'var(--surface-raised)' : 'transparent', fg: on ? 'var(--text-primary)' : 'var(--text-muted)',
+        border: on ? 'var(--accent)' : 'var(--border-subtle)', pick: () => this.setState({ cRes: r.key }) };
+    });
+    const setDef = (p) => this.setState(st => ({ cDef: { ...st.cDef, [st.cRes]: p } }));
+
+    // 1d / 1f / 1g
+    const live = (del) => ROWS.filter(r => !del.includes(r.id));
+    const dRows = live(s.dDel).map(r => {
+      const open = s.dOpen === r.id;
+      return { ...r, open, bg: open ? 'var(--surface-raised)' : 'transparent',
+        trashFg: open ? 'var(--danger)' : 'var(--text-faint)', trashBg: open ? 'var(--danger-dim)' : 'transparent',
+        ask: () => this.setState(st => ({ dOpen: st.dOpen === r.id ? null : r.id })),
+        confirm: () => this.setState(st => ({ dDel: [...st.dDel, r.id], dOpen: null })) };
+    });
+    const fRows = live(s.fDel).map(r => ({ ...r, del: () => this.deleteF(r.id) }));
+    const fIds = s.fToast ? s.fToast.ids : [];
+    const fToast = fIds.length === 1 ? (ROWS.find(r => r.id === fIds[0]) || {}).file + ' moved to trash' : fIds.length + ' notes moved to trash';
+    const gRows = live(s.gDel).map(r => {
+      const armed = s.gArmed === r.id;
+      return { ...r, armed, calm: !armed, bg: armed ? 'var(--danger-dim)' : 'transparent', color: armed ? 'var(--danger)' : r.color,
+        arm: () => this.setState({ gArmed: r.id }), yes: () => this.setState(st => ({ gDel: [...st.gDel, r.id], gArmed: null })) };
+    });
+
+    return {
+      ...this.colorVals(),
+      ...this.tipVals(),
+      // 1a
+      aShow: s.aShow, aOpen: s.aOpen, aCreating: s.aCreating, aNotCreating: !s.aCreating, aName: s.aName, aNew: s.aNew,
+      aChip: s.aFolder.split('/').join(' / '), aChipColor: this.colorOf(s.aFolder),
+      aFolders: this.folderRows(s.aFolder, p => this.setState({ aFolder: p, aOpen: false })),
+      aAuto, aAutoPath: s.aFolder + '/' + sub + '/',
+      aFoot: s.aFlash || '→ ' + fullPath, aFootColor: s.aFlash ? 'var(--accent)' : 'var(--text-faint)',
+      toggleNew: () => this.setState(st => ({ aShow: !st.aShow })),
+      toggleAList: () => this.setState(st => ({ aOpen: !st.aOpen })),
+      startACreate: () => this.setState({ aCreating: true }),
+      onAName: e => this.setState({ aName: e.target.value }),
+      onANameKey: e => { if (e.key === 'Enter') createA(); if (e.key === 'Escape') this.setState({ aShow: false }); },
+      onANew: e => this.setState({ aNew: e.target.value }),
+      onANewKey: this.inputKey('aNew', 'aCreating', p => this.setState({ aFolder: p, aOpen: false })),
+      createA,
+      resetA: () => this.setState({ aShow: true, aOpen: true, aFolder: 'specs/auth', aCreating: false, aNew: '', aName: 'adapter-tests', aFlash: '' }),
+      // 1b
+      bFolder: s.bFolder, bColor: this.colorOf(s.bFolder), bCreating: s.bCreating, bNotCreating: !s.bCreating, bNew: s.bNew,
+      bFolders: this.folderRows(s.bFolder, p => this.setState({ bFolder: p }), f => ({ count: (DOCS[f.path] || []).length || '' })),
+      bDocs, bEmpty: bDocs.length === 0,
+      startBCreate: () => this.setState({ bCreating: true }),
+      onBNew: e => this.setState({ bNew: e.target.value }),
+      onBNewKey: this.inputKey('bNew', 'bCreating', p => this.setState({ bFolder: p })),
+      // 1c
+      cOpen: s.cOpen, cRows, cResLabel: RES.find(r => r.key === s.cRes).label,
+      cFolders: this.folderRows(s.cDef[s.cRes], setDef, f => ({ marks: RES.filter(r => s.cDef[r.key] === f.path).map(r => r.icon).join('') })),
+      cCreating: s.cCreating, cNotCreating: !s.cCreating, cNew: s.cNew,
+      cChipBg: s.cOpen ? 'var(--surface-raised)' : 'transparent',
+      toggleC: () => this.setState(st => ({ cOpen: !st.cOpen })),
+      startCCreate: () => this.setState({ cCreating: true }),
+      onCNew: e => this.setState({ cNew: e.target.value }),
+      onCNewKey: this.inputKey('cNew', 'cCreating', setDef),
+      // 1d
+      dRows, dAllGone: dRows.length === 0, closeD: () => this.setState({ dOpen: null }),
+      resetD: () => this.setState({ dDel: [], dOpen: null }),
+      // 1e
+      eRows: TRASH.map(r => ({ ...r, op: s.eDone ? 0 : 1 - s.eHold * 0.6 })).filter(() => !s.eDone),
+      eDone: s.eDone, eNotDone: !s.eDone, eCount: s.eDone ? '0' : '3 items',
+      eFill: Math.round(s.eHold * 100) + '%', eFg: s.eHold > 0.5 ? 'var(--bg-base)' : 'var(--danger)',
+      eHint: s.eDone ? '✓ 3 items deleted for good' : s.eHolding ? 'keep holding…' : 'deletes for good',
+      eDown: () => { this.setState({ eHolding: true }); this.tickE(); },
+      eUp: () => { if (this.state.eHolding) { this.setState({ eHolding: false }); this.tickE(); } },
+      resetE: () => this.setState({ eDone: false, eHold: 0, eHolding: false }),
+      holdLabel: (holdMs / 1000).toFixed(1).replace(/\.0$/, '') + 's',
+      // 1f
+      fRows, fAllGone: fRows.length === 0, fToastOn: !!s.fToast, fToast, fBar: Math.round(s.fT * 100) + '%',
+      undoF: () => { clearInterval(this._fT); this.setState(st => ({ fDel: st.fDel.filter(id => !fIds.includes(id)), fToast: null, fT: 0 })); },
+      resetF: () => { clearInterval(this._fT); this.setState({ fDel: [], fToast: null, fT: 0 }); },
+      undoLabel: undoSeconds + 's',
+      // 1g
+      gRows, gAllGone: gRows.length === 0, disarmG: () => this.setState({ gArmed: null }),
+      resetG: () => this.setState({ gDel: [], gArmed: null }),
+    };
+  }
+}
+</script>
+</body>
+</html>
