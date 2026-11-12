@@ -86,7 +86,16 @@ fn main() {
                         // nothing typed is lost to the close button
                         note::flush_note();
                         board::flush_board();
-                        CloseDecision::Close
+                        // ⚠️ leave HERE, saved, instead of answering `Close`:
+                        // Freya would drop the window inside this callback and
+                        // the run loop then turns once more, and on a Mac with a
+                        // Touch Bar AppKit's Touch Bar finder takes its observer
+                        // off the dead `WinitView` and aborts the app
+                        // (NSRangeException, "nextResponder"). One window, so
+                        // closing it is quitting.
+                        // ponytail: a second window needs the fix in the fork
+                        // (drop the window after the run loop stops)
+                        std::process::exit(0)
                     })
                     .with_size(1600., 940.)
                     .with_background(DARK.bg_base)
