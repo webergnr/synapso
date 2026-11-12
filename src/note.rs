@@ -1238,7 +1238,7 @@ struct Sheet {
 }
 
 /// JetBrains Mono advances 600/1000 em, so a line's wrap is arithmetic.
-fn advance(size: f32) -> f32 {
+pub(crate) fn advance(size: f32) -> f32 {
     size * 0.6
 }
 
