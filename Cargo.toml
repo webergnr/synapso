@@ -16,16 +16,17 @@ rust-version = "1.94"
 # the model/parsers/geometry, extracted with no shell dependency (TRD Phase 0)
 synapso-core = { path = "crates/synapso-core" }
 # The shell: Freya 0.5.0-rc.10 (Skia, its own component model) on our fork,
-# branch `synapso`, pinned by rev. The fork is upstream plus five commits:
+# branch `synapso`, pinned by rev. The fork is upstream plus six commits:
 # rotated labels are drawn supersampled (the tab rail's vertical text stair-
 # stepped otherwise), Tab and the arrows stay inside a focused text field
 # instead of moving focus, and a paragraph paints the holder its layout
 # measured (⌘P's arrows panicked otherwise), a trackpad pinch reaches
 # the app as `on_pinch`, and a paragraph's cursor width can be set (the
-# canvas editor is zoomed). See docs/adr-009-freya.md.
-freya = { git = "https://github.com/webergnr/freya", rev = "ab0e94ca", features = ["zoom-shortcuts", "borderless"] }
-freya-engine = { git = "https://github.com/webergnr/freya", rev = "ab0e94ca" }
-freya-winit = { git = "https://github.com/webergnr/freya", rev = "ab0e94ca" }
+# canvas editor is zoomed), and auto-hidden scrollbars show only while the
+# pointer is over their list. See docs/adr-009-freya.md.
+freya = { git = "https://github.com/webergnr/freya", rev = "fa68d74a", features = ["zoom-shortcuts", "borderless"] }
+freya-engine = { git = "https://github.com/webergnr/freya", rev = "fa68d74a" }
+freya-winit = { git = "https://github.com/webergnr/freya", rev = "fa68d74a" }
 # the sidecar is edited in place, so keys this build doesn't know keep their order
 serde_json = { version = "1", features = ["preserve_order"] }
 # the versions the core pins, so colours and geometry cross unconverted
