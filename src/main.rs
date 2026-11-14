@@ -188,6 +188,7 @@ fn app() -> impl IntoElement {
             split: State::create(SPLIT_DEFAULT),
             tree: State::create(false),
             tree_pinned: State::create(false),
+            tree_open: State::create(Default::default()),
             last_view: State::create(View::Split),
             dark: State::create(true),
             overlay: State::create(Overlay::None),
@@ -718,6 +719,13 @@ pub fn new_folder(app: App, parent: &str) {
     if std::fs::create_dir_all(&path).is_ok() {
         app.reindex();
         let rel = format!("{}/", index::rel_of(&root, &path));
+        // shown where it was made, even inside folders that start closed
+        let mut open = app.tree_open;
+        let mut up = index::parent_folder(&rel);
+        while !up.is_empty() {
+            open.write().insert(up.clone(), true);
+            up = index::parent_folder(&up);
+        }
         let mut naming = app.naming;
         naming.set(Some(rel));
     }
