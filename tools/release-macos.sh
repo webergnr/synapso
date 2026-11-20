@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-# The macOS half of a release, by hand.
-#
-# CI builds only Windows (see .github/workflows/release.yml): a GitHub-hosted
-# macOS runner needs Actions minutes this account does not have. This script is
-# the recipe that job used to run, so it does not rot in a deleted YAML block.
+# The macOS half of a release. .github/workflows/release.yml runs it on a
+# hosted Mac for every release; it also runs on a Mac by hand.
 #
 #   tools/release-macos.sh v0.2.0            # build and zip
-#   tools/release-macos.sh v0.2.0 --upload   # and add it to the draft release
+#   tools/release-macos.sh v0.2.0 --upload   # and add it to a draft release
 #
-# The draft is created by the tag push; this only adds a file to it. It refuses
-# to touch a release somebody already published.
+# --upload only adds a file to an existing draft. It refuses to touch a
+# release somebody already published.
 set -euo pipefail
 
 TAG="${1:?usage: release-macos.sh <tag> [--upload]}"

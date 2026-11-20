@@ -1,40 +1,74 @@
 name: release
 
-# A `v*` tag CREATES a draft release — nothing is visible until somebody
-# presses publish. The "Run workflow" button does the same build without
-# publishing anything: the .zip lands as a run artifact, which is how this
-# workflow is tested.
-# ⚠️ "without publishing anything" holds even when Run workflow is pointed at a
-# tag — see the condition on the publish step.
+# Every push to main that touches the app PUBLISHES a release: Windows x64 and
+# macOS arm64, built and tested here, under the next version (see the version
+# job). Pushes that only touch the website or the docs do not release.
 #
-# ⚠️ Windows only, on GitHub's hosted image. The macOS half is built by hand
-# on a Mac with `tools/release-macos.sh`, which carries the exact recipe this
-# file used to run, and the .zip is dropped into the draft before anybody
-# presses publish. Hosted minutes are free on a public repository, so
-# `macos-latest` can go back in a matrix here.
+# The "Run workflow" button, and a pull request that changes this file or the
+# macOS recipe, do the same builds WITHOUT publishing anything: the .zip files
+# stay as run artifacts, which is how this workflow is tested.
+#
+# Hosted runners, macOS included, are free on a public repository.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths-ignore:
+      - "website/**"
+      - "docs/**"
+      - "**.md"
+      - ".github/workflows/website.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "tools/release-macos.sh"
   workflow_dispatch:
 
+# one release at a time: a second push waits, then sees the first one's tag
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
-  release:
+  # The next version: the last vX.Y.Z tag with the patch bumped, or the
+  # version in Cargo.toml when that is higher. Raising Cargo.toml (0.2.0, say)
+  # is how a release skips ahead; otherwise every release is +0.0.1.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - id: next
+        run: |
+          set -euo pipefail
+          last=$(git ls-remote --tags --refs origin 'v*' | sed 's#.*refs/tags/v##' \
+            | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sort -V | tail -1)
+          last=${last:-0.0.0}
+          IFS=. read -r major minor patch <<<"$last"
+          bumped="$major.$minor.$((patch + 1))"
+          cargo=$(sed -n 's/^version = "\([0-9.]*\)"$/\1/p' Cargo.toml | head -1)
+          next=$(printf '%s\n%s\n' "$bumped" "$cargo" | sort -V | tail -1)
+          echo "last tag v$last, Cargo.toml $cargo -> v$next"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: version
     runs-on: windows-latest
-    # ⚠️ GitHub's default shell on Windows is `pwsh` — PowerShell 7, a separate
-    # install this box does not have. `powershell` is the 5.1 that ships with
-    # the OS.
+    # GitHub's default shell on Windows is `pwsh`; `powershell` is the 5.1 that
+    # ships with the OS, which the steps below were written for
     defaults:
       run:
         shell: powershell
-    permissions:
-      contents: write
     env:
       ZIP: synapso-windows-x86_64.zip
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # ⚠️ same as ci.yml: `actions-rust-lang/setup-rust-toolchain` is bash
-      # inside, and this box has no bash.
+      # inside, so the toolchain is set up by hand
       - name: rust toolchain
         run: |
           if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
@@ -49,6 +83,19 @@ jobs:
           rustup default stable
           rustc --version; cargo --version
 
+      # the exe's FileVersion comes from Cargo.toml, so it gets the release's
+      # version; Cargo.lock too, or --locked refuses to build. Not committed.
+      - name: stamp the version
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          sed -i '0,/^version = ".*"$/s//version = "'"$VERSION"'"/' Cargo.toml
+          sed -i '/^name = "synapso"$/{n;s/^version = ".*"$/version = "'"$VERSION"'"/}' Cargo.lock
+          grep -m1 '^version = ' Cargo.toml
+          grep -A1 '^name = "synapso"$' Cargo.lock
+
       - run: cargo test --workspace --release --locked
       - run: cargo build --release --locked
 
@@ -59,71 +106,55 @@ jobs:
           name: ${{ env.ZIP }}
           path: ${{ env.ZIP }}
 
-      # ⚠️ `github.ref` is also `refs/tags/…` in a "Run workflow" pointed at a
-      # tag, and then the run that was supposed to publish nothing would
-      # publish. Only a tag push gets through here.
-      - name: draft release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+  macos:
+    needs: version
+    # macos-latest is arm64, which is what the .zip name promises (the recipe
+    # checks it with lipo)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          rustc --version; cargo --version
+      # tests, builds, bundles, signs ad hoc and zips: the same recipe a Mac
+      # runs by hand
+      - run: tools/release-macos.sh "v${{ needs.version.outputs.version }}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: synapso-macos-arm64.zip
+          path: synapso-macos-arm64.zip
+
+  publish:
+    needs: [version, windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: dist
+          merge-multiple: true
+      - run: |
+          ls -l dist
+          test -f dist/synapso-windows-x86_64.zip
+          test -f dist/synapso-macos-arm64.zip
+      # only a push to main publishes; a pull request or "Run workflow" stops
+      # at the artifacts above. Tag and release are created together, on the
+      # commit that was built, and the release goes out with both files on it.
+      - name: publish v${{ needs.version.outputs.version }}
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
-        # the REST API and not `gh`: the CLI is not installed on this box, and
-        # Invoke-RestMethod ships with the OS
+          TAG: v${{ needs.version.outputs.version }}
+          NOTES: |
+            Neither binary is signed.
+
+            - **macOS**: Gatekeeper blocks the first launch. Try to open it once, then
+              System Settings -> Privacy & Security -> Open Anyway (right-click -> Open
+              on macOS 14 and older), or `xattr -dr com.apple.quarantine Synapso.app`.
+            - **Windows**: SmartScreen warns. More info -> Run anyway.
         run: |
-          $ErrorActionPreference = 'Stop'
-          $tag = $env:GITHUB_REF_NAME
-          $repo = $env:GITHUB_REPOSITORY
-          $headers = @{
-            Authorization = "Bearer $env:GH_TOKEN"
-            Accept        = 'application/vnd.github+json'
-            'User-Agent'  = 'synapso-release'
-          }
-          # WARNING: every character in this step is ASCII, deliberately.
-          #
-          # Windows PowerShell 5.1 reads a .ps1 with no BOM using the system
-          # ANSI codepage, and the runner writes this block as UTF-8. An em
-          # dash is E2 80 94; byte 94 in CP1252 is U+201D, the closing smart
-          # quote -- which PowerShell accepts as a string delimiter. Three em
-          # dashes in here meant three stray quote characters, an odd number,
-          # and "The string is missing the terminator" reported forty lines
-          # below the real fault. Two releases died on it.
-          #
-          # An array joined instead of a here-string, for a second reason: the
-          # closing '@ of a here-string has to start at column 0, and every
-          # line here is indented by the YAML block that carries it.
-          $notes = @(
-            'Windows only for now -- the macOS build is added to this draft by hand.'
-            ''
-            'Neither binary is signed.'
-            ''
-            '- **macOS**: Gatekeeper blocks the first launch. Try to open it once, then'
-            '  System Settings -> Privacy & Security -> Open Anyway (right-click -> Open'
-            '  on macOS 14 and older), or `xattr -dr com.apple.quarantine Synapso.app`.'
-            '- **Windows**: SmartScreen warns. More info -> Run anyway.'
-          ) -join "`n"
-          # running this again (after a failed upload, say) hits a release that
-          # already exists. Reusing it is fine while it is still a DRAFT; once
-          # somebody has pressed publish, swapping the file the world is
-          # downloading is not something a retry gets to do with no gate at all.
-          $release = $null
-          try {
-            $release = Invoke-RestMethod -Headers $headers "https://api.github.com/repos/$repo/releases/tags/$tag"
-          } catch {
-            if ($_.Exception.Response.StatusCode.value__ -ne 404) { throw }
-          }
-          if ($null -eq $release) {
-            $body = @{ tag_name = $tag; name = $tag; draft = $true; body = $notes } | ConvertTo-Json
-            $release = Invoke-RestMethod -Method Post -Headers $headers -ContentType 'application/json' -Body $body "https://api.github.com/repos/$repo/releases"
-            Write-Host "created draft $tag"
-          } elseif (-not $release.draft) {
-            Write-Error "$tag is already published (draft=false) -- not swapping assets under whoever is downloading them. Check the release by hand."
-          } else {
-            Write-Host "reusing draft $tag"
-            $old = $release.assets | Where-Object { $_.name -eq $env:ZIP }
-            if ($old) { Invoke-RestMethod -Method Delete -Headers $headers $old.url }
-          }
-          # absolute: -InFile goes through .NET, whose working directory is not
-          # necessarily PowerShell's current location
-          $zip = (Resolve-Path $env:ZIP).Path
-          Invoke-RestMethod -Method Post -Headers $headers -ContentType 'application/zip' `
-            -InFile $zip "https://uploads.github.com/repos/$repo/releases/$($release.id)/assets?name=$env:ZIP" | Out-Null
-          Write-Host "uploaded $env:ZIP to draft $tag"
+          gh release create "$TAG" dist/*.zip --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --title "$TAG" --notes "$NOTES" --generate-notes
