@@ -1,0 +1,177 @@
+---
+// The README's frame-time table, drawn: one bar per scenario for the p50, a
+// whisker out to the p99, and the 160 Hz frame budget as the reference line.
+// It stays a real <table>, so the numbers are the accessible view.
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.speed;
+const MAX = 8; // ms, the axis
+const BUDGET = 6.25;
+const pct = (ms: number) => `${((ms / MAX) * 100).toFixed(2)}%`;
+const ticks = [0, 2, 4, 6, 8];
+---
+
+<section class="sp section" id={t.id} aria-labelledby="sp-h">
+  <div class="wrap grid">
+    <div class="text">
+      <h2 class="h2" id="sp-h">{t.title}</h2>
+      <div class="prose"><p>{t.body}</p></div>
+    </div>
+
+    <figure class="chart" style={`--budget:${pct(BUDGET)}`}>
+      <div class="cap-row" aria-hidden="true">
+        <span class="label ttl">{t.chartTitle}</span>
+        <span class="legend label">
+          <span class="lg"><span class="sw bar-sw"></span>p50</span>
+          <span class="lg"><span class="sw whisk-sw"></span>p99</span>
+          <span class="lg"><span class="sw budget-sw"></span>{t.budget}</span>
+        </span>
+      </div>
+      <table>
+        <caption class="visually-hidden">{t.chartTitle}, in milliseconds; {t.budget}</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="visually-hidden">{t.scenario}</th>
+            <th scope="col" class="axis" aria-hidden="true">
+              {ticks.map((ms) => <span style={`left:${pct(ms)}`}>{ms === MAX ? `${ms} ms` : ms}</span>)}
+            </th>
+            <th scope="col" class="num">p50</th>
+            <th scope="col" class="num">p99</th>
+          </tr>
+        </thead>
+        <tbody>
+          {t.rows.map((r) => {
+            const over = r.p99 > BUDGET;
+            return (
+              <tr class:list={{ over }}>
+                <th scope="row">{r.name}</th>
+                <td class="plot" aria-hidden="true">
+                  <span class="budget"></span>
+                  <span class="bar" style={`width:${pct(r.p50)}`}></span>
+                  <span class="whisk" style={`left:${pct(r.p50)}; width:calc(${pct(r.p99)} - ${pct(r.p50)})`}></span>
+                  <span class="tick" style={`left:${pct(r.p99)}`}></span>
+                </td>
+                <td class="num">{r.p50.toFixed(1)}</td>
+                <td class="num p99">{r.p99.toFixed(1)}{over && <span class="flag" title="over the frame budget">▲ over</span>}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <figcaption class="notes">
+        <p>{t.method}</p>
+        <p>{t.caveat}</p>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .sp { padding-top: var(--sp-10); }
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: var(--sp-8);
+    align-items: start;
+  }
+  .text .prose { margin-top: var(--sp-5); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--f-mono);
+    font-size: var(--fs-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .cap-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--sp-2) var(--sp-5);
+    padding-bottom: var(--sp-5);
+  }
+  .ttl { color: var(--ink); }
+  .legend { display: inline-flex; flex-wrap: wrap; gap: var(--sp-4); text-transform: none; letter-spacing: 0.02em; }
+  .lg { display: inline-flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }
+  .sw { display: inline-block; }
+  .bar-sw { width: 14px; height: 8px; background: var(--accent); border-radius: 0 2px 2px 0; }
+  .whisk-sw { width: 14px; height: 2px; background: var(--ink-3); position: relative; }
+  .budget-sw { width: 0; height: 12px; border-left: 1px dashed var(--doc-2); }
+
+  th, td { padding: 0; text-align: left; font-weight: 400; }
+  thead th { color: var(--ink-2); font-size: var(--fs-label); padding-bottom: var(--sp-2); border-bottom: 1px solid var(--line-2); }
+  tbody th { color: var(--ink); padding: 14px var(--sp-4) 14px 0; white-space: nowrap; width: 1%; }
+  tbody tr { border-bottom: 1px solid var(--line); }
+  tbody tr:hover { background: var(--surface-panel); }
+  .num { text-align: right; padding-left: var(--sp-4); width: 4.5em; white-space: nowrap; color: var(--ink-2); }
+  tbody .num { color: var(--ink); }
+  tbody .p99 { color: var(--ink-2); }
+
+  .axis { position: relative; height: 1.6em; }
+  .axis span { position: absolute; bottom: var(--sp-2); transform: translateX(-50%); }
+  .axis span:first-child { transform: none; }
+  .axis span:last-child { transform: translateX(-100%); white-space: nowrap; }
+
+  .plot { position: relative; height: 44px; min-width: 160px; }
+  .budget {
+    position: absolute;
+    left: var(--budget);
+    top: 0; bottom: 0;
+    border-left: 1px dashed var(--doc-2);
+    opacity: 0.8;
+  }
+  .bar {
+    position: absolute;
+    left: 0;
+    top: calc(50% - 5px);
+    height: 10px;
+    background: var(--accent);
+    border-radius: 0 4px 4px 0;
+  }
+  .whisk {
+    position: absolute;
+    top: calc(50% - 1px);
+    height: 2px;
+    background: var(--ink-3);
+    margin-left: 2px;
+  }
+  .tick {
+    position: absolute;
+    top: calc(50% - 7px);
+    width: 2px;
+    height: 14px;
+    background: var(--ink-2);
+    transform: translateX(-1px);
+  }
+  .over .tick { background: var(--danger); }
+  .over .p99 { color: var(--ink); }
+  .flag {
+    display: block;
+    font-size: var(--fs-label);
+    color: var(--danger);
+    letter-spacing: 0.04em;
+  }
+
+  .notes { margin-top: var(--sp-5); display: grid; gap: var(--sp-2); }
+  .notes p { font-size: var(--fs-small); color: var(--ink-2); max-width: 80ch; }
+  .notes p:last-child { color: var(--ink-2); }
+
+  @media (max-width: 960px) {
+    .grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); }
+  }
+  /* phones: the scenario name gets its own line, the bar and numbers share the next */
+  @media (max-width: 560px) {
+    thead { display: none; }
+    tbody tr {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      padding: var(--sp-3) 0;
+    }
+    tbody th { grid-column: 1 / -1; width: auto; white-space: normal; padding: 0 0 var(--sp-1); }
+    .plot { height: 22px; min-width: 0; }
+    .num { width: auto; min-width: 3.2em; }
+  }
+</style>

@@ -1,0 +1,62 @@
+---
+// The social card, as a page: open /og at 1200×630 and screenshot it into
+// public/og.png (README › Social card). Not linked from anywhere, not indexed.
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../styles/site.css';
+import HeroArtwork from '../components/HeroArtwork.astro';
+import { en as copy } from '../content/en';
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Synapso — social card</title>
+  </head>
+  <body>
+    <div class="card">
+      <div class="copy">
+        <p class="label tags">Open source <span>/</span> Native desktop <span>/</span> Apache-2.0</p>
+        <p class="h">Think in notes.<br />See the <span class="wl">connections</span></p>
+        <p class="sub">Markdown notes, canvases and the links between them. Plain files you own.</p>
+        <p class="label brand">synapso</p>
+      </div>
+      <div class="art"><HeroArtwork title={copy.hero.figure} /></div>
+    </div>
+  </body>
+</html>
+
+<style>
+  body { margin: 0; background: var(--page); }
+  .card {
+    position: relative;
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+    background-size: 24px 24px;
+  }
+  .copy { position: absolute; left: 64px; top: 64px; z-index: 2; width: 640px; }
+  .tags { color: var(--ink-2); }
+  .tags span { color: var(--accent); }
+  .h {
+    margin-top: 28px;
+    font-family: var(--f-display);
+    font-size: 64px;
+    font-weight: 800;
+    font-stretch: 125%;
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .wl { color: var(--accent); text-decoration: underline dashed; text-decoration-thickness: 3px; text-underline-offset: 8px; }
+  .sub { margin-top: 28px; font-size: 22px; line-height: 1.4; color: var(--ink-2); max-width: 30ch; }
+  .brand { position: absolute; top: 470px; color: var(--ink); letter-spacing: 0.2em; font-size: 14px; }
+  .art { position: absolute; right: -24px; top: 18px; width: 600px; }
+  /* a still: everything in its final place */
+  .art :global(*) { animation: none !important; }
+  .art :global(.thread-pulse) { opacity: 0; }
+</style>

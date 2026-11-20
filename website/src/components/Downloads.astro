@@ -1,0 +1,293 @@
+---
+import { formatDate, RELEASES_URL, type DownloadsView } from '../lib/releases';
+import { platformsHTML, type DownloadsCopy } from '../lib/downloads-html';
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy; view: DownloadsView }
+const { copy, view } = Astro.props;
+const t = copy.download;
+// only what the browser needs to re-render the cards
+const clientCopy: DownloadsCopy = {
+  notAvailable: t.notAvailable,
+  fromSource: t.fromSource,
+  get: t.get,
+  unsigned: t.unsigned,
+  yourSystem: t.yourSystem,
+  linuxNote: t.linuxNote,
+};
+const date = formatDate(view.publishedAt);
+---
+
+<section
+  class="dl section"
+  id={t.id}
+  aria-labelledby="dl-h"
+  data-downloads
+  data-version={view.version ?? ''}
+  data-copy={JSON.stringify(clientCopy)}
+>
+  <div class="wrap">
+    <div class="head">
+      <h2 class="title" id="dl-h">{t.title}</h2>
+      <div class="release label" data-release>
+        {view.version ? (
+          <>
+            <span>{t.latest}</span>
+            <a class="ver" href={view.releaseUrl} data-ver>{view.version}</a>
+            {date && <span data-date>{t.published} {date}</span>}
+          </>
+        ) : (
+          <span class="warn">{t.unknown}</span>
+        )}
+        <a class="all" href={RELEASES_URL}>{t.allReleases} ↗</a>
+      </div>
+    </div>
+
+    <div class="platforms" data-platforms set:html={platformsHTML(view, clientCopy)} />
+
+    <div class="source" id="build">
+      <div>
+        <h3 class="label">{t.sourceTitle}</h3>
+        <p class="needs">{t.sourceNeeds}</p>
+      </div>
+      <div class="code">
+        <pre><code data-src>{t.sourceCode}</code></pre>
+        <button type="button" class="copy" data-copy-btn data-done={t.copied}>{t.copy}</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { fetchLatest, toView, formatDate, offered, type GhRelease } from '../lib/releases';
+  import { platformsHTML, type DownloadsCopy } from '../lib/downloads-html';
+
+  const root = document.querySelector<HTMLElement>('[data-downloads]');
+
+  function detectOS(): string | null {
+    const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+    const p = `${nav.userAgentData?.platform ?? ''} ${navigator.platform ?? ''} ${navigator.userAgent}`;
+    if (/android|iphone|ipad/i.test(p)) return null;
+    if (/mac/i.test(p)) return 'macos';
+    if (/win/i.test(p)) return 'windows';
+    if (/linux|x11/i.test(p)) return 'linux';
+    return null;
+  }
+
+  function markMine() {
+    const os = detectOS();
+    if (!root || !os) return;
+    root.querySelector(`.pf[data-os="${os}"]`)?.setAttribute('data-mine', '');
+  }
+
+  // a newer release than the build saw gets rendered in place; a failure
+  // leaves the built page (and its link to the releases list) as it is
+  async function refresh() {
+    if (!root) return;
+    const KEY = 'synapso:latest-release';
+    let release: GhRelease | null = null;
+    try {
+      const hit = JSON.parse(sessionStorage.getItem(KEY) ?? 'null');
+      if (hit && Date.now() - hit.at < 10 * 60_000) release = hit.release;
+    } catch {}
+    if (!release) {
+      release = await fetchLatest();
+      try {
+        if (release) sessionStorage.setItem(KEY, JSON.stringify({ at: Date.now(), release }));
+      } catch {}
+    }
+    if (!release) return;
+    const view = toView(release);
+    if (!view.version || view.version === root.dataset.version) return;
+
+    const t = JSON.parse(root.dataset.copy ?? '{}') as DownloadsCopy;
+    const list = root.querySelector<HTMLElement>('[data-platforms]');
+    if (list) list.innerHTML = platformsHTML(view, t);
+    const ver = root.querySelector<HTMLAnchorElement>('[data-ver]');
+    if (ver) {
+      ver.textContent = view.version;
+      ver.href = view.releaseUrl;
+    }
+    const date = root.querySelector<HTMLElement>('[data-date]');
+    const d = formatDate(view.publishedAt);
+    if (date && d) date.textContent = date.textContent!.replace(/\S+ \d+, \d{4}$/, d);
+    root.dataset.version = view.version;
+    // the nav, the hero and the drawing's title block name the version too
+    for (const el of document.querySelectorAll('[data-release-ver]')) el.textContent = view.version;
+    const meta = document.querySelector<HTMLElement>('[data-offered]');
+    if (meta) {
+      meta.replaceChildren(...[view.version, ...offered(view)].map((text, i) => {
+        const span = document.createElement('span');
+        if (i === 0) span.className = 'ver';
+        span.textContent = text;
+        return span;
+      }));
+    }
+    markMine();
+  }
+
+  markMine();
+  if (root) {
+    // fetch when the section is about to be seen, not on page load
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        refresh();
+      }
+    }, { rootMargin: '600px 0px' });
+    io.observe(root);
+  }
+
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-copy-btn]')) {
+    btn.addEventListener('click', async () => {
+      const code = btn.parentElement?.querySelector('[data-src]')?.textContent ?? '';
+      try {
+        await navigator.clipboard.writeText(code);
+        const label = btn.textContent;
+        btn.textContent = btn.dataset.done ?? label;
+        setTimeout(() => (btn.textContent = label), 1600);
+      } catch {}
+    });
+  }
+</script>
+
+<style>
+  .dl { padding-top: var(--sp-10); }
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--sp-4) var(--sp-7);
+    padding-bottom: var(--sp-5);
+    border-bottom: 1px solid var(--line-2);
+  }
+  .title {
+    font-family: var(--f-display);
+    font-size: var(--fs-statement);
+    font-weight: 800;
+    font-stretch: 125%;
+    line-height: 0.85;
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  .release {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-4);
+    align-items: baseline;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    color: var(--ink-2);
+  }
+  .release .ver { color: var(--accent); font-size: var(--fs-mono); text-decoration: none; }
+  .release .ver:hover { text-decoration: underline; }
+  .release .all { color: var(--ink); white-space: nowrap; }
+  .release .warn { color: var(--doc-2); }
+
+  .platforms {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-bottom: 1px solid var(--line-2);
+  }
+  .platforms :global(.pf) {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-6) var(--sp-5) var(--sp-6) 0;
+    min-width: 0;
+  }
+  .platforms :global(.pf + .pf) { padding-left: var(--sp-5); border-left: 1px solid var(--line); }
+  .platforms :global(.pf-head) { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+  .platforms :global(.pf-name) {
+    font-family: var(--f-display);
+    font-size: clamp(1.6rem, 2.4vw, 2.25rem);
+    font-weight: 700;
+    font-stretch: 112%;
+    letter-spacing: -0.02em;
+  }
+  .platforms :global(.mine) {
+    display: none;
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .platforms :global(.pf[data-mine] .mine) { display: inline; }
+
+  .platforms :global(.builds) { margin-top: var(--sp-5); display: grid; gap: var(--sp-3); }
+  .platforms :global(.build) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3) var(--sp-4);
+    padding: var(--sp-4);
+    border: 1px solid var(--line-2);
+    background: var(--surface-panel);
+  }
+  .platforms :global(.build.na) { background: transparent; border-style: dashed; border-color: var(--line); }
+  .platforms :global(.spec) { display: grid; gap: 2px; min-width: 0; font-family: var(--f-mono); }
+  .platforms :global(.arch) { font-size: var(--fs-mono); font-weight: 600; color: var(--ink); }
+  .platforms :global(.file) { font-size: var(--fs-label); color: var(--ink-2); overflow-wrap: anywhere; }
+  .platforms :global(.meta) { font-size: var(--fs-label); color: var(--ink-2); }
+  .platforms :global(.na-t) { font-size: var(--fs-label); color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.08em; }
+  .platforms :global(.na .arch) { color: var(--ink-2); font-weight: 500; }
+  .platforms :global(.get) { height: 40px; padding-inline: var(--sp-4); }
+  .platforms :global(.src) {
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .platforms :global(.src:hover) { color: var(--accent); }
+  .platforms :global(.pf-note) { margin-top: var(--sp-4); font-size: var(--fs-small); color: var(--ink-2); }
+
+  #build {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: var(--sp-5) var(--sp-7);
+    padding: var(--sp-6) 0;
+    scroll-margin-top: 96px;
+  }
+  #build h3 { color: var(--ink); }
+  .needs { margin-top: var(--sp-2); color: var(--ink-2); font-size: var(--fs-small); }
+  .code { position: relative; }
+  pre {
+    margin: 0;
+    padding: var(--sp-4) var(--sp-5);
+    padding-right: 88px;
+    background: var(--surface-inset);
+    border: 1px solid var(--line);
+    font-size: var(--fs-mono);
+    line-height: 1.8;
+    color: var(--ink);
+    overflow-x: auto;
+  }
+  .copy {
+    position: absolute;
+    top: var(--sp-3);
+    right: var(--sp-3);
+    padding: 6px 10px;
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    border: 1px solid var(--line-2);
+    background: var(--surface-panel);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
+  }
+  .copy:hover { color: var(--ink); border-color: var(--ink-3); }
+
+  @media (max-width: 1100px) {
+    .platforms { grid-template-columns: minmax(0, 1fr); }
+    .platforms :global(.pf) { padding: var(--sp-6) 0; }
+    .platforms :global(.pf + .pf) { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 760px) {
+    #build { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

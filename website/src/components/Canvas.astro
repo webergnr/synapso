@@ -1,0 +1,168 @@
+---
+import { Picture } from 'astro:assets';
+import shot from '../../../docs/screenshots/02-canvas.png';
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.canvas;
+
+// fixture/seed/architecture.canvas as fixture/gen_vault.py writes it into the
+// demo vault, trimmed to three nodes and two edges. Keys in `ext` are
+// Synapso's own; other JSON Canvas readers ignore them.
+const ext = new Set(['shape', 'route', 'dash']);
+const nodes = [
+  { id: 'gw', type: 'text', x: 350, y: 100, width: 160, height: 56, text: 'api gateway' },
+  { id: 'retry', type: 'text', x: 402, y: 232, width: 56, height: 48, text: 'retry?', shape: 'triangle' },
+  { id: 'cardA', type: 'file', x: 370, y: 440, width: 240, height: 112, file: 'auth/auth-flow.md', color: '1' },
+];
+const edges = [
+  { id: 'e3', fromNode: 'gw', toNode: 'retry', label: 'on 401', route: 'straight' },
+  { id: 'e5', fromNode: 'cardA', toNode: 'gw', dash: true, toEnd: 'none', color: '1' },
+];
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const obj = (o: Record<string, unknown>) =>
+  '{ ' + Object.entries(o).map(([k, v]) =>
+    `<span class="${ext.has(k) ? 'x' : 'k'}">"${k}"</span>: <span class="v">${esc(JSON.stringify(v))}</span>`).join(', ') + ' }';
+// one block per line, indent as a CSS variable: a long line wraps under
+// itself (hanging indent) instead of scrolling sideways
+const line = (depth: number, html: string) => `<span class="jl" style="--d:${depth}">${html}</span>`;
+const json = [
+  line(0, '{'),
+  line(1, '<span class="k">"nodes"</span>: ['),
+  ...nodes.map((n) => line(2, `${obj(n)},`)),
+  line(2, '<span class="el">…</span>'),
+  line(1, '],'),
+  line(1, '<span class="k">"edges"</span>: ['),
+  ...edges.map((e) => line(2, `${obj(e)},`)),
+  line(2, '<span class="el">…</span>'),
+  line(1, ']'),
+  line(0, '}'),
+].join('');
+---
+
+<section class="cv section" id={t.id} aria-labelledby="cv-h">
+  <div class="wrap">
+    <div class="top">
+      <figure class="shot pic">
+        <Picture
+          src={shot}
+          formats={['avif', 'webp']}
+          widths={[720, 1080, 1440, 2160]}
+          sizes="(min-width: 1100px) 62vw, 100vw"
+          alt={t.alt}
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+      <div class="text">
+        <h2 class="h2" id="cv-h">{t.title}</h2>
+        <div class="prose"><p>{t.body}</p></div>
+        <div class="rail" aria-label={t.toolsLabel}>
+          <p class="label">{t.toolsLabel}</p>
+          <ul>
+            {t.tools.map(([k, name]) => <li><kbd>{k}</kbd><span>{name}</span></li>)}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="disk">
+      <div class="prose fmt"><p>{t.format}</p></div>
+      <figure class="file">
+        <figcaption class="label bar">
+          <span>{t.fileLabel}</span>
+          <span class="legend"><span class="sw k-sw"></span>JSON Canvas 1.0 <span class="sw x-sw"></span>Synapso's own</span>
+        </figcaption>
+        <pre><code set:html={json} /></pre>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cv { padding-top: var(--sp-10); }
+  .top {
+    display: grid;
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+    gap: var(--sp-7);
+    align-items: center;
+  }
+  .pic {
+    margin-left: calc(var(--gutter) * -1);
+    border-left: 0;
+    aspect-ratio: 16 / 10.5;
+    overflow: hidden;
+  }
+  .pic::before { display: none; }
+  .pic :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 0% 18%; }
+  .text .prose { margin-top: var(--sp-5); }
+
+  .rail { margin-top: var(--sp-6); }
+  .rail ul {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-2) var(--sp-3);
+    margin-top: var(--sp-3);
+  }
+  .rail li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+
+  .disk {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: var(--sp-7);
+    margin-top: var(--sp-8);
+    align-items: start;
+  }
+  .fmt p { color: var(--ink); font-size: var(--fs-lede); line-height: 1.5; }
+  .file {
+    border-top: 1px solid var(--line-2);
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bar {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-5);
+    padding: var(--sp-3) 0;
+    border-bottom: 1px solid var(--line);
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+  .legend { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--ink-2); }
+  .sw { width: 8px; height: 8px; display: inline-block; }
+  .k-sw { background: var(--doc-4); }
+  .x-sw { background: var(--accent); margin-left: var(--sp-3); }
+  pre {
+    margin: 0;
+    padding: var(--sp-4) 0 var(--sp-5);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: var(--fs-mono);
+    line-height: 1.75;
+    color: var(--ink-2);
+    tab-size: 2;
+  }
+  pre :global(.jl) {
+    display: block;
+    padding-left: calc(var(--d) * 2ch + 4ch);
+    text-indent: -4ch;
+  }
+  pre :global(.k) { color: var(--doc-4); }
+  pre :global(.x) { color: var(--accent); }
+  pre :global(.v) { color: var(--ink); }
+  pre :global(.el) { color: var(--ink-3); }
+
+  @media (max-width: 1100px) {
+    .top, .disk { grid-template-columns: minmax(0, 1fr); }
+    .pic { margin-inline: calc(var(--gutter) * -1); border-right: 0; }
+  }
+</style>

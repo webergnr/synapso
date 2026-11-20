@@ -1,0 +1,317 @@
+---
+import HeroArtwork from './HeroArtwork.astro';
+import { REPO_URL, offered, type DownloadsView } from '../lib/releases';
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy; view: DownloadsView }
+const { copy, view } = Astro.props;
+const t = copy.hero;
+
+---
+
+<section class="hero" id="top" data-hero>
+  <div class="grid wrap">
+    <div class="copy">
+      <p class="tags label">
+        {t.tags.map((tag, i) => <>{i > 0 && <span class="slash" aria-hidden="true">/</span>}<span>{tag}</span></>)}
+      </p>
+
+      <h1 class="mega">
+        <span class="line">{t.lineA[0]} <span class="split">{t.lineA[1]}</span></span>
+        <span class="line indent">{t.lineB}</span>
+        <span class="line indent"><span class="wiki"><span class="br br-l" aria-hidden="true">[[</span>{t.link}<span class="br br-r" aria-hidden="true">]]</span></span></span>
+      </h1>
+
+      <p class="lede">{t.lede}</p>
+
+      <div class="ctas">
+        <a class="btn btn-primary" href="#download">{t.primary}<span class="arr down" aria-hidden="true">↓</span></a>
+        <a class="btn btn-ghost" href={REPO_URL} rel="noopener">{t.secondary}<span class="arr" aria-hidden="true">↗</span></a>
+      </div>
+
+      <p class="meta label" data-offered>
+        {view.version
+          ? <><span class="ver">{view.version}</span>{offered(view).map((u) => <span>{u}</span>)}</>
+          : <a href={view.releaseUrl}>{t.noRelease}</a>}
+      </p>
+    </div>
+
+    <figure class="figure">
+      <div class="art-wrap" data-art-wrap>
+        <HeroArtwork title={t.figure} />
+      </div>
+      <figcaption class="bom" data-bom>
+        <table>
+          <caption class="visually-hidden">{t.bomTitle}</caption>
+          <thead>
+            <tr class="title-row">
+              <th colspan="3" scope="colgroup">{t.bomTitle}</th>
+              <th class="rev">REV <span data-release-ver>{view.version ?? '—'}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {t.bom.map((row, i) => (
+              <tr data-part={row.part}>
+                <td class="n">{i + 1}</td>
+                <th scope="row">{row.item}</th>
+                <td class="what">{row.what}</td>
+                <td class="fmt">{row.fmt}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </figcaption>
+    </figure>
+  </div>
+
+  <ul class="triad wrap" aria-label={t.triadLabel}>
+    {t.triad.map((x) => (
+      <li><span class="key">{x.key}</span><span class="txt">{x.text}</span></li>
+    ))}
+  </ul>
+</section>
+
+<script>
+  // the drawing tilts a few degrees toward the pointer, like turning a model
+  // on a desk. Fine pointers only, and never with reduced motion.
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  const wrap = document.querySelector<HTMLElement>('[data-art-wrap]');
+  const fine = matchMedia('(hover: hover) and (pointer: fine)');
+  const still = matchMedia('(prefers-reduced-motion: reduce)');
+  if (hero && wrap && fine.matches && !still.matches) {
+    let frame = 0;
+    hero.addEventListener('pointermove', (e) => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const r = hero.getBoundingClientRect();
+        wrap.style.setProperty('--px', (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
+        wrap.style.setProperty('--py', (((e.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
+      });
+    });
+    hero.addEventListener('pointerleave', () => {
+      wrap.style.setProperty('--px', '0');
+      wrap.style.setProperty('--py', '0');
+    });
+  }
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    padding-top: clamp(96px, 12vh, 136px);
+    isolation: isolate;
+  }
+  /* the canvas' dot grid, fading out under the fold */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+    background-size: 24px 24px;
+    background-position: 12px 12px;
+    mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 95%);
+    pointer-events: none;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--sp-5);
+    align-items: start;
+  }
+  .copy {
+    grid-column: 1 / span 8;
+    grid-row: 1;
+    position: relative;
+    z-index: 2;
+    padding-top: var(--sp-5);
+    container-type: inline-size;
+  }
+  .figure {
+    grid-column: 6 / -1;
+    grid-row: 1;
+    position: relative;
+    z-index: 1;
+    margin-top: -56px;
+    margin-right: calc(var(--gutter) * -1);
+  }
+
+  .tags { display: flex; flex-wrap: wrap; gap: var(--sp-2); color: var(--ink-2); }
+  .slash { color: var(--accent); }
+
+  .mega {
+    margin-top: var(--sp-6);
+    font-family: var(--f-display);
+    /* "THINK IN NOTES." is 10.44em wide at wdth 125: fit it to the column */
+    font-size: calc(100cqi / 10.6);
+    font-weight: 800;
+    font-stretch: 125%;
+    line-height: 0.88;
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+    min-width: 0;
+  }
+  .line { display: block; white-space: nowrap; }
+  .split { white-space: nowrap; }
+  .indent { padding-left: 0.62em; }
+
+  /* CONNECTIONS is a wiki link, drawn the way the editor draws one: accent,
+     dashed underline, and the [[ ]] folded away until the caret is on it */
+  .wiki {
+    position: relative;
+    color: var(--accent);
+    text-decoration: underline dashed;
+    text-decoration-thickness: 0.035em;
+    text-underline-offset: 0.08em;
+    outline: none;
+  }
+  .br {
+    position: absolute;
+    top: 0;
+    color: var(--ink-3);
+    font-weight: 300;
+    opacity: 0;
+    transition: opacity var(--dur-2) var(--ease-out);
+    text-decoration: none;
+    pointer-events: none;
+  }
+  .br-l { right: 100%; margin-right: 0.04em; }
+  .br-r { left: calc(100% + 0.3em); }
+  .mega:hover .br { opacity: 1; }
+  @media (prefers-reduced-motion: no-preference) {
+    .br { animation: caret 2600ms var(--ease-out) 600ms both; }
+    .mega:hover .br { animation: none; }
+  }
+  @keyframes caret {
+    0% { opacity: 0; }
+    12%, 62% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .lede {
+    margin-top: var(--sp-6);
+    max-width: 44ch;
+    color: var(--ink-2);
+  }
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-top: var(--sp-6);
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-4);
+    margin-top: var(--sp-4);
+    color: var(--ink-2);
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+  /* :global: the download section's refresh rewrites these spans */
+  .meta :global(.ver) { color: var(--accent); }
+  .meta :global(span + span)::before { content: '·'; margin-right: var(--sp-4); color: var(--ink-3); }
+  .meta :global(.ver + span)::before { content: none; }
+
+  /* the drawing */
+  .art-wrap {
+    transform: perspective(1600px) rotateX(calc(var(--py, 0) * -2.2deg)) rotateY(calc(var(--px, 0) * 3deg));
+    transition: transform 1100ms var(--ease-out);
+    will-change: transform;
+  }
+
+  /* the parts list, set like the title block of a drawing */
+  .bom {
+    position: absolute;
+    right: var(--gutter);
+    bottom: -88px;
+    width: min(360px, 48%);
+  }
+  .bom table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    background: var(--page);
+    border: 1px solid var(--line-2);
+  }
+  .bom th, .bom td {
+    padding: 6px 8px;
+    border-top: 1px solid var(--line);
+    text-align: left;
+    font-weight: 400;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .bom thead th {
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-top: 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bom .rev { text-align: right; color: var(--accent); }
+  .bom tbody th { color: var(--ink); font-weight: 600; }
+  .bom .n { width: 2.2em; color: var(--ink-2); border-right: 1px solid var(--line); text-align: center; }
+  .bom .what { overflow: hidden; text-overflow: ellipsis; max-width: 0; width: 100%; }
+  .bom .fmt { color: var(--ink-2); text-align: right; }
+  .bom tbody tr { cursor: default; transition: background-color var(--dur-1) var(--ease-out); }
+  .bom tbody tr:hover { background: var(--surface-panel); }
+  .bom tbody tr:hover .n { color: var(--accent); }
+
+  /* three lines: fast, yours, connected */
+  .triad {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: calc(var(--sp-9) + var(--sp-6));
+    padding-block: 0;
+  }
+  .triad li {
+    display: grid;
+    gap: var(--sp-2);
+    padding: var(--sp-5) var(--sp-5) var(--sp-6) 0;
+    border-top: 1px solid var(--line-2);
+  }
+  .triad li + li { padding-left: var(--sp-5); border-left: 1px solid var(--line); }
+  .key {
+    font-family: var(--f-mono);
+    font-size: var(--fs-mono);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .key::before { content: '■ '; color: var(--accent); font-size: 0.8em; vertical-align: 0.1em; }
+  .txt { color: var(--ink-2); font-size: var(--fs-small); max-width: 36ch; }
+
+  @media (max-width: 1100px) {
+    .copy { grid-column: 1 / -1; }
+    .figure {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      margin: var(--sp-6) 0 0;
+    }
+    .bom { position: static; width: 100%; max-width: 520px; margin: var(--sp-4) 0 0 auto; }
+    .triad { margin-top: var(--sp-7); }
+  }
+  @media (max-width: 720px) {
+    /* four lines; CONNECTIONS (8.4em at wdth 112) sets the size */
+    .mega { font-size: calc(100cqi / 8.55); font-stretch: 112%; }
+    .split { display: block; }
+    .br { display: none; }
+    .triad { grid-template-columns: minmax(0, 1fr); }
+    .triad li + li { padding-left: 0; border-left: 0; }
+    .triad li { padding: var(--sp-4) 0; }
+    .figure { margin-inline: calc(var(--gutter) * -1); }
+    .bom { padding-inline: var(--gutter); max-width: none; }
+    .indent { padding-left: 0; }
+  }
+  @media (max-width: 480px) {
+    .ctas .btn { flex: 1 1 100%; justify-content: center; }
+    .meta { flex-direction: column; gap: 2px; }
+    .meta :global(span + span)::before { content: none; }
+  }
+</style>

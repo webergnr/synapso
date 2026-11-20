@@ -1,0 +1,45 @@
+name: website
+
+# Checks the landing page in website/: tests, types, a full static build.
+# Deploying is left to the host (see website/README.md); this only proves the
+# site builds from what is on the branch.
+on:
+  pull_request:
+    paths:
+      - "website/**"
+      - "docs/screenshots/**"
+      - "design/tokens.css"
+      - "assets/icon/**"
+      - ".github/workflows/website.yml"
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - "docs/screenshots/**"
+      - "design/tokens.css"
+      - "assets/icon/**"
+      - ".github/workflows/website.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run check
+      # the token only lifts the API rate limit for reading the latest release
+      - run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
