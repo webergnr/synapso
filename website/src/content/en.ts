@@ -245,7 +245,7 @@ export const en = {
       { href: 'https://github.com/webergnr/synapso/blob/main/LICENSE', text: 'License' },
       { href: 'https://github.com/webergnr/synapso/blob/main/NOTICE', text: 'Notice' },
     ],
-    license: 'Apache-2.0 · © 2026 Weber Grandizoli',
+    license: 'Open source · Apache-2.0',
     fonts: 'Set in Archivo, JetBrains Mono and Excalifont (SIL OFL 1.1).',
   },
 } as const;
