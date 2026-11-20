@@ -293,6 +293,38 @@ pub fn write_checked(path: &Path, text: &str, expected: Stamp) -> io::Result<Sta
     Ok(stamp(path))
 }
 
+/// What saving a note came to.
+#[derive(Debug, PartialEq)]
+pub enum Saved {
+    /// The file has it; the stamp to expect next time.
+    Wrote(Stamp),
+    /// The file would not take it, so it went to this `-unsaved` file beside it.
+    Rescued(PathBuf),
+    /// Neither took it: the edit is on screen only.
+    Failed(String),
+}
+
+/// Save a note over its file if the file is still the one we loaded
+/// (`expected`). Otherwise, or when the write fails, the edit goes to a rescue
+/// beside it: `rescued`, the one this note already writes to, or a fresh
+/// `name-unsaved.md` that never takes over a rescue left by someone else.
+pub fn save_note(path: &Path, text: &str, expected: Stamp, rescued: Option<&Path>) -> Saved {
+    if let Ok(stamp) = write_checked(path, text, expected) {
+        return Saved::Wrote(stamp);
+    }
+    let target = rescued.map_or_else(
+        || {
+            let dir = path.parent().unwrap_or(path);
+            unique_path(dir, &format!("{}-unsaved", name(path)), "md")
+        },
+        Path::to_path_buf,
+    );
+    match write(&target, text) {
+        Ok(()) => Saved::Rescued(target),
+        Err(e) => Saved::Failed(e.to_string()),
+    }
+}
+
 /// Deleted files go here instead of away. Hidden, and inside the vault, so a
 /// deletion is one `mv` from being undone by hand.
 pub const TRASH: &str = ".trash";
@@ -2184,5 +2216,98 @@ mod tests {
         assert_eq!(sanitize("CON"), "con-note");
         assert_eq!(sanitize("lpt1"), "lpt1-note");
         assert_eq!(sanitize("console"), "console");
+    }
+
+    /// A scratch vault of its own per test: they run in parallel.
+    fn save_note_vault(case: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("synapso-save-note-{case}"));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// A folder where the note should be: `rename` will not put a file over a
+    /// folder that holds something, on any of the three systems, so the write
+    /// fails while the stamp still matches.
+    fn unwritable(dir: &Path, name: &str) -> PathBuf {
+        let path = dir.join(name);
+        fs::create_dir_all(path.join("inside")).unwrap();
+        path
+    }
+
+    #[test]
+    fn a_note_save_writes_the_file_and_carries_its_stamp() {
+        let dir = save_note_vault("ok");
+        let note = dir.join("plan.md");
+        fs::write(&note, "old").unwrap();
+
+        let saved = save_note(&note, "new", stamp(&note), None);
+
+        assert_eq!(fs::read_to_string(&note).unwrap(), "new");
+        assert_eq!(saved, Saved::Wrote(stamp(&note)));
+    }
+
+    /// The file changed under us: the edit goes beside it, to one rescue file
+    /// that stays the same across saves, and never over a rescue an earlier
+    /// session left.
+    #[test]
+    fn a_note_changed_on_disk_goes_to_one_stable_unsaved_file() {
+        let dir = save_note_vault("conflict");
+        let note = dir.join("plan.md");
+        fs::write(&note, "loaded").unwrap();
+        let loaded = stamp(&note);
+        fs::write(&note, "someone else's, longer").unwrap();
+        fs::write(dir.join("plan-unsaved.md"), "an older rescue").unwrap();
+
+        let first = save_note(&note, "mine", loaded, None);
+        let rescue = dir.join("plan-unsaved-2.md");
+        assert_eq!(first, Saved::Rescued(rescue.clone()));
+        assert_eq!(fs::read_to_string(&rescue).unwrap(), "mine");
+
+        let second = save_note(&note, "mine, more", loaded, Some(&rescue));
+        assert_eq!(second, Saved::Rescued(rescue.clone()), "the same rescue");
+        assert_eq!(fs::read_to_string(&rescue).unwrap(), "mine, more");
+
+        assert_eq!(fs::read_to_string(&note).unwrap(), "someone else's, longer");
+        assert_eq!(
+            fs::read_to_string(dir.join("plan-unsaved.md")).unwrap(),
+            "an older rescue"
+        );
+    }
+
+    /// A write that fails for another reason than a conflict is rescued too.
+    #[test]
+    fn a_note_that_will_not_write_is_rescued_beside_it() {
+        let dir = save_note_vault("failed");
+        let note = unwritable(&dir, "plan.md");
+
+        let saved = save_note(&note, "mine", stamp(&note), None);
+
+        let rescue = dir.join("plan-unsaved.md");
+        assert_eq!(saved, Saved::Rescued(rescue.clone()));
+        assert_eq!(fs::read_to_string(&rescue).unwrap(), "mine");
+    }
+
+    /// The file and the rescue both refused: nothing on disk holds the edit,
+    /// and the caller hears why the rescue failed, the reason it is unsaved.
+    #[test]
+    fn a_rescue_that_will_not_write_either_is_a_failure() {
+        let dir = save_note_vault("failed-twice");
+        let note = dir.join("plan.md");
+        fs::write(&note, "loaded").unwrap();
+        let loaded = stamp(&note);
+        fs::write(&note, "someone else's, longer").unwrap();
+        let rescue = unwritable(&dir, "plan-unsaved.md");
+
+        let saved = save_note(&note, "mine", loaded, Some(&rescue));
+
+        let Saved::Failed(why) = saved else {
+            panic!("{saved:?}")
+        };
+        assert_ne!(
+            why, "changed on disk",
+            "the rescue's error, not the conflict"
+        );
+        assert_eq!(fs::read_to_string(&note).unwrap(), "someone else's, longer");
     }
 }

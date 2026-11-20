@@ -5,7 +5,8 @@ for production/open-source (external briefing + verification against the code).
 
 > ⚠️ **Historical.** Written while the shell was iced. Where this names an iced
 > type or file, read it as the shape of the problem, not as the code today —
-> the cutover landed (`docs/floem-migration-trd.md` §5) and the shell is Floem.
+> the cutover landed (`docs/floem-migration-trd.md` §5), and since ADR-009 the
+> shell is Freya.
 > The decisions still hold; the mechanics moved.
 
 ## Decision
@@ -34,9 +35,11 @@ option nobody exercised.
 | 9 | `label.to_lowercase().find(q)` sliced the original | `match_range` compares char by char; `İ`/`ẞ` no longer take the palette down |
 | 10 | `Save` said "saved" even when it refused | It only claims what happened |
 
-Every item has a test. The application-level ones (`src/main.rs`) run the real
-`update` over a scratch vault: editing a note with frontmatter, a conflict on
-disk, a note that failed to load.
+Every item had a test. The application-level ones ran iced's real `update`
+over a scratch vault, and went with the iced shell. Today the note's save rule
+(over the file, else a `-unsaved` rescue, else a refusal) is
+`vault::save_note` in `synapso-core`, tested there over a scratch vault, as
+the board's is in `Scene::save`.
 
 ## Deferred, with a trigger
 

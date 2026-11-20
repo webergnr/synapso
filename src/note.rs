@@ -5,7 +5,10 @@ use freya::animation::*;
 use std::rc::Rc;
 
 use freya::{prelude::*, text_edit::*};
-use synapso_core::{doc::Lines, vault};
+use synapso_core::{
+    doc::Lines,
+    vault::{self, Saved},
+};
 
 use crate::{
     app::{App, Caret},
@@ -147,13 +150,6 @@ pub fn flush_note() -> Option<String> {
     FLUSH.with(|f| f.borrow().as_ref().and_then(|f| f()))
 }
 
-/// What a save attempt came to.
-enum Saved {
-    Wrote,
-    Rescued(std::path::PathBuf),
-    Failed(String),
-}
-
 impl Component for NotePane {
     fn render_key(&self) -> DiffKey {
         (&self.rel).into()
@@ -239,9 +235,10 @@ impl Component for NotePane {
                 }
                 let text = editable.editor().read().text().to_string();
                 let expected = *stamp.read();
-                let result = match vault::write_checked(&path, &text, expected) {
-                    Ok(new) => {
-                        stamp.set(new);
+                let result = vault::save_note(&path, &text, expected, rescued.read().as_deref());
+                match &result {
+                    Saved::Wrote(new) => {
+                        stamp.set(*new);
                         // the graph, the backlinks and the cards hear about it
                         let change = app.index.peek().note_written(&rel, &text);
                         if let Some(change) = change {
@@ -251,26 +248,10 @@ impl Component for NotePane {
                         // and the section cards, whatever the index made of it
                         let mut rev = app.note_rev;
                         *rev.write() += 1;
-                        Saved::Wrote
                     }
-                    Err(_) => {
-                        let target = rescued.read().clone().unwrap_or_else(|| {
-                            let dir = path.parent().unwrap_or(&path);
-                            vault::unique_path(
-                                dir,
-                                &format!("{}-unsaved", vault::name(&path)),
-                                "md",
-                            )
-                        });
-                        match vault::write(&target, &text) {
-                            Ok(()) => {
-                                rescued.set(Some(target.clone()));
-                                Saved::Rescued(target)
-                            }
-                            Err(e) => Saved::Failed(e.to_string()),
-                        }
-                    }
-                };
+                    Saved::Rescued(target) => rescued.set(Some(target.clone())),
+                    Saved::Failed(_) => {}
+                }
                 // ⚠️ a failed write is still unsaved: the next flush tries again
                 if !matches!(result, Saved::Failed(_)) {
                     saved_at.set(generation);
@@ -280,7 +261,7 @@ impl Component for NotePane {
             }
         };
         let report = move |s: Option<Saved>, explicit: bool| match s {
-            Some(Saved::Wrote) if explicit => app.toast("workspace saved", "just now", None),
+            Some(Saved::Wrote(_)) if explicit => app.toast("workspace saved", "just now", None),
             Some(Saved::Rescued(p)) => {
                 app.toast(
                     "the file changed on disk",
