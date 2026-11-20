@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-# The macOS half of a release, by hand.
-#
-# CI builds only Windows (see .github/workflows/release.yml): a GitHub-hosted
-# macOS runner needs Actions minutes this account does not have. This script is
-# the recipe that job used to run, so it does not rot in a deleted YAML block.
+# The macOS half of a release. .github/workflows/release.yml runs it on a
+# hosted Mac for every release; it also runs on a Mac by hand.
 #
 #   tools/release-macos.sh v0.2.0            # build and zip
-#   tools/release-macos.sh v0.2.0 --upload   # and add it to the draft release
+#   tools/release-macos.sh v0.2.0 --upload   # and add it to a draft release
 #
-# The draft is created by the tag push; this only adds a file to it. It refuses
-# to touch a release somebody already published.
+# --upload only adds a file to an existing draft. It refuses to touch a
+# release somebody already published.
 set -euo pipefail
 
 TAG="${1:?usage: release-macos.sh <tag> [--upload]}"
@@ -24,7 +21,7 @@ VERSION="${TAG#v}"
 VERSION="${VERSION%%[!0-9.]*}"
 echo "$VERSION" | grep -qE '^[0-9]+(\.[0-9]+){0,2}$' || VERSION="0.0.0"
 
-cargo test --release --locked
+cargo test --workspace --release --locked
 cargo build --release --locked
 
 # the .zip name promises arm64: if this ever runs on an Intel Mac, break loudly

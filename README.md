@@ -347,23 +347,30 @@ on the canvas (text, captions, edge labels). Both are vendored in
 
 ## Release
 
-`git tag v0.3.0 && git push origin v0.3.0` fires
-`.github/workflows/release.yml`: it tests and builds **Windows** on GitHub's
-hosted image and leaves a **draft** release with `synapso.exe` zipped in.
-The *Run workflow* button in Actions does the same build without publishing
-anything, and the `.zip` stays as a run artifact.
+Every push to `main` that touches the app publishes a release
+(`.github/workflows/release.yml`); pushes that only change the website or the
+docs do not. It tests and builds **Windows x64** and **macOS arm64** on
+GitHub's hosted runners and publishes both `.zip` files together, under the
+next version: the last `vX.Y.Z` tag plus one patch, or the `version` in
+`Cargo.toml` when that is higher. Raise `Cargo.toml` to skip ahead (`0.2.0`
+for the next minor). The workflow stamps that version into the build, so the
+Windows exe says the same as the tag.
 
-The **macOS** half is built by hand on a Mac, with the recipe in
-`tools/release-macos.sh`:
+The *Run workflow* button in Actions, and a pull request that changes the
+workflow or the macOS recipe, do the same builds without publishing anything;
+the `.zip` files stay as run artifacts.
+
+The macOS build is `tools/release-macos.sh`, which also runs on a Mac by hand:
 
 ```sh
-tools/release-macos.sh v0.3.0 --upload
+tools/release-macos.sh v0.3.0            # build and zip
+tools/release-macos.sh v0.3.0 --upload   # and add it to a draft release
 ```
 
-It runs `cargo test --release --locked`, checks the binary really is arm64,
-assembles `Synapso.app`, signs it ad hoc, zips it with `ditto`, and adds it to
-the draft — refusing to touch a release somebody already published. Publishing
-is by hand, after both `.zip` files are on the draft.
+It runs `cargo test --workspace --release --locked`, checks the binary really is arm64,
+assembles `Synapso.app`, signs it ad hoc and zips it with `ditto`. `--upload`
+only ever adds to a draft, refusing to touch a release somebody already
+published.
 
 Neither binary is signed, so Gatekeeper and SmartScreen warn on first launch
 (the release notes say how to get past them).
