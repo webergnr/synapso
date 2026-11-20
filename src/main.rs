@@ -93,7 +93,7 @@ fn main() {
                         // off the dead `WinitView` and aborts the app
                         // (NSRangeException, "nextResponder"). One window, so
                         // closing it is quitting.
-                        // ponytail: a second window needs the fix in the fork
+                        // A second window would need the fix in the fork instead
                         // (drop the window after the run loop stops)
                         std::process::exit(0)
                     })
