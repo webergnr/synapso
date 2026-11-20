@@ -1,0 +1,26 @@
+# `cargo deny check licenses sources`, run by ci.yml on every PR.
+# Advisories are `cargo audit`'s (same RustSec database), also in ci.yml.
+
+[licenses]
+# what the dependency tree carries today; a new one fails the gate until it
+# is read and added here
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "ISC",
+    "MIT",
+    # libfuzzer-sys, under rav1e (the image crate's AVIF encoder): permissive, OSI
+    "NCSA",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+# the Freya fork the app is pinned to (Cargo.toml)
+allow-git = ["https://github.com/webergnr/freya"]
