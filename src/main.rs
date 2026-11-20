@@ -636,8 +636,7 @@ pub fn rename(app: App, rel: &str, new_name: &str) -> Result<String, String> {
     }
     let from = root.join(rel.trim_end_matches('/'));
     let to = root.join(new_rel.trim_end_matches('/'));
-    // a case-only rename is the same file on Windows: let it through
-    if to.exists() && !new_rel.eq_ignore_ascii_case(rel) {
+    if !rename_target_is_free(&from, &to).map_err(|e| e.to_string())? {
         return Err(format!("{} already exists", new_rel.trim_end_matches('/')));
     }
     // what the panes hold reaches disk first: the rewrite below sees the board,
@@ -679,6 +678,37 @@ pub fn rename(app: App, rel: &str, new_name: &str) -> Result<String, String> {
         *rev.write() += 1;
     }
     Ok(new_rel)
+}
+
+/// Whether `to` is free for `from` to be renamed onto. ⚠️ A case-only rename
+/// (`Plan.md` → `plan.md`) is the same file on a disk that ignores case
+/// (macOS, Windows), where `to` exists because it IS `from`; on one where case
+/// counts (Linux, case-sensitive APFS) `to` can be another note that `rename`
+/// would replace. The folder's listing tells them apart: free only when it
+/// holds `from` and not `to` spelled exactly.
+fn rename_target_is_free(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<bool> {
+    match std::fs::symlink_metadata(to) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(true),
+        Err(e) => return Err(e),
+        Ok(_) => {}
+    }
+    let (Some(parent), Some(from_name), Some(to_name)) =
+        (from.parent(), from.file_name(), to.file_name())
+    else {
+        return Ok(false);
+    };
+    if to.parent() != Some(parent) || !from_name.eq_ignore_ascii_case(to_name) {
+        return Ok(false);
+    }
+    let mut source_present = false;
+    for entry in std::fs::read_dir(parent)? {
+        let name = entry?.file_name();
+        if name == to_name {
+            return Ok(false);
+        }
+        source_present |= name == from_name;
+    }
+    Ok(source_present)
 }
 
 /// Every `.canvas` in the vault that points at `from` (or inside it, for a
@@ -921,5 +951,36 @@ mod tests {
         );
         assert_eq!(plain("/home/me/notes"), "/home/me/notes");
         assert_eq!(plain(r"C:\already"), r"C:\already");
+    }
+
+    /// A rename that only changes the case: the same file on a disk that
+    /// ignores case (macOS, Windows), a different one where case counts
+    /// (Linux, case-sensitive APFS), and `rename` would replace it there.
+    #[test]
+    fn case_only_rename_protects_a_separate_destination() {
+        let root = std::env::temp_dir().join("synapso-rename-case");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let from = root.join("Draft.md");
+        let to = root.join("draft.md");
+        std::fs::write(&from, "first draft").unwrap();
+        assert!(rename_target_is_free(&from, &to).unwrap());
+        if !to.exists() {
+            // case counts here: `draft.md` is a note of its own
+            std::fs::write(&to, "second draft").unwrap();
+            assert!(!rename_target_is_free(&from, &to).unwrap());
+            assert_eq!(std::fs::read_to_string(&from).unwrap(), "first draft");
+            assert_eq!(std::fs::read_to_string(&to).unwrap(), "second draft");
+        }
+        // case ignored: `plan.md` names `Plan.md`, which is another note than
+        // `a.md`, so renaming `a.md` to `plan` would replace it
+        std::fs::write(root.join("Plan.md"), "the plan").unwrap();
+        let a = root.join("a.md");
+        std::fs::write(&a, "a").unwrap();
+        let plan = root.join("plan.md");
+        if plan.exists() {
+            assert!(!rename_target_is_free(&a, &plan).unwrap());
+        }
+        std::fs::remove_dir_all(&root).unwrap();
     }
 }
