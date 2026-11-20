@@ -643,16 +643,41 @@ pub fn rename(app: App, rel: &str, new_name: &str) -> Result<String, String> {
     // and the note pane remounts from the moved file; ⚠️ not over an edit that
     // is on screen only
     app::flush_panes().map_err(|why| format!("not renamed, not saved: {why}"))?;
+    // ⚠️ `[[links]]` are not rewritten (no decision on that yet): the notes
+    // that use the old name are named instead, read before the index moves on
+    let linking = if is_folder {
+        vec![]
+    } else {
+        linked_from(&app.index.read(), rel)
+    };
     std::fs::rename(&from, &to).map_err(|e| e.to_string())?;
-    let rewired = relink_canvases(&root, rel, &new_rel);
+    let (rewired, stuck) = relink_canvases(&root, rel, &new_rel);
     // the colour moves with it
     let key = index::color_key(rel);
     let tone = app.index.read().own.get(&key).copied();
+    let mut sidecar = vec![];
     if let Some(t) = tone {
-        let _ = index::set_tone(&root, rel, None);
-        let _ = index::set_tone(&root, &new_rel, Some(t));
+        sidecar.extend(index::set_tone(&root, rel, None).err());
+        sidecar.extend(index::set_tone(&root, &new_rel, Some(t)).err());
     }
-    session::renamed(&root, rel, &new_rel);
+    sidecar.extend(session::renamed(&root, rel, &new_rel).err());
+    // the rename happened: what it left behind is said, not an error
+    let mut left = vec![];
+    match linking.len() {
+        0 => {}
+        1 => left.push(format!(
+            "{} still links to [[{}]]",
+            linking[0],
+            stem_of(rel)
+        )),
+        n => left.push(format!("{n} notes still link to [[{}]]", stem_of(rel))),
+    }
+    if !stuck.is_empty() {
+        left.push(format!("{} still points at {rel}", stuck.join(", ")));
+    }
+    if let Some(e) = sidecar.first() {
+        left.push(format!("its colour and place did not move: {e}"));
+    }
     let fix = |s: &str| -> String {
         if is_folder && s.starts_with(rel) {
             format!("{new_rel}{}", &s[rel.len()..])
@@ -676,6 +701,13 @@ pub fn rename(app: App, rel: &str, new_name: &str) -> Result<String, String> {
     if rewired > 0 {
         let mut rev = app.board_rev;
         *rev.write() += 1;
+    }
+    if !left.is_empty() {
+        app.toast(
+            format!("renamed to {}", base_name(&new_rel)),
+            left.join("; "),
+            None,
+        );
     }
     Ok(new_rel)
 }
@@ -713,10 +745,12 @@ fn rename_target_is_free(from: &std::path::Path, to: &std::path::Path) -> std::i
 
 /// Every `.canvas` in the vault that points at `from` (or inside it, for a
 /// folder) points at `to` afterwards. Loads and saves through the core so
-/// unknown keys ride through. Returns how many boards changed.
-fn relink_canvases(root: &std::path::Path, from: &str, to: &str) -> usize {
+/// unknown keys ride through. Returns how many boards changed, and the ones
+/// that would not save, which still point at `from`.
+fn relink_canvases(root: &std::path::Path, from: &str, to: &str) -> (usize, Vec<String>) {
     let index = Index::load(root);
     let mut changed = 0;
+    let mut failed = vec![];
     for d in index.docs.iter().filter(|d| d.kind == DocKind::Canvas) {
         let Ok(mut canvas) = synapso_core::vault::Canvas::load(&d.path) else {
             continue;
@@ -737,11 +771,33 @@ fn relink_canvases(root: &std::path::Path, from: &str, to: &str) -> usize {
                 touched = true;
             }
         }
-        if touched && canvas.save(&d.path, stamp).is_ok() {
-            changed += 1;
+        if !touched {
+            continue;
+        }
+        match canvas.save(&d.path, stamp) {
+            Ok(_) => changed += 1,
+            Err(_) => failed.push(d.rel.clone()),
         }
     }
-    changed
+    (changed, failed)
+}
+
+/// The notes whose `[[links]]` reach `rel`, which a rename leaves pointing at
+/// the old name.
+fn linked_from(index: &Index, rel: &str) -> Vec<String> {
+    let mut from: Vec<String> = index
+        .backlinks(rel)
+        .iter()
+        .map(|l| l.from.clone())
+        .collect();
+    from.sort();
+    from.dedup();
+    from
+}
+
+/// `notes/plan.md` → `plan`: what a `[[link]]` calls it.
+fn stem_of(rel: &str) -> String {
+    synapso_core::vault::name(std::path::Path::new(rel))
 }
 
 pub fn new_folder(app: App, parent: &str) {
@@ -982,5 +1038,58 @@ mod tests {
             assert!(!rename_target_is_free(&a, &plan).unwrap());
         }
         std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    /// A rename moves the boards' cards along, and names what it does not
+    /// move: the notes whose `[[links]]` still use the old name.
+    #[test]
+    fn a_rename_relinks_its_boards_and_names_the_notes_still_linking() {
+        let root = std::env::temp_dir().join("synapso-rename-links");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let write = |rel: &str, text: &str| std::fs::write(root.join(rel), text).unwrap();
+        write("plan.md", "# plan");
+        write("a.md", "see [[plan]]");
+        write("b.md", "[[plan#goals]], and [[plan]] again");
+        write("c.md", "nothing here");
+        write(
+            "board.canvas",
+            r#"{"nodes":[{"id":"n","type":"file","file":"plan.md","x":0,"y":0,"width":100,"height":100}],"edges":[]}"#,
+        );
+
+        assert_eq!(
+            linked_from(&Index::load(&root), "plan.md"),
+            ["a.md", "b.md"]
+        );
+        std::fs::rename(root.join("plan.md"), root.join("roadmap.md")).unwrap();
+        assert_eq!(relink_canvases(&root, "plan.md", "roadmap.md"), (1, vec![]));
+        let board = synapso_core::vault::Canvas::load(&root.join("board.canvas")).unwrap();
+        assert_eq!(board.nodes[0].file.as_deref(), Some("roadmap.md"));
+    }
+
+    /// A board that will not save keeps the old name: the rename says which.
+    #[cfg(unix)]
+    #[test]
+    fn a_board_that_will_not_take_the_new_name_is_named() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = std::env::temp_dir().join("synapso-rename-stuck-board");
+        let locked = root.join("locked");
+        let open = |mode| std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(mode));
+        let _ = open(0o755);
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&locked).unwrap();
+        std::fs::write(root.join("plan.md"), "# plan").unwrap();
+        std::fs::write(
+            locked.join("board.canvas"),
+            r#"{"nodes":[{"id":"n","type":"file","file":"plan.md","x":0,"y":0,"width":100,"height":100}],"edges":[]}"#,
+        )
+        .unwrap();
+        // nothing new can be made in the folder, the save's temp included
+        open(0o555).unwrap();
+
+        let relinked = relink_canvases(&root, "plan.md", "roadmap.md");
+
+        open(0o755).unwrap();
+        assert_eq!(relinked, (0, vec!["locked/board.canvas".to_string()]));
     }
 }
