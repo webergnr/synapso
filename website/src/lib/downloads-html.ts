@@ -1,9 +1,14 @@
-// The platform cards as an HTML string. One function, two callers: the page
-// renders it at build time, and the browser re-renders it when GitHub has a
-// newer release than the build saw. Same markup either way.
-import { formatSize, type DownloadsView, type OS } from './releases.ts';
+// The platform cards and the release line as HTML strings. One function each,
+// two callers: the page renders them at build time, and the browser re-renders
+// them when GitHub has a newer release than the build saw. Same markup either
+// way, so a build that could not read a release recovers fully in the browser.
+import { formatDate, formatSize, RELEASES_URL, type DownloadsView, type OS } from './releases.ts';
 
 export interface DownloadsCopy {
+  latest: string;
+  published: string;
+  unknown: string;
+  allReleases: string;
   notAvailable: string;
   fromSource: string;
   get: string;
@@ -16,6 +21,17 @@ const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const NOTE: Partial<Record<OS, 'macos' | 'windows'>> = { macos: 'macos', windows: 'windows' };
+
+export function releaseHTML(view: DownloadsView, t: DownloadsCopy): string {
+  const date = formatDate(view.publishedAt);
+  const line = view.version
+    ? `<span>${esc(t.latest)}</span>
+<a class="ver" href="${esc(view.releaseUrl)}">${esc(view.version)}</a>${date ? `
+<span>${esc(t.published)} ${esc(date)}</span>` : ''}`
+    : `<span class="warn">${esc(t.unknown)}</span>`;
+  return `${line}
+<a class="all" href="${RELEASES_URL}">${esc(t.allReleases)} ↗</a>`;
+}
 
 export function platformsHTML(view: DownloadsView, t: DownloadsCopy): string {
   return view.platforms

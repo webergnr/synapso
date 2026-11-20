@@ -1,7 +1,8 @@
 // node --test src/lib/releases.test.ts  (Node 24 runs TypeScript as is)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseAsset, toView, RELEASES_URL, type GhRelease } from './releases.ts';
+import { parseAsset, toView, replacesBuilt, RELEASES_URL, type GhRelease } from './releases.ts';
+import { releaseHTML, type DownloadsCopy } from './downloads-html.ts';
 
 const asset = (name: string) => ({ name, size: 15_827_678, browser_download_url: `https://example.test/${name}` });
 
@@ -62,4 +63,24 @@ test('no release (fetch failed) or a draft: nothing is offered, the link is the 
     assert.equal(view.releaseUrl, RELEASES_URL);
     assert.ok(view.platforms.every((p) => p.builds.length === 0 && p.missing.length > 0));
   }
+});
+
+test('the browser only swaps in a newer release than the build saw', () => {
+  const v002 = toView({ ...v001, tag_name: 'v0.0.2', published_at: '2026-11-20T10:00:00Z' });
+  const built002 = { version: 'v0.0.2', publishedAt: '2026-11-20T10:00:00Z' };
+  const built001 = { version: 'v0.0.1', publishedAt: v001.published_at! };
+  assert.equal(replacesBuilt(v002, built001), true, 'newer release than the build');
+  assert.equal(replacesBuilt(toView(v001), built002), false, 'a cached older release must not undo a newer build');
+  assert.equal(replacesBuilt(toView(v001), built001), false, 'same release');
+  assert.equal(replacesBuilt(toView(v001), { version: '', publishedAt: '' }), true, 'the build saw no release');
+  assert.equal(replacesBuilt(toView(null), built001), false, 'nothing fetched');
+});
+
+test('the release line: the version once one is known, the warning only without one', () => {
+  const t = { latest: 'Latest release', published: 'published', unknown: 'WARN', allReleases: 'All' } as DownloadsCopy;
+  const known = releaseHTML(toView(v001), t);
+  assert.match(known, /class="ver" href="https:\/\/github\.com\/webergnr\/synapso\/releases\/tag\/v0\.0\.1">v0\.0\.1</);
+  assert.match(known, /published Nov 9, 2026/);
+  assert.doesNotMatch(known, /WARN/);
+  assert.match(releaseHTML(toView(null), t), /class="warn">WARN</);
 });

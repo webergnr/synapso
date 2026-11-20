@@ -1,13 +1,17 @@
 ---
-import { formatDate, RELEASES_URL, type DownloadsView } from '../lib/releases';
-import { platformsHTML, type DownloadsCopy } from '../lib/downloads-html';
+import { type DownloadsView } from '../lib/releases';
+import { platformsHTML, releaseHTML, type DownloadsCopy } from '../lib/downloads-html';
 import type { Copy } from '../content/en';
 
 interface Props { copy: Copy; view: DownloadsView }
 const { copy, view } = Astro.props;
 const t = copy.download;
-// only what the browser needs to re-render the cards
+// only what the browser needs to re-render the cards and the release line
 const clientCopy: DownloadsCopy = {
+  latest: t.latest,
+  published: t.published,
+  unknown: t.unknown,
+  allReleases: t.allReleases,
   notAvailable: t.notAvailable,
   fromSource: t.fromSource,
   get: t.get,
@@ -15,7 +19,6 @@ const clientCopy: DownloadsCopy = {
   yourSystem: t.yourSystem,
   linuxNote: t.linuxNote,
 };
-const date = formatDate(view.publishedAt);
 ---
 
 <section
@@ -24,23 +27,13 @@ const date = formatDate(view.publishedAt);
   aria-labelledby="dl-h"
   data-downloads
   data-version={view.version ?? ''}
+  data-published={view.publishedAt ?? ''}
   data-copy={JSON.stringify(clientCopy)}
 >
   <div class="wrap">
     <div class="head">
       <h2 class="h2" id="dl-h">{t.title}</h2>
-      <div class="release label" data-release>
-        {view.version ? (
-          <>
-            <span>{t.latest}</span>
-            <a class="ver" href={view.releaseUrl} data-ver>{view.version}</a>
-            {date && <span data-date>{t.published} {date}</span>}
-          </>
-        ) : (
-          <span class="warn">{t.unknown}</span>
-        )}
-        <a class="all" href={RELEASES_URL}>{t.allReleases} ↗</a>
-      </div>
+      <div class="release label" data-release set:html={releaseHTML(view, clientCopy)} />
     </div>
 
     <div class="platforms" data-platforms set:html={platformsHTML(view, clientCopy)} />
@@ -62,8 +55,8 @@ const date = formatDate(view.publishedAt);
 </section>
 
 <script>
-  import { fetchLatest, toView, formatDate, offered, type GhRelease } from '../lib/releases';
-  import { platformsHTML, type DownloadsCopy } from '../lib/downloads-html';
+  import { fetchLatest, toView, offered, replacesBuilt, type GhRelease } from '../lib/releases';
+  import { platformsHTML, releaseHTML, type DownloadsCopy } from '../lib/downloads-html';
 
   const root = document.querySelector<HTMLElement>('[data-downloads]');
 
@@ -101,20 +94,15 @@ const date = formatDate(view.publishedAt);
     }
     if (!release) return;
     const view = toView(release);
-    if (!view.version || view.version === root.dataset.version) return;
+    if (!view.version || !replacesBuilt(view, { version: root.dataset.version, publishedAt: root.dataset.published })) return;
 
     const t = JSON.parse(root.dataset.copy ?? '{}') as DownloadsCopy;
     const list = root.querySelector<HTMLElement>('[data-platforms]');
     if (list) list.innerHTML = platformsHTML(view, t);
-    const ver = root.querySelector<HTMLAnchorElement>('[data-ver]');
-    if (ver) {
-      ver.textContent = view.version;
-      ver.href = view.releaseUrl;
-    }
-    const date = root.querySelector<HTMLElement>('[data-date]');
-    const d = formatDate(view.publishedAt);
-    if (date && d) date.textContent = date.textContent!.replace(/\S+ \d+, \d{4}$/, d);
+    const line = root.querySelector<HTMLElement>('[data-release]');
+    if (line) line.innerHTML = releaseHTML(view, t);
     root.dataset.version = view.version;
+    root.dataset.published = view.publishedAt ?? '';
     // the nav, the hero and the drawing's title block name the version too
     for (const el of document.querySelectorAll('[data-release-ver]')) el.textContent = view.version;
     const meta = document.querySelector<HTMLElement>('[data-offered]');
@@ -174,10 +162,11 @@ const date = formatDate(view.publishedAt);
     letter-spacing: 0.02em;
     color: var(--ink-2);
   }
-  .release .ver { color: var(--accent); font-size: var(--fs-mono); text-decoration: none; }
-  .release .ver:hover { text-decoration: underline; }
-  .release .all { color: var(--ink); white-space: nowrap; }
-  .release .warn { color: var(--doc-2); }
+  /* :global — the line is set:html, like the cards, so it carries no scope */
+  .release :global(.ver) { color: var(--accent); font-size: var(--fs-mono); text-decoration: none; }
+  .release :global(.ver:hover) { text-decoration: underline; }
+  .release :global(.all) { color: var(--ink); white-space: nowrap; }
+  .release :global(.warn) { color: var(--doc-2); }
 
   .platforms {
     display: grid;

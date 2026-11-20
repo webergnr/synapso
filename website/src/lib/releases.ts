@@ -112,6 +112,16 @@ export function toView(release: GhRelease | null): DownloadsView {
   };
 }
 
+/** Whether a release the browser fetched should replace the one the page was
+ * built with: only a different and NEWER one. A cached or late answer for an
+ * older release must not undo a newer build. A build that saw no release
+ * (`built.publishedAt` empty) takes any. */
+export function replacesBuilt(view: DownloadsView, built: { version?: string; publishedAt?: string }): boolean {
+  if (!view.version || view.version === built.version) return false;
+  if (!built.publishedAt) return true;
+  return Date.parse(view.publishedAt ?? '') > Date.parse(built.publishedAt);
+}
+
 function rank(expect: Arch[], arch: Arch): number {
   const i = expect.indexOf(arch);
   return i === -1 ? expect.length : i;
