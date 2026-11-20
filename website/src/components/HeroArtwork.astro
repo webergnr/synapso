@@ -1,0 +1,436 @@
+---
+// The hero drawing: a Synapso vault as an exploded assembly drawing. Four
+// layers stacked in isometric — the folder on disk, a canvas, a note, the
+// graph — and one note (auth-flow.md, the demo vault's) threaded through all
+// four by its colour line, the app's signature 2 px line in the document's
+// colour. Every element is something the app really draws; the content is
+// the demo vault's, as in the screenshots.
+//
+// Coordinates: each layer is drawn flat in its own plane (x right, y down,
+// 0–330) and projected with ISO; z lifts a layer off the one below.
+
+interface Props { title: string }
+const { title } = Astro.props;
+
+const C = 0.8660254, S = 0.5;
+const OX = 430, OY = 420;
+const W = 330;
+const Z = { vault: 0, canvas: 140, note: 280, graph: 420 } as const;
+// the note is a narrower sheet, so the canvas under it stays in view
+const NW = 230;
+
+/** plane (x, y) at height z → screen [x, y] */
+const iso = (x: number, y: number, z: number): [number, number] => [OX + (x - y) * C, OY + (x + y) * S - z];
+const pt = (p: [number, number]) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`;
+/** SVG transform that maps plane coordinates onto the layer at height z */
+const plane = (z: number) => `matrix(${C} ${S} ${-C} ${S} ${OX} ${OY - z})`;
+
+/** the two visible side faces of a slab of thickness t under the plane at z */
+const slab = (z: number, t: number, w = W) => ({
+  left: [iso(0, W, z), iso(w, W, z), iso(w, W, z - t), iso(0, W, z - t)].map(pt).join(' '),
+  right: [iso(w, 0, z), iso(w, W, z), iso(w, W, z - t), iso(w, 0, z - t)].map(pt).join(' '),
+});
+const slabs = { vault: slab(Z.vault, 12), canvas: slab(Z.canvas, 5), note: slab(Z.note, 4, NW) };
+
+// ── the vault: the folder tree as text on the slab ───────────────────────────
+const tree: { t: string; c?: number; hot?: boolean }[] = [
+  { t: '~/Synapso' },
+  { t: '├─ adapters/', c: 4 },
+  { t: '├─ auth/', c: 1 },
+  { t: '│  ├─ architecture.canvas', c: 1 },
+  { t: '│  ├─ auth-flow.md', c: 1, hot: true },
+  { t: '│  └─ tokens.md', c: 1 },
+  { t: '├─ journal/', c: 2 },
+  { t: '├─ roadmap/', c: 3 },
+  { t: '├─ .synapso.json' },
+  { t: '└─ .trash/' },
+];
+// starts low on the slab: the canvas above covers its back corner
+const TREE_X = 58, TREE_Y = 124, ROW = 19;
+const hotRow = tree.findIndex((r) => r.hot);
+
+// ruler ticks along the vault's front-right edge
+const ticks = Array.from({ length: 34 }, (_, i) => i * 10);
+
+// ── the graph: rings by hop around the focused note ─────────────────────────
+const G = { x: 150, y: 150 };
+const polar = (r: number, deg: number) => ({ x: G.x + r * Math.cos((deg * Math.PI) / 180), y: G.y + r * Math.sin((deg * Math.PI) / 180) });
+const ring1 = [
+  { a: -100, c: 7 }, { a: -40, c: 1 }, { a: 15, c: 4 }, { a: 70, c: 1 }, { a: 128, c: 2 }, { a: 190, c: 3 }, { a: 240, c: 1 },
+].map((n) => ({ ...n, ...polar(62, n.a) }));
+const ring2 = [
+  { a: -70, from: 0 }, { a: -15, from: 1 }, { a: 40, from: 2 }, { a: 100, from: 3 }, { a: 160, from: 4 }, { a: 215, from: 5 },
+].map((n) => ({ ...n, ...polar(112, n.a) }));
+const beyond = [-120, -50, 65, 140, 250].map((a) => polar(150, a));
+
+// ── the colour line: one note's anchor on every layer ────────────────────────
+const anchors = [
+  iso(TREE_X + 116, TREE_Y + hotRow * ROW - 3, Z.vault),
+  iso(150, 176, Z.canvas),
+  iso(14, 112, Z.note),
+  iso(G.x, G.y, Z.graph),
+];
+const thread = `M${anchors.map(pt).join(' L')}`;
+
+// construction lines: the four plane corners, vault to graph
+const corners = ([[0, 0], [W, 0], [0, W], [W, W]] as const).map(([x, y]) => ({
+  a: iso(x, y, Z.vault), b: iso(x, y, Z.graph),
+}));
+
+// balloons: item number → where the leader touches its layer
+const balloons = [
+  { n: 1, part: 'graph', at: iso(W, 60, Z.graph), b: [812, 130] },
+  { n: 2, part: 'note', at: iso(NW, 30, Z.note), b: [812, 272] },
+  { n: 3, part: 'canvas', at: iso(W, 40, Z.canvas), b: [812, 432] },
+  { n: 4, part: 'vault', at: iso(30, W, Z.vault), b: [60, 690] },
+];
+---
+
+<svg class="art" viewBox="20 20 830 770" role="img" aria-labelledby="art-title" data-art>
+  <title id="art-title">{title}</title>
+  <defs>
+    <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.9" class="dot" />
+    </pattern>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" class="hatch" />
+    </pattern>
+    <marker id="head" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0 0 L8 4 L0 8 Z" class="head" />
+    </marker>
+  </defs>
+
+  <!-- registration marks -->
+  <g class="reg" aria-hidden="true">
+    <path d="M30 44 h14 M37 37 v14" />
+    <path d="M826 44 h14 M833 37 v14" />
+    <path d="M30 776 h14 M37 769 v14" />
+    <path d="M826 776 h14 M833 769 v14" />
+  </g>
+
+  <!-- construction lines behind everything -->
+  <g class="construct" aria-hidden="true">
+    {corners.map(({ a, b }) => <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} />)}
+  </g>
+
+  <!-- 4 · VAULT -->
+  <g class="layer" data-part="vault" style={`--i:0; --drop:0px`}>
+    <polygon class="side" points={slabs.vault.left} />
+    <polygon class="side side-r" points={slabs.vault.right} />
+    <g transform={plane(Z.vault)}>
+      <rect class="face face-vault" width={W} height={W} />
+      <rect class="inner" x="14" y="14" width={W - 28} height={W - 28} />
+      <text class="stamp" x="24" y="40">VAULT · ~/Synapso</text>
+      <g class="tick">
+        {ticks.map((x) => <line x1={x} y1={W} x2={x} y2={W - (x % 50 === 0 ? 9 : 4)} />)}
+      </g>
+      {tree.map((r, i) => (
+        <g class:list={['row', { hot: r.hot }]}>
+          {r.c && <rect class={`cl doc-${r.c}`} x={TREE_X - 12} y={TREE_Y + i * ROW - 9} width="2" height="12" />}
+          <text class="file" x={TREE_X} y={TREE_Y + i * ROW}>{r.t}</text>
+        </g>
+      ))}
+    </g>
+  </g>
+
+  <!-- 3 · CANVAS -->
+  <g class="layer" data-part="canvas" style={`--i:1; --drop:${Z.canvas}px`}>
+    <polygon class="side" points={slabs.canvas.left} />
+    <polygon class="side side-r" points={slabs.canvas.right} />
+    <g transform={plane(Z.canvas)}>
+      <rect class="face face-canvas" width={W} height={W} />
+      <rect width={W} height={W} fill="url(#dots)" />
+      <text class="stamp" x="16" y="318">CANVAS · architecture.canvas</text>
+      <text class="hand cap" x="100" y="28">happy path — v0.3</text>
+      <rect class="node" x="96" y="40" width="56" height="26" rx="3" />
+      <text class="hand" x="124" y="57" text-anchor="middle">client</text>
+      <rect class="node" x="170" y="40" width="76" height="26" rx="3" />
+      <text class="hand" x="208" y="57" text-anchor="middle">api gateway</text>
+      <rect class="node" x="262" y="40" width="64" height="26" rx="3" />
+      <text class="hand" x="294" y="57" text-anchor="middle">auth service</text>
+      <line class="edge" x1="152" y1="53" x2="168" y2="53" marker-end="url(#head)" />
+      <line class="edge" x1="246" y1="53" x2="260" y2="53" marker-end="url(#head)" />
+      <line class="edge" x1="294" y1="66" x2="294" y2="98" marker-end="url(#head)" />
+      <line class="edge" x1="200" y1="66" x2="200" y2="82" marker-end="url(#head)" />
+      <text class="hand tiny" x="206" y="78">on 401</text>
+      <path class="node" d="M200 84 L182 112 L218 112 Z" />
+      <text class="hand tiny" x="200" y="108" text-anchor="middle">retry?</text>
+      <ellipse class="node" cx="290" cy="114" rx="34" ry="15" />
+      <text class="hand" x="290" y="118" text-anchor="middle">token store</text>
+      <line class="link doc-1" x1="222" y1="66" x2="214" y2="150" />
+      <line class="link doc-2" x1="286" y1="129" x2="282" y2="212" />
+      <rect class="pic" x="18" y="204" width="96" height="62" />
+      <rect class="pic-fill" x="18" y="204" width="96" height="62" fill="url(#hatch)" />
+      <g class="card">
+        <rect class="card-bg" x="150" y="150" width="98" height="52" rx="3" />
+        <rect class="cl doc-1" x="150" y="150" width="2.5" height="52" />
+        <text class="mono-s" x="158" y="163">auth-flow.md</text>
+        <rect class="bar" x="158" y="171" width="78" height="3" />
+        <rect class="bar" x="158" y="179" width="70" height="3" />
+        <rect class="bar" x="158" y="187" width="52" height="3" />
+      </g>
+      <g class="card">
+        <rect class="card-bg" x="232" y="212" width="86" height="46" rx="3" />
+        <rect class="cl doc-4" x="232" y="212" width="2.5" height="46" />
+        <text class="mono-s" x="240" y="225">adapter-design.md</text>
+        <rect class="bar" x="240" y="233" width="68" height="3" />
+        <rect class="bar" x="240" y="241" width="56" height="3" />
+      </g>
+      <rect class="mini" x="272" y="276" width="46" height="34" />
+      <rect class="mini-n" x="278" y="282" width="8" height="3" />
+      <rect class="mini-n" x="292" y="282" width="8" height="3" />
+      <rect class="mini-n" x="306" y="282" width="8" height="3" />
+      <rect class="mini-n" x="296" y="294" width="10" height="5" />
+    </g>
+  </g>
+
+  <!-- 2 · NOTE -->
+  <g class="layer" data-part="note" style={`--i:2; --drop:${Z.note}px`}>
+    <polygon class="side" points={slabs.note.left} />
+    <polygon class="side side-r" points={slabs.note.right} />
+    <g transform={plane(Z.note)}>
+      <rect class="face face-note" width={NW} height={W} />
+      <rect class="cl doc-1" x="14" y="40" width="2.5" height="270" />
+      <text class="stamp" x="14" y="322">NOTE · auth-flow.md · MD</text>
+      <text class="h1" x="28" y="62"><tspan class="faint">#</tspan> Auth Flow</text>
+      <rect class="bar" x="28" y="80" width="180" height="3.5" />
+      <rect class="bar" x="28" y="91" width="188" height="3.5" />
+      <rect class="bar" x="28" y="102" width="70" height="3.5" />
+      <rect class="wiki" x="102" y="102" width="72" height="3.5" />
+      <line class="wiki-u" x1="102" y1="109" x2="174" y2="109" />
+      <text class="h2s" x="28" y="134">Token exchange</text>
+      <rect class="code" x="28" y="144" width="188" height="52" />
+      <rect class="tok tok-a" x="38" y="155" width="22" height="3" />
+      <rect class="tok" x="64" y="155" width="84" height="3" />
+      <rect class="tok tok-b" x="52" y="166" width="62" height="3" />
+      <rect class="tok" x="52" y="177" width="104" height="3" />
+      <text class="lang" x="208" y="154" text-anchor="end">rust</text>
+      <text class="h2s" x="28" y="226">Open items</text>
+      <rect class="box on" x="28" y="236" width="8" height="8" />
+      <rect class="bar done" x="44" y="239" width="112" height="3" />
+      <rect class="box" x="28" y="252" width="8" height="8" />
+      <rect class="bar" x="44" y="255" width="132" height="3" />
+      <rect class="box" x="28" y="268" width="8" height="8" />
+      <rect class="bar" x="44" y="271" width="100" height="3" />
+      <rect class="quote" x="28" y="286" width="2" height="16" />
+      <rect class="bar faintbar" x="38" y="292" width="170" height="3" />
+    </g>
+  </g>
+
+  <!-- 1 · GRAPH -->
+  <g class="layer" data-part="graph" style={`--i:3; --drop:${Z.graph}px`}>
+    <g transform={plane(Z.graph)}>
+      <rect class="face face-graph" x="-10" y="-10" width={W + 20} height={W + 20} />
+      <text class="stamp" x="0" y={W + 4}>GRAPH · depth 2</text>
+      <circle class="ring" cx={G.x} cy={G.y} r="62" />
+      <circle class="ring" cx={G.x} cy={G.y} r="112" />
+      <circle class="ring faint-ring" cx={G.x} cy={G.y} r="150" />
+      <text class="ring-l" x={G.x + 4} y={G.y - 66}>1 hop</text>
+      <text class="ring-l" x={G.x + 4} y={G.y - 116}>2 hops</text>
+      {ring2.map((n) => <line class="g-edge" x1={ring1[n.from].x} y1={ring1[n.from].y} x2={n.x} y2={n.y} />)}
+      {ring1.map((n) => <line class={`g-link doc-${n.c}`} x1={G.x} y1={G.y} x2={n.x} y2={n.y} />)}
+      {beyond.map((b) => <circle class="g-dot" cx={b.x} cy={b.y} r="2.5" />)}
+      {ring2.map((n) => (
+        <g class="g-node">
+          <rect x={n.x - 14} y={n.y - 5} width="28" height="10" rx="1.5" />
+        </g>
+      ))}
+      {ring1.map((n) => (
+        <g class="g-node">
+          <rect x={n.x - 17} y={n.y - 6} width="34" height="12" rx="1.5" />
+          <rect class={`cl doc-${n.c}`} x={n.x - 17} y={n.y - 6} width="2" height="12" />
+        </g>
+      ))}
+      <g class="g-focus">
+        <rect x={G.x - 34} y={G.y - 11} width="68" height="22" rx="2" />
+        <text x={G.x - 26} y={G.y + 3}>auth-flow.md</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- the colour line, threaded through the stack -->
+  <g class="thread" aria-hidden="true">
+    <path class="thread-line" d={thread} pathLength="1" />
+    <path class="thread-pulse" d={thread} pathLength="1" />
+    {anchors.map((a, i) => <rect class="anchor" x={a[0] - 4.5} y={a[1] - 4.5} width="9" height="9" style={`--k:${i}`} />)}
+    <text class="thread-l" x={anchors[3][0] + 120} y={anchors[3][1] - 92}>auth-flow.md · 1 file, 4 views</text>
+    <line class="thread-lead" x1={anchors[3][0] + 5} y1={anchors[3][1] - 5} x2={anchors[3][0] + 116} y2={anchors[3][1] - 88} />
+  </g>
+
+  <!-- balloons: item numbers, as in an assembly drawing; the parts list is the table beside -->
+  <g class="balloons">
+    {balloons.map(({ n, part, at, b }) => (
+      <g class="balloon" data-part={part} style={`--k:${n}`}>
+        <line x1={at[0]} y1={at[1]} x2={b[0]} y2={b[1]} />
+        <circle cx={at[0]} cy={at[1]} r="2" class="tip" />
+        <circle cx={b[0]} cy={b[1]} r="13" />
+        <text x={b[0]} y={b[1] + 4} text-anchor="middle">{n}</text>
+      </g>
+    ))}
+  </g>
+</svg>
+
+<style>
+  .art {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    font-family: var(--f-mono);
+  }
+  .art :global(*) { vector-effect: non-scaling-stroke; }
+
+  .reg path { stroke: var(--ink-3); stroke-width: 1; fill: none; }
+  .construct line {
+    stroke: var(--line-2);
+    stroke-width: 1;
+    stroke-dasharray: 3 5;
+  }
+
+  /* layers */
+  .face { stroke: var(--line-2); stroke-width: 1; }
+  .face-vault { fill: var(--surface-inset); }
+  .face-canvas { fill: var(--canvas-bg); fill-opacity: 0.9; }
+  .face-note { fill: var(--surface-panel); fill-opacity: 0.92; }
+  .face-graph { fill: none; stroke: var(--line); stroke-dasharray: 3 5; }
+  .side { fill: var(--surface-raised); stroke: var(--line-2); stroke-width: 1; }
+  .side-r { fill: var(--surface-panel); }
+  .inner { fill: none; stroke: var(--line); stroke-dasharray: 2 4; }
+  .stamp {
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    fill: var(--ink-3);
+  }
+  .tick line { stroke: var(--ink-3); stroke-width: 1; }
+
+  .dot { fill: var(--dot); }
+  .hatch { stroke: var(--line-2); stroke-width: 1; }
+
+  .file { font-size: 10px; fill: var(--ink-2); white-space: pre; }
+  .row.hot .file { fill: var(--ink); font-weight: 600; }
+
+  .cl { stroke: none; }
+  .doc-1 { fill: var(--doc-1); stroke: var(--doc-1); }
+  .doc-2 { fill: var(--doc-2); stroke: var(--doc-2); }
+  .doc-3 { fill: var(--doc-3); stroke: var(--doc-3); }
+  .doc-4 { fill: var(--doc-4); stroke: var(--doc-4); }
+  .doc-7 { fill: var(--doc-7); stroke: var(--doc-7); }
+  rect.cl { stroke: none; }
+
+  /* canvas */
+  .node { fill: var(--surface-raised); stroke: var(--line-2); stroke-width: 1; }
+  .hand { font-family: var(--f-hand); font-size: 10.5px; fill: var(--ink); }
+  .hand.cap { font-size: 11px; }
+  .hand.tiny { font-size: 8px; fill: var(--ink-2); }
+  .edge { stroke: var(--connector); stroke-width: 1.2; }
+  .head { fill: var(--connector); }
+  .link { stroke-width: 1.2; stroke-dasharray: 4 3; fill: none; }
+  .pic { fill: var(--surface-panel); stroke: var(--line-2); }
+  .pic-fill { stroke: none; }
+  .card-bg { fill: var(--surface-raised); stroke: var(--line-2); stroke-width: 1; }
+  .mono-s { font-size: 7.5px; font-weight: 600; fill: var(--ink); }
+  .bar { fill: var(--line-2); }
+  .mini { fill: var(--surface-panel); stroke: var(--line-2); }
+  .mini-n { fill: var(--accent-dim); stroke: none; }
+
+  /* note */
+  .h1 { font-size: 17px; font-weight: 700; fill: var(--ink); }
+  .faint { fill: var(--ink-3); font-weight: 400; }
+  .h2s { font-size: 10.5px; font-weight: 700; fill: var(--ink); }
+  .wiki { fill: var(--accent); }
+  .wiki-u { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 2; }
+  .code { fill: var(--surface-inset); stroke: var(--line); }
+  .tok { fill: var(--ink-3); }
+  .tok-a { fill: var(--doc-3); }
+  .tok-b { fill: var(--doc-4); }
+  .lang { font-size: 7px; fill: var(--ink-3); }
+  .box { fill: none; stroke: var(--ink-3); stroke-width: 1; }
+  .box.on { fill: var(--accent-dim); stroke: var(--accent); }
+  .done { fill: var(--line); }
+  .quote { fill: var(--line-2); }
+  .faintbar { fill: var(--line); }
+
+  /* graph */
+  .ring { fill: none; stroke: var(--line-2); stroke-dasharray: 2 4; }
+  .faint-ring { stroke: var(--line); }
+  .ring-l { font-size: 7.5px; fill: var(--ink-3); letter-spacing: 0.06em; }
+  .g-edge { stroke: var(--line-2); stroke-width: 1; }
+  .g-link { stroke-width: 1.2; }
+  .g-dot { fill: none; stroke: var(--ink-3); }
+  .g-node rect { fill: var(--surface-raised); stroke: var(--line-2); }
+  .g-node rect.cl { stroke: none; }
+  .g-focus rect { fill: var(--surface-overlay); stroke: var(--doc-1); stroke-width: 1.5; }
+  .g-focus text { font-size: 8.5px; font-weight: 600; fill: var(--ink); }
+
+  /* the thread */
+  .thread-line { fill: none; stroke: var(--doc-1); stroke-width: 1.5; }
+  .thread-pulse { fill: none; stroke: var(--text-primary); stroke-width: 2; stroke-dasharray: 0.035 1; stroke-dashoffset: 0.035; opacity: 0; }
+  .anchor { fill: var(--page); stroke: var(--accent); stroke-width: 2; }
+  .thread-l { font-size: 10px; fill: var(--doc-1); letter-spacing: 0.04em; }
+  .thread-lead { stroke: var(--doc-1); stroke-width: 1; }
+
+  .balloon line { stroke: var(--ink-3); stroke-width: 1; }
+  .balloon .tip { fill: var(--ink-2); }
+  .balloon circle:not(.tip) { fill: var(--page); stroke: var(--ink-2); stroke-width: 1; }
+  .balloon text { font-size: 12px; font-weight: 600; fill: var(--ink); }
+
+  /* hover a row of the parts list → its layer and balloon light up */
+  .layer .face, .balloon circle:not(.tip), .balloon line {
+    transition: stroke var(--dur-2) var(--ease-out), opacity var(--dur-2) var(--ease-out);
+  }
+  .layer > g, .layer > polygon { transition: opacity var(--dur-2) var(--ease-out); }
+  :global([data-hero]:has([data-bom] [data-part]:hover)) .layer > g,
+  :global([data-hero]:has([data-bom] [data-part]:hover)) .layer > polygon { opacity: 0.35; }
+  :global([data-hero]:has([data-bom] [data-part='vault']:hover)) .layer[data-part='vault'] > *,
+  :global([data-hero]:has([data-bom] [data-part='canvas']:hover)) .layer[data-part='canvas'] > *,
+  :global([data-hero]:has([data-bom] [data-part='note']:hover)) .layer[data-part='note'] > *,
+  :global([data-hero]:has([data-bom] [data-part='graph']:hover)) .layer[data-part='graph'] > * { opacity: 1; }
+  :global([data-hero]:has([data-bom] [data-part='vault']:hover)) .layer[data-part='vault'] .face,
+  :global([data-hero]:has([data-bom] [data-part='canvas']:hover)) .layer[data-part='canvas'] .face,
+  :global([data-hero]:has([data-bom] [data-part='note']:hover)) .layer[data-part='note'] .face,
+  :global([data-hero]:has([data-bom] [data-part='graph']:hover)) .layer[data-part='graph'] .face { stroke: var(--accent); }
+  :global([data-hero]:has([data-bom] [data-part='vault']:hover)) .balloon[data-part='vault'] circle:not(.tip),
+  :global([data-hero]:has([data-bom] [data-part='canvas']:hover)) .balloon[data-part='canvas'] circle:not(.tip),
+  :global([data-hero]:has([data-bom] [data-part='note']:hover)) .balloon[data-part='note'] circle:not(.tip),
+  :global([data-hero]:has([data-bom] [data-part='graph']:hover)) .balloon[data-part='graph'] circle:not(.tip) { stroke: var(--accent); }
+
+  /* ── the entrance: the stack starts collapsed on the vault and comes apart,
+     then the construction lines, the colour line and the balloons arrive ── */
+  @media (prefers-reduced-motion: no-preference) {
+    .layer {
+      animation: explode 1300ms var(--ease-out) both;
+      animation-delay: calc(200ms + var(--i) * 120ms);
+    }
+    .construct line {
+      animation: fade 900ms var(--ease-out) both;
+      animation-delay: 1100ms;
+    }
+    .thread-line {
+      animation: fade 600ms var(--ease-out) both;
+      animation-delay: 1500ms;
+    }
+    .anchor {
+      animation: pop 380ms var(--ease-out) both;
+      animation-delay: calc(1450ms + var(--k) * 110ms);
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .thread-l, .thread-lead { animation: fade 500ms var(--ease-out) both; animation-delay: 2000ms; }
+    .balloon { animation: fade 500ms var(--ease-out) both; animation-delay: calc(1700ms + var(--k) * 90ms); }
+    .thread-pulse {
+      opacity: 1;
+      animation: travel 3600ms var(--ease-in-out) 2600ms infinite;
+    }
+  }
+  @keyframes explode {
+    from { transform: translateY(var(--drop)); opacity: 0; }
+    35% { opacity: 1; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  /* a signal runs up the colour line, vault → graph, then rests */
+  @keyframes travel {
+    0% { stroke-dashoffset: 0.035; }
+    55%, 100% { stroke-dashoffset: -1; }
+  }
+</style>

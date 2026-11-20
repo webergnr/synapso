@@ -1,0 +1,187 @@
+---
+import { Picture } from 'astro:assets';
+// real window captures on a Retina Mac: 1392 × 870 points at 2×, macOS bar included
+import split from '../assets/screens/01-split.png';
+import canvas from '../assets/screens/02-canvas.png';
+import note from '../assets/screens/03-note.png';
+import graph from '../assets/screens/04-graph.png';
+import picker from '../assets/screens/05-picker.png';
+import light from '../assets/screens/06-light.png';
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.proof;
+const images = { split, notes: note, canvas, graph, picker, light } as const;
+---
+
+<section class="views section" id={t.id} aria-labelledby="views-h" data-views>
+  <div class="wrap">
+    <div class="head split">
+      <h2 class="h2 l" id="views-h">{t.title}</h2>
+      <p class="lede r">{t.lede}</p>
+    </div>
+
+    <div class="switch" role="tablist" aria-label={t.tablist}>
+      {t.views.map((v, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`tab-${v.id}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          aria-controls={`panel-${v.id}`}
+          tabindex={i === 0 ? 0 : -1}
+        >
+          {v.label}<span class="k">{v.key}</span>
+        </button>
+      ))}
+    </div>
+
+    <div class="stage shot">
+      {t.views.map((v, i) => (
+        <figure
+          class="panel"
+          role="tabpanel"
+          id={`panel-${v.id}`}
+          aria-labelledby={`tab-${v.id}`}
+          data-active={i === 0 ? '' : undefined}
+        >
+          <Picture
+            src={images[v.id]}
+            formats={['avif', 'webp']}
+            widths={[720, 1080, 1440, 2160]}
+            sizes="(min-width: 1440px) 1328px, calc(100vw - 2 * clamp(16px, 4vw, 56px))"
+            alt={t.alt[v.id]}
+            loading="lazy"
+            decoding="async"
+          />
+          <figcaption class="visually-hidden">{v.caption}</figcaption>
+        </figure>
+      ))}
+    </div>
+
+    <div class="figcode" aria-live="polite">
+      <p class="cap" data-caption>{t.views[0].caption}</p>
+      <p class="label code" data-code>FIG. 01 · {t.views[0].label} · 1392 × 870 @2x</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-views]')) {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const caption = root.querySelector<HTMLElement>('[data-caption]');
+    const code = root.querySelector<HTMLElement>('[data-code]');
+
+    const select = (tab: HTMLButtonElement, focus = false) => {
+      for (const t of tabs) {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')!)?.toggleAttribute('data-active', on);
+      }
+      const i = tabs.indexOf(tab);
+      const panel = document.getElementById(tab.getAttribute('aria-controls')!);
+      if (caption) caption.textContent = panel?.querySelector('figcaption')?.textContent ?? '';
+      if (code) code.textContent = `FIG. ${String(i + 1).padStart(2, '0')} · ${tab.firstChild?.textContent} · 1392 × 870 @2x`;
+      if (focus) tab.focus();
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(tab));
+      tab.addEventListener('keydown', (e) => {
+        const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (step) {
+          e.preventDefault();
+          select(tabs[(i + step + tabs.length) % tabs.length], true);
+        } else if (e.key === 'Home' || e.key === 'End') {
+          e.preventDefault();
+          select(tabs[e.key === 'Home' ? 0 : tabs.length - 1], true);
+        }
+      });
+    });
+  }
+</script>
+
+<style>
+  .views { padding-top: var(--sp-10); }
+  .head { align-items: end; }
+  .head .lede { grid-column: 8 / -1; max-width: 42ch; }
+
+  /* the status bar's view switch, at a larger size */
+  .switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-top: var(--sp-7);
+    border: 1px solid var(--line-2);
+    width: fit-content;
+    max-width: 100%;
+    background: var(--surface-panel);
+  }
+  [role='tab'] {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--sp-3);
+    padding: 10px 16px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    background: transparent;
+    font-family: var(--f-mono);
+    font-size: var(--fs-mono);
+    color: var(--ink-2);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+  }
+  [role='tab']:last-child { border-right: 0; }
+  [role='tab']:hover { color: var(--ink); background: var(--surface-raised); }
+  [role='tab'][aria-selected='true'] {
+    color: var(--ink);
+    background: var(--surface-overlay);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  [role='tab']:focus-visible { outline-offset: -2px; }
+  .k { font-size: var(--fs-label); color: var(--ink-2); }
+  [aria-selected='true'] .k { color: var(--accent); }
+
+  .stage {
+    display: grid;
+    margin-top: var(--sp-4);
+    aspect-ratio: 1392 / 870;
+  }
+  /* all views share one cell and crossfade; an inactive one is invisible to
+     assistive tech too (visibility), and keeps its layout so nothing jumps */
+  .panel {
+    grid-area: 1 / 1;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 320ms var(--ease-out), visibility 0s linear 320ms;
+  }
+  .panel[data-active] {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 320ms var(--ease-out);
+  }
+  .panel :global(img) { width: 100%; height: auto; }
+
+  .cap { color: var(--ink-2); font-size: var(--fs-small); max-width: 70ch; }
+  .code { color: var(--ink-2); white-space: nowrap; }
+
+  @media (max-width: 860px) {
+    .head .lede { grid-column: 1 / -1; }
+    .figcode { flex-direction: column; gap: var(--sp-2); }
+  }
+  @media (max-width: 560px) {
+    .stage { aspect-ratio: 1 / 1; }
+    .panel { overflow: hidden; }
+    .panel :global(img) { height: 100%; object-fit: cover; object-position: var(--focus, 0% 0%); }
+    #panel-split { --focus: 0% 0%; }
+    #panel-canvas { --focus: 20% 30%; }
+    #panel-graph { --focus: 46% 40%; }
+    #panel-picker { --focus: 40% 20%; }
+    .switch { width: 100%; }
+    [role='tab'] { flex: 1 1 33%; justify-content: center; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+    .k { display: none; }
+  }
+</style>

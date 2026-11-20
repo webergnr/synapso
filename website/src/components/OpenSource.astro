@@ -1,0 +1,55 @@
+---
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.oss;
+const [primary, ...rest] = t.links;
+---
+
+<section class="os section" id={t.id} aria-labelledby="os-h">
+  <div class="wrap split">
+    <h2 class="h2 l" id="os-h">{t.title}</h2>
+    <div class="text r">
+      <div class="prose"><p>{t.body}</p></div>
+      <div class="links">
+        <a class="btn btn-primary" href={primary.href} rel="noopener">{primary.text}<span class="arr" aria-hidden="true">↗</span></a>
+        <ul>
+          {rest.map((l) => <li><a class="wl" href={l.href} rel="noopener">{l.text}</a></li>)}
+        </ul>
+      </div>
+      <div class="stack">
+        <h3 class="label">{t.stackTitle}</h3>
+        <ul>
+          {t.stack.map((s) => <li><a href={s.href} rel="noopener">{s.name}</a></li>)}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .os { padding-block: var(--sp-10); }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-4) var(--sp-6);
+    margin-top: var(--sp-6);
+  }
+  .links ul { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); }
+  .links .wl { font-family: var(--f-mono); font-size: var(--fs-mono); white-space: nowrap; }
+  .stack { margin-top: var(--sp-7); padding-top: var(--sp-4); border-top: 1px solid var(--line); }
+  .stack ul { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); margin-top: var(--sp-3); }
+  .stack a {
+    font-family: var(--f-mono);
+    font-size: var(--fs-mono);
+    color: var(--ink-2);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .stack a:hover { color: var(--accent); text-decoration: underline; }
+  @media (max-width: 480px) {
+    .links .btn { width: 100%; justify-content: space-between; }
+  }
+</style>

@@ -1,0 +1,62 @@
+---
+import { Image } from 'astro:assets';
+import icon from '../../../assets/icon/synapso-512.png';
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.footer;
+---
+
+<footer class="ft">
+  <div class="wrap row">
+    <a class="brand" href="#top">
+      <Image src={icon} alt="" width={40} height={40} class="mark" />
+      <span>Synapso</span>
+    </a>
+    <nav aria-label={t.label}>
+      <ul>
+        {t.links.map((l) => <li><a href={l.href} rel="noopener">{l.text}</a></li>)}
+      </ul>
+    </nav>
+    <p class="fine">{t.license}<span class="sep" aria-hidden="true">·</span>{t.fonts}</p>
+  </div>
+</footer>
+
+<style>
+  .ft { border-top: 1px solid var(--line-2); padding-block: var(--sp-6) var(--sp-7); }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-4) var(--sp-7);
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    text-decoration: none;
+    font-family: var(--f-mono);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: var(--fs-mono);
+  }
+  .mark { width: 20px; height: 20px; }
+  ul { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-5); }
+  nav a {
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  nav a:hover { color: var(--ink); }
+  .fine { margin-left: auto; font-size: var(--fs-label); font-family: var(--f-mono); color: var(--ink-2); }
+  .sep { margin-inline: var(--sp-3); }
+  @media (max-width: 760px) {
+    .fine { margin-left: 0; }
+  }
+</style>

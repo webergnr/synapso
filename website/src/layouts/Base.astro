@@ -1,0 +1,59 @@
+---
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../styles/site.css';
+import type { Copy } from '../content/en';
+
+interface Props {
+  copy: Copy;
+  lang?: string;
+}
+const { copy, lang = 'en' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+// absolute URLs only when SITE_URL says where the site lives
+const canonical = Astro.site ? new URL(base, Astro.site).href : null;
+const og = Astro.site ? new URL(`${base}og.png`, Astro.site).href : null;
+---
+
+<!doctype html>
+<html lang={lang} data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{copy.meta.title}</title>
+    <meta name="description" content={copy.meta.description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta name="theme-color" content="#101115" />
+    <meta name="color-scheme" content="dark" />
+
+    <link rel="icon" href={`${base}favicon.ico`} sizes="any" />
+    <link rel="icon" href={`${base}favicon-32.png`} type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href={`${base}apple-touch-icon.png`} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Synapso" />
+    <meta property="og:title" content={copy.meta.title} />
+    <meta property="og:description" content={copy.meta.description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    {og && <meta property="og:image" content={og} />}
+    {og && <meta property="og:image:width" content="1200" />}
+    {og && <meta property="og:image:height" content="630" />}
+    {og && <meta property="og:image:alt" content={copy.meta.ogAlt} />}
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'Synapso',
+      applicationCategory: 'ProductivityApplication',
+      operatingSystem: 'macOS, Windows',
+      license: 'https://www.apache.org/licenses/LICENSE-2.0',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      ...(canonical ? { url: canonical } : {}),
+      codeRepository: 'https://github.com/webergnr/synapso',
+    })} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

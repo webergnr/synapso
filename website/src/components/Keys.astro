@@ -1,0 +1,94 @@
+---
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.keys;
+// one chip per chord: "⌘1 ⌘2 ⌘3" → three chips
+const chords = (keys: string) => keys.split(' ');
+---
+
+<section class="keys section" id={t.id} aria-labelledby="keys-h" data-keys>
+  <div class="wrap split">
+    <div class="head l">
+      <h2 class="h2" id="keys-h">{t.title}</h2>
+      <p class="lede">{t.body}</p>
+      <div class="os" role="group" aria-label={t.toggle}>
+        <button type="button" aria-pressed="true" data-os="mac">{t.mac}</button>
+        <button type="button" aria-pressed="false" data-os="pc">{t.pc}</button>
+      </div>
+    </div>
+    <dl class="list r">
+      {t.rows.map((r) => (
+        <div class="row">
+          <dt>{chords(r.keys).map((k) => <kbd data-key={k}>{k}</kbd>)}</dt>
+          <dd>{r.what}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</section>
+
+<script>
+  // the app spells ⌘ as "Ctrl+" off the Mac (src/keys.rs); so does the page
+  for (const root of document.querySelectorAll<HTMLElement>('[data-keys]')) {
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('[data-os]')];
+    const keys = [...root.querySelectorAll<HTMLElement>('kbd[data-key]')];
+    const set = (os: string) => {
+      for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.os === os));
+      for (const k of keys) k.textContent = os === 'mac' ? k.dataset.key! : k.dataset.key!.replace('⌘', 'Ctrl+');
+    };
+    buttons.forEach((b) => b.addEventListener('click', () => set(b.dataset.os!)));
+    const platform = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ?? navigator.platform ?? '';
+    if (platform && !/mac|iphone|ipad/i.test(platform)) set('pc');
+  }
+</script>
+
+<style>
+  .keys { padding-top: var(--sp-10); }
+  .head { position: sticky; top: 96px; }
+  .head .lede { margin-top: var(--sp-5); }
+  .os {
+    display: inline-flex;
+    margin-top: var(--sp-6);
+    border: 1px solid var(--line-2);
+  }
+  .os button {
+    padding: 8px 14px;
+    border: 0;
+    background: transparent;
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    letter-spacing: 0.06em;
+    color: var(--ink-2);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+  }
+  .os button + button { border-left: 1px solid var(--line); }
+  .os button:hover { color: var(--ink); }
+  .os button[aria-pressed='true'] { background: var(--surface-overlay); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+  .os button:focus-visible { outline-offset: -2px; }
+
+  .list { border-top: 1px solid var(--line-2); }
+  .row {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: var(--sp-5);
+    align-items: center;
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  dt { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  dt kbd { font-size: 1.0625rem; padding: 0.45em 0.6em; min-width: 2.4em; }
+  dd { color: var(--ink-2); }
+  .row:hover dd { color: var(--ink); }
+
+  @media (max-width: 960px) {
+    .head { position: static; }
+  }
+  @media (max-width: 480px) {
+    .row { grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); }
+    dt kbd { font-size: 0.9375rem; }
+  }
+</style>

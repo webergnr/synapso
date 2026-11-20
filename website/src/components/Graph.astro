@@ -1,0 +1,84 @@
+---
+import { Picture } from 'astro:assets';
+import shot from '../assets/screens/04-graph.png';
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.graph;
+---
+
+<section class="gr section" id={t.id} aria-labelledby="gr-h">
+  <div class="wrap">
+    <h2 class="h2 title" id="gr-h">{t.title}</h2>
+
+    <figure class="shot frame">
+      <Picture
+        src={shot}
+        formats={['avif', 'webp']}
+        widths={[720, 1080, 1440, 2160]}
+        sizes="(min-width: 1440px) 1328px, calc(100vw - 2 * clamp(16px, 4vw, 56px))"
+        alt={t.alt}
+        loading="lazy"
+        decoding="async"
+      />
+      <!-- numbered pins, as in the hero's drawing; the key is below -->
+      <ul class="pins" aria-hidden="true">
+        {t.pins.map((p, i) => <li style={`left:${p.x}%; top:${p.y}%`}>{i + 1}</li>)}
+      </ul>
+    </figure>
+    <ol class="key">
+      {t.pins.map((p, i) => <li><span class="n" aria-hidden="true">{i + 1}</span><strong>{p.label}</strong> {p.text}</li>)}
+    </ol>
+
+    <div class="cols split">
+      <p class="lede l">{t.body}</p>
+      <p class="side r">{t.inspector}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .gr { padding-top: var(--sp-10); }
+  .title { max-width: 14ch; margin-left: auto; text-align: right; }
+  .frame { margin-top: var(--sp-7); }
+
+  .pins { position: absolute; inset: 0; pointer-events: none; }
+  .pins li, .key .n {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    font-weight: 600;
+    color: var(--on-accent);
+    background: var(--accent);
+  }
+  .pins li { position: absolute; transform: translate(-50%, -50%); box-shadow: 0 0 0 3px var(--page); }
+  .key {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, auto));
+    justify-content: space-between;
+    gap: var(--sp-3) var(--sp-5);
+    margin-top: var(--sp-4);
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    color: var(--ink-2);
+  }
+  .key li { display: inline-flex; align-items: center; gap: var(--sp-2); }
+  .key strong { color: var(--ink); font-weight: 600; }
+
+  .cols { margin-top: var(--sp-7); }
+  .cols .lede { color: var(--ink); max-width: 52ch; }
+  .side { color: var(--ink-2); padding-left: var(--sp-5); border-left: 1px solid var(--line); max-width: 48ch; }
+
+  @media (max-width: 860px) {
+    .title { margin-left: 0; text-align: left; }
+    .key { grid-template-columns: minmax(0, 1fr); }
+  }
+  /* on a phone the pins would cover what they point at: the key reads alone */
+  @media (max-width: 560px) {
+    .pins, .key .n { display: none; }
+  }
+</style>

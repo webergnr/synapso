@@ -1,0 +1,162 @@
+---
+import { Image } from 'astro:assets';
+import icon from '../../../assets/icon/synapso-512.png';
+import { REPO_URL } from '../lib/releases';
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy; version: string | null }
+const { copy, version } = Astro.props;
+const t = copy.nav;
+---
+
+<header class="nav" data-nav>
+  <div class="bar wrap">
+    <a class="brand" href="#top" aria-label={t.home}>
+      <Image src={icon} alt="" width={56} height={56} class="mark" loading="eager" />
+      <span class="word">Synapso</span>
+      {version && <span class="ver label" data-release-ver>{version}</span>}
+    </a>
+
+    <nav class="links" aria-label={t.label}>
+      <ul>
+        {t.links.map((l) => <li><a href={l.href}>{l.text}</a></li>)}
+        <li><a href={REPO_URL} rel="noopener">{t.github}<span class="ext" aria-hidden="true">↗</span></a></li>
+      </ul>
+    </nav>
+
+    <a class="btn btn-primary cta" href="#download">{t.download}<span class="arr down" aria-hidden="true">↓</span></a>
+
+    <details class="menu" data-menu>
+      <summary aria-label={t.menu}><span class="burger" aria-hidden="true"></span></summary>
+      <ul class="sheet">
+        {t.links.map((l) => <li><a href={l.href}>{l.text}</a></li>)}
+        <li><a href={REPO_URL} rel="noopener">{t.github} ↗</a></li>
+      </ul>
+    </details>
+  </div>
+</header>
+
+<script>
+  const nav = document.querySelector<HTMLElement>('[data-nav]');
+  const menu = document.querySelector<HTMLDetailsElement>('[data-menu]');
+  if (nav) {
+    const onScroll = () => nav.toggleAttribute('data-scrolled', window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+  // an anchor in the sheet scrolls the page; the sheet should not stay open over it
+  menu?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a')) menu.open = false;
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu?.open) {
+      menu.open = false;
+      menu.querySelector('summary')?.focus();
+    }
+  });
+</script>
+
+<style>
+  .nav {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: var(--z-nav);
+    border-bottom: 1px solid transparent;
+    transition: background-color var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
+  }
+  .nav[data-scrolled] {
+    background-color: var(--page);
+    border-bottom-color: var(--line);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-5);
+    height: 64px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    text-decoration: none;
+    margin-right: auto;
+  }
+  .mark { width: 28px; height: 28px; }
+  .word {
+    font-family: var(--f-mono);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .ver {
+    color: var(--ink-2);
+    padding-left: var(--sp-3);
+    border-left: 1px solid var(--line);
+  }
+  .links ul {
+    display: flex;
+    gap: var(--sp-1);
+  }
+  .links a, .sheet a {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--ink-2);
+    padding: var(--sp-2) var(--sp-3);
+    white-space: nowrap;
+    transition: color var(--dur-1) var(--ease-out);
+  }
+  .links a:hover { color: var(--ink); }
+  .ext { color: var(--ink-3); }
+  .cta { height: 38px; padding-inline: var(--sp-4); }
+
+  .menu { display: none; position: relative; }
+  .menu summary {
+    list-style: none;
+    display: grid;
+    place-items: center;
+    width: 38px; height: 38px;
+    border: 1px solid var(--line-2);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .menu summary::-webkit-details-marker { display: none; }
+  .burger, .burger::before {
+    display: block;
+    width: 16px; height: 1.5px;
+    background: var(--ink);
+    position: relative;
+  }
+  .burger { transform: translateY(-3px); }
+  .burger::before { content: ''; position: absolute; top: 6px; }
+  .menu[open] .burger { transform: translateY(0) rotate(45deg); }
+  .menu[open] .burger::before { top: 0; transform: rotate(-90deg); }
+  .sheet {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 13px);
+    min-width: 220px;
+    padding: var(--sp-2);
+    background: var(--surface-overlay);
+    border: 1px solid var(--line-2);
+    display: grid;
+  }
+  .sheet a { display: flex; padding: var(--sp-3); color: var(--ink); }
+  .sheet a:hover { background: var(--surface-raised); }
+
+  @media (max-width: 900px) {
+    .links { display: none; }
+    .menu { display: block; }
+    .bar { gap: var(--sp-3); }
+  }
+  @media (max-width: 380px) {
+    .ver { display: none; }
+  }
+</style>

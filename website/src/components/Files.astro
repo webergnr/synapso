@@ -1,0 +1,127 @@
+---
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.files;
+---
+
+<section class="fl section" id={t.id} aria-labelledby="fl-h">
+  <div class="wrap">
+    <h2 class="statement" id="fl-h">
+      <span class="a">{t.title[0]}</span>
+      <span class="b">{t.title[1]}</span>
+    </h2>
+    <p class="lede big">{t.lede}</p>
+
+    <div class="grid split">
+      <figure class="tree l">
+        <figcaption class="label">ls -a</figcaption>
+        <ul>
+          {t.tree.map((r) => (
+            <li style={`--d:${r.depth}`}>
+              <span class="path">
+                <span class:list={['cl', r.color ? `c${r.color}` : 'c0']} aria-hidden="true"></span>
+                {r.path}
+              </span>
+              {r.note && <span class="note">{r.note}</span>}
+            </li>
+          ))}
+        </ul>
+      </figure>
+
+      <div class="rules r">
+        <h3 class="label">{t.rulesTitle}</h3>
+        <ol>
+          {t.rules.map((r) => <li>{r}</li>)}
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .fl {
+    margin-top: var(--sp-10);
+    padding-block: var(--sp-10) var(--sp-9);
+    border-top: 1px solid var(--line-2);
+    border-bottom: 1px solid var(--line-2);
+    background: var(--bg-base);
+  }
+  .statement {
+    font-family: var(--f-display);
+    font-size: var(--fs-statement);
+    font-weight: 800;
+    font-stretch: 125%;
+    line-height: 0.9;
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  .statement span { display: block; }
+  .statement .b {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--ink-2);
+    text-align: right;
+  }
+  .big {
+    margin-top: var(--sp-7);
+    font-size: clamp(1.15rem, 1.6vw, 1.5rem);
+    color: var(--ink);
+    max-width: 40ch;
+  }
+
+  .grid { margin-top: var(--sp-9); }
+  .tree {
+    font-family: var(--f-mono);
+    font-size: var(--fs-mono);
+    background: var(--surface-inset);
+    border: 1px solid var(--line);
+    padding: var(--sp-4) var(--sp-5) var(--sp-5);
+  }
+  .tree figcaption { margin-bottom: var(--sp-3); color: var(--ink-2); text-transform: none; }
+  .tree figcaption::before { content: '$ '; color: var(--accent); }
+  .tree li {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: var(--sp-4);
+    align-items: baseline;
+    padding: 5px 0 5px calc(var(--d) * 1.5em);
+    border-bottom: 1px dashed var(--line);
+  }
+  .tree li:last-child { border-bottom: 0; }
+  .path { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--ink); white-space: nowrap; }
+  .cl { width: 2px; height: 1.1em; background: var(--line-2); }
+  .c1 { background: var(--doc-1); }
+  .c4 { background: var(--doc-4); }
+  .note { color: var(--ink-2); font-size: var(--fs-label); text-align: right; }
+
+  .rules h3 { color: var(--ink); }
+  .rules ol { margin-top: var(--sp-4); counter-reset: r; }
+  .rules li {
+    counter-increment: r;
+    display: grid;
+    grid-template-columns: 2.5em minmax(0, 1fr);
+    gap: var(--sp-3);
+    padding: var(--sp-4) 0;
+    border-top: 1px solid var(--line);
+    color: var(--ink-2);
+  }
+  .rules li::before {
+    content: '§' counter(r);
+    font-family: var(--f-mono);
+    font-size: var(--fs-mono);
+    color: var(--accent);
+    padding-top: 0.15em;
+  }
+
+  @media (max-width: 960px) {
+  }
+  @media (max-width: 560px) {
+    .statement { font-stretch: 100%; }
+    .statement .b { text-align: left; }
+    .tree li { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .note { text-align: left; }
+  }
+</style>

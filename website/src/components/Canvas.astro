@@ -1,0 +1,150 @@
+---
+import { Picture } from 'astro:assets';
+import shot from '../assets/screens/02-canvas.png';
+import type { Copy } from '../content/en';
+
+interface Props { copy: Copy }
+const { copy } = Astro.props;
+const t = copy.canvas;
+
+// The skeleton of fixture/seed/architecture.canvas, as fixture/gen_vault.py
+// writes it into the demo vault: what a board holds, not every key of it.
+// `ext` marks keys that are Synapso's own; other JSON Canvas readers ignore them.
+const skeleton: { depth: number; key: string; value?: string; note?: string; ext?: string }[] = [
+  { depth: 0, key: 'nodes', note: 'everything on the board' },
+  { depth: 1, key: 'text', value: '"api gateway"', note: 'a box with a caption' },
+  { depth: 1, key: 'text', value: '"retry?"', ext: 'shape: triangle' },
+  { depth: 1, key: 'file', value: 'auth/auth-flow.md', note: 'a note, as a card' },
+  { depth: 0, key: 'edges', note: 'arrows and lines' },
+  { depth: 1, key: 'gw → retry', value: '"on 401"', note: 'a labelled arrow' },
+  { depth: 1, key: 'auth-flow → gw', ext: 'dash' },
+];
+---
+
+<section class="cv section" id={t.id} aria-labelledby="cv-h">
+  <div class="wrap">
+    <div class="top">
+      <div class="text">
+        <h2 class="h2" id="cv-h">{t.title}</h2>
+        <div class="prose"><p>{t.body}</p></div>
+        <div class="rail" aria-label={t.toolsLabel}>
+          <p class="label">{t.toolsLabel}</p>
+          <ul>
+            {t.tools.map(([k, name]) => <li><kbd>{k}</kbd><span>{name}</span></li>)}
+          </ul>
+        </div>
+      </div>
+      <figure class="shot pic">
+        <Picture
+          src={shot}
+          formats={['avif', 'webp']}
+          widths={[720, 1080, 1440, 2160]}
+          sizes="(min-width: 1100px) 58vw, 100vw"
+          alt={t.alt}
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+    </div>
+
+    <div class="disk split">
+      <div class="prose fmt l"><p>{t.format}</p></div>
+      <figure class="file r">
+        <figcaption class="label bar">
+          <span>{t.fileLabel}</span>
+          <span class="legend"><span class="sw k-sw"></span>JSON Canvas 1.0 <span class="sw x-sw"></span>Synapso's own</span>
+        </figcaption>
+        <ul class="skel">
+          {skeleton.map((r, i) => {
+            const last = r.depth === 1 && skeleton[i + 1]?.depth !== 1;
+            return (
+              <li class:list={[`d${r.depth}`]}>
+                <span class="branch" aria-hidden="true">{r.depth === 0 ? '' : last ? '└─' : '├─'}</span>
+                <span class="key">{r.key}</span>
+                {r.value && <span class="val">{r.value}</span>}
+                {r.ext && <span class="ext">{r.ext}</span>}
+                {r.note && <span class="note">{r.note}</span>}
+              </li>
+            );
+          })}
+        </ul>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cv { padding-top: var(--sp-10); }
+  .top {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--sp-5);
+    align-items: center;
+  }
+  /* the board takes the wide side, the words go left */
+  .text { grid-column: 1 / span 4; grid-row: 1; }
+  .pic { grid-column: 6 / -1; grid-row: 1; }
+  .text .prose { margin-top: var(--sp-5); }
+
+  .rail { margin-top: var(--sp-6); }
+  .rail ul {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-2) var(--sp-3);
+    margin-top: var(--sp-3);
+  }
+  .rail li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: var(--f-mono);
+    font-size: var(--fs-label);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+
+  .disk { margin-top: var(--sp-8); }
+  .fmt p { color: var(--ink); font-size: var(--fs-lede); line-height: 1.5; }
+  .file { border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); }
+  .bar {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-5);
+    padding: var(--sp-3) 0;
+    border-bottom: 1px solid var(--line);
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+  .legend { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--ink-2); }
+  .sw { width: 8px; height: 8px; display: inline-block; }
+  .k-sw { background: var(--doc-4); }
+  .x-sw { background: var(--accent); margin-left: var(--sp-3); }
+
+  /* the skeleton: key, value, then what it means in words */
+  .skel { padding: var(--sp-3) 0 var(--sp-4); font-family: var(--f-mono); font-size: var(--fs-mono); }
+  .skel li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--sp-3);
+    padding: 6px 0;
+  }
+  .skel li.d0 { margin-top: var(--sp-2); }
+  .branch { color: var(--ink-3); width: 2ch; margin-left: 1ch; }
+  .d0 .branch { display: none; }
+  .key { color: var(--doc-4); }
+  .d0 .key { font-weight: 600; }
+  .val { color: var(--ink); }
+  .ext { color: var(--accent); border: 1px solid var(--accent); padding: 0 6px; font-size: var(--fs-label); }
+  .note { color: var(--ink-2); font-family: var(--f-body); font-size: var(--fs-small); margin-left: auto; }
+
+  @media (max-width: 1100px) {
+    .text { grid-column: 1 / -1; }
+    .pic { grid-column: 1 / -1; grid-row: 2; margin-top: var(--sp-6); }
+  }
+  @media (max-width: 560px) {
+    .note { margin-left: 0; flex-basis: 100%; padding-left: 3ch; }
+    .d0 .note { padding-left: 0; }
+  }
+</style>

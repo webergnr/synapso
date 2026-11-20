@@ -1,0 +1,37 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Hero from '../components/Hero.astro';
+import Views from '../components/Views.astro';
+import Markdown from '../components/Markdown.astro';
+import Canvas from '../components/Canvas.astro';
+import Graph from '../components/Graph.astro';
+import Keys from '../components/Keys.astro';
+import Speed from '../components/Speed.astro';
+import Files from '../components/Files.astro';
+import Downloads from '../components/Downloads.astro';
+import OpenSource from '../components/OpenSource.astro';
+import Footer from '../components/Footer.astro';
+import { en as copy } from '../content/en';
+import { fetchLatest, toView } from '../lib/releases';
+
+// read once at build time; the download section refreshes it in the browser
+const view = toView(await fetchLatest(process.env.GITHUB_TOKEN));
+---
+
+<Base copy={copy}>
+  <Nav copy={copy} version={view.version} />
+  <main>
+    <Hero copy={copy} view={view} />
+    <Views copy={copy} />
+    <Markdown copy={copy} />
+    <Canvas copy={copy} />
+    <Graph copy={copy} />
+    <Keys copy={copy} />
+    <Speed copy={copy} />
+    <Files copy={copy} />
+    <Downloads copy={copy} view={view} />
+    <OpenSource copy={copy} />
+  </main>
+  <Footer copy={copy} />
+</Base>
