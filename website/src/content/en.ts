@@ -116,11 +116,11 @@ export const en = {
       'The inspector lists backlinks with their context, outgoing links, and notes that mention this one without linking it, with a button that writes the link.',
     // pins on the screenshot, in percent of its box, and what each one marks
     pins: [
-      { x: 7.4, y: 14.9, label: 'Groups', text: 'top-level folders, each a toggle' },
-      { x: 40.9, y: 39.2, label: 'Focus', text: 'the note you are on' },
-      { x: 46.0, y: 26.7, label: 'Ring 1', text: 'one hop out' },
-      { x: 52.2, y: 12.4, label: 'Beyond', text: 'past the depth: a dot' },
-      { x: 85.6, y: 24.8, label: 'Backlinks', text: 'with their line' },
+      { x: 7.4, y: 15.5, label: 'Groups', text: 'top-level folders, each a toggle' },
+      { x: 40.6, y: 38.4, label: 'Focus', text: 'the note you are on' },
+      { x: 45.8, y: 26.8, label: 'Ring 1', text: 'one hop out' },
+      { x: 51.4, y: 12.7, label: 'Beyond', text: 'past the depth: a dot' },
+      { x: 85.8, y: 25.7, label: 'Backlinks', text: 'with their line' },
     ],
     alt: 'The Synapso graph: auth-flow.md in the centre, linked notes on rings by hop, and the inspector listing seven backlinks.',
   },

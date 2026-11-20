@@ -1,6 +1,6 @@
 ---
 import { Picture } from 'astro:assets';
-import shot from '../../../docs/screenshots/02-canvas.png';
+import shot from '../assets/screens/02-canvas.png';
 import type { Copy } from '../content/en';
 
 interface Props { copy: Copy }
@@ -83,8 +83,7 @@ const skeleton: { depth: number; key: string; value?: string; note?: string; ext
   }
   /* the board takes the wide side, the words go left */
   .text { grid-column: 1 / span 4; grid-row: 1; }
-  .pic { grid-column: 6 / -1; grid-row: 1; aspect-ratio: 16 / 10.5; overflow: hidden; }
-  .pic :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 0% 18%; }
+  .pic { grid-column: 6 / -1; grid-row: 1; }
   .text .prose { margin-top: var(--sp-5); }
 
   .rail { margin-top: var(--sp-6); }

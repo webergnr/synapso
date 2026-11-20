@@ -28,7 +28,7 @@ The site reads the app's own files in place, so it cannot drift from the app:
 | What | From |
 |---|---|
 | Every colour | `../design/tokens.css` (the dark theme), imported by `src/styles/site.css` |
-| Screenshots | `../docs/screenshots/*.png`, the ones the README uses; Astro turns them into AVIF/WebP at four widths |
+| Screenshots | `src/assets/screens/*.png`: real window captures of the app on a Retina Mac (1392 × 870 points at 2×, demo vault from `../fixture`), macOS bar included; Astro turns them into AVIF/WebP at four widths |
 | Icon, favicon | `../assets/icon/` |
 | The canvas skeleton | `../fixture/seed/architecture.canvas`, reduced by hand to its key points in `src/components/Canvas.astro` |
 | Frame times | the README's *Performance* table, copied into `src/content/en.ts` |

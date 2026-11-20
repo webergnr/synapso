@@ -252,8 +252,6 @@ kbd {
 /* figures: a real screenshot, a hairline, crop marks at the corners */
 .shot {
   position: relative;
-  border: 1px solid var(--line);
-  background: var(--bg-base);
 }
 .shot::before, .shot::after {
   content: '';

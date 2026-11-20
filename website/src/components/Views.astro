@@ -1,11 +1,12 @@
 ---
 import { Picture } from 'astro:assets';
-import split from '../../../docs/screenshots/01-split.png';
-import canvas from '../../../docs/screenshots/02-canvas.png';
-import note from '../../../docs/screenshots/03-note.png';
-import graph from '../../../docs/screenshots/04-graph.png';
-import picker from '../../../docs/screenshots/05-picker.png';
-import light from '../../../docs/screenshots/06-light.png';
+// real window captures on a Retina Mac: 1392 × 870 points at 2×, macOS bar included
+import split from '../assets/screens/01-split.png';
+import canvas from '../assets/screens/02-canvas.png';
+import note from '../assets/screens/03-note.png';
+import graph from '../assets/screens/04-graph.png';
+import picker from '../assets/screens/05-picker.png';
+import light from '../assets/screens/06-light.png';
 import type { Copy } from '../content/en';
 
 interface Props { copy: Copy }
@@ -61,7 +62,7 @@ const images = { split, notes: note, canvas, graph, picker, light } as const;
 
     <div class="figcode" aria-live="polite">
       <p class="cap" data-caption>{t.views[0].caption}</p>
-      <p class="label code" data-code>FIG. 01 · {t.views[0].label} · 1440 × 900</p>
+      <p class="label code" data-code>FIG. 01 · {t.views[0].label} · 1392 × 870 @2x</p>
     </div>
   </div>
 </section>
@@ -82,7 +83,7 @@ const images = { split, notes: note, canvas, graph, picker, light } as const;
       const i = tabs.indexOf(tab);
       const panel = document.getElementById(tab.getAttribute('aria-controls')!);
       if (caption) caption.textContent = panel?.querySelector('figcaption')?.textContent ?? '';
-      if (code) code.textContent = `FIG. ${String(i + 1).padStart(2, '0')} · ${tab.firstChild?.textContent} · 1440 × 900`;
+      if (code) code.textContent = `FIG. ${String(i + 1).padStart(2, '0')} · ${tab.firstChild?.textContent} · 1392 × 870 @2x`;
       if (focus) tab.focus();
     };
 
@@ -147,7 +148,7 @@ const images = { split, notes: note, canvas, graph, picker, light } as const;
   .stage {
     display: grid;
     margin-top: var(--sp-4);
-    aspect-ratio: 1440 / 900;
+    aspect-ratio: 1392 / 870;
   }
   /* all views share one cell and crossfade; an inactive one is invisible to
      assistive tech too (visibility), and keeps its layout so nothing jumps */
