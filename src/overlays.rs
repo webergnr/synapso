@@ -596,6 +596,11 @@ fn preview(app: App, doc: Option<crate::index::DocEntry>) -> Element {
 /// Create `folder/name.ext` (making folders on the way for `a/b/name`),
 /// refusing a name that exists.
 pub fn create_named(app: App, folder: &str, name: &str, kind: DocKind) {
+    // the new one takes a pane: not over an edit that is on screen only, and
+    // not after the file is made (a retry would make `untitled-2`)
+    if !app.flush("new") {
+        return;
+    }
     let root = app.root();
     let name = name
         .trim()

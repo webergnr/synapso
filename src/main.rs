@@ -83,10 +83,23 @@ fn main() {
             .with_window(
                 WindowConfig::new(app)
                     .with_on_close(|_, _| {
-                        // nothing typed is lost to the close button
-                        note::flush_note();
-                        board::flush_board();
-                        CloseDecision::Close
+                        // nothing typed is lost to the close button: an edit
+                        // that could not be written keeps the window open (the
+                        // pane's toast says why); the same close again goes
+                        // (`app::flush_panes`)
+                        if app::flush_panes("close").is_err() {
+                            return CloseDecision::KeepOpen;
+                        }
+                        // ⚠️ leave HERE, saved, instead of answering `Close`:
+                        // Freya would drop the window inside this callback and
+                        // the run loop then turns once more, and on a Mac with a
+                        // Touch Bar AppKit's Touch Bar finder takes its observer
+                        // off the dead `WinitView` and aborts the app
+                        // (NSRangeException, "nextResponder"). One window, so
+                        // closing it is quitting.
+                        // A second window would need the fix in the fork instead
+                        // (drop the window after the run loop stops)
+                        std::process::exit(0)
                     })
                     .with_size(1600., 940.)
                     .with_background(DARK.bg_base)
@@ -477,8 +490,9 @@ fn app() -> impl IntoElement {
 /// until answered, so no script can drive it. What happens after the pick is
 /// `vault::set_root` (proved in `tests/open_vault.rs`) and a fresh session.
 pub fn open_vault(app: App) {
-    note::flush_note();
-    board::flush_board();
+    if !app.flush("open vault") {
+        return;
+    }
     let Some(picked) = rfd::FileDialog::new()
         .set_title("open a folder of .md files")
         .set_directory(app.root())
@@ -544,8 +558,9 @@ fn dock_icon() {
 
 pub fn toggle_theme(app: App) {
     // whatever is typed goes to disk before the panes are rebuilt
-    crate::note::flush_note();
-    crate::board::flush_board();
+    if !app.flush("theme") {
+        return;
+    }
     let mut dark = app.dark;
     let d = *dark.read();
     dark.set(!d);
@@ -553,6 +568,11 @@ pub fn toggle_theme(app: App) {
 
 /// ⌘N: a note in the open note's folder, opened with its name ready to type.
 pub fn new_note(app: App, folder: Option<String>) {
+    // the new one takes a pane: not over an edit that is on screen only, and
+    // not after the file is made (a retry would make `untitled-2`)
+    if !app.flush("new") {
+        return;
+    }
     let root = app.root();
     let folder = folder.unwrap_or_else(|| index::parent_folder(&app.note.read()));
     let dir = root.join(&folder);
@@ -571,6 +591,11 @@ pub fn new_note(app: App, folder: Option<String>) {
 
 /// A canvas next to the open note, opened in the board.
 pub fn new_canvas(app: App, folder: Option<String>) {
+    // the new one takes a pane: not over an edit that is on screen only, and
+    // not after the file is made (a retry would make `untitled-2`)
+    if !app.flush("new") {
+        return;
+    }
     let root = app.root();
     let folder = folder.unwrap_or_else(|| index::parent_folder(&app.note.read()));
     let dir = root.join(&folder);
@@ -621,24 +646,49 @@ pub fn rename(app: App, rel: &str, new_name: &str) -> Result<String, String> {
     }
     let from = root.join(rel.trim_end_matches('/'));
     let to = root.join(new_rel.trim_end_matches('/'));
-    // a case-only rename is the same file on Windows: let it through
-    if to.exists() && !new_rel.eq_ignore_ascii_case(rel) {
+    // what the panes hold reaches disk first: the rewrite below sees the board,
+    // and the note pane remounts from the moved file; ⚠️ not over an edit that
+    // is on screen only, and BEFORE the name is checked: the flush may have
+    // just made `plan-unsaved.md`, which a rename to that name would replace
+    app::flush_panes("rename").map_err(|why| format!("not renamed, not saved: {why}"))?;
+    if !rename_target_is_free(&from, &to).map_err(|e| e.to_string())? {
         return Err(format!("{} already exists", new_rel.trim_end_matches('/')));
     }
-    // what the panes hold reaches disk first: the rewrite below sees the board,
-    // and the note pane remounts from the moved file
-    note::flush_note();
-    board::flush_board();
+    // ⚠️ `[[links]]` are not rewritten (no decision on that yet): the notes
+    // that use the old name are named instead, read before the index moves on
+    let linking = if is_folder {
+        vec![]
+    } else {
+        linked_from(&app.index.read(), rel)
+    };
     std::fs::rename(&from, &to).map_err(|e| e.to_string())?;
-    let rewired = relink_canvases(&root, rel, &new_rel);
+    let (rewired, stuck) = relink_canvases(&root, rel, &new_rel);
     // the colour moves with it
     let key = index::color_key(rel);
     let tone = app.index.read().own.get(&key).copied();
+    let mut sidecar = vec![];
     if let Some(t) = tone {
-        let _ = index::set_tone(&root, rel, None);
-        let _ = index::set_tone(&root, &new_rel, Some(t));
+        sidecar.extend(index::set_tone(&root, rel, None).err());
+        sidecar.extend(index::set_tone(&root, &new_rel, Some(t)).err());
     }
-    session::renamed(&root, rel, &new_rel);
+    sidecar.extend(session::renamed(&root, rel, &new_rel).err());
+    // the rename happened: what it left behind is said, not an error
+    let mut left = vec![];
+    match linking.len() {
+        0 => {}
+        1 => left.push(format!(
+            "{} still links to [[{}]]",
+            linking[0],
+            stem_of(rel)
+        )),
+        n => left.push(format!("{n} notes still link to [[{}]]", stem_of(rel))),
+    }
+    if !stuck.is_empty() {
+        left.push(format!("{} still points at {rel}", stuck.join(", ")));
+    }
+    if let Some(e) = sidecar.first() {
+        left.push(format!("its colour and place did not move: {e}"));
+    }
     let fix = |s: &str| -> String {
         if is_folder && s.starts_with(rel) {
             format!("{new_rel}{}", &s[rel.len()..])
@@ -663,15 +713,55 @@ pub fn rename(app: App, rel: &str, new_name: &str) -> Result<String, String> {
         let mut rev = app.board_rev;
         *rev.write() += 1;
     }
+    if !left.is_empty() {
+        app.toast(
+            format!("renamed to {}", base_name(&new_rel)),
+            left.join("; "),
+            None,
+        );
+    }
     Ok(new_rel)
+}
+
+/// Whether `to` is free for `from` to be renamed onto. ⚠️ A case-only rename
+/// (`Plan.md` → `plan.md`) is the same file on a disk that ignores case
+/// (macOS, Windows), where `to` exists because it IS `from`; on one where case
+/// counts (Linux, case-sensitive APFS) `to` can be another note that `rename`
+/// would replace. The folder's listing tells them apart: free only when it
+/// holds `from` and not `to` spelled exactly.
+fn rename_target_is_free(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<bool> {
+    match std::fs::symlink_metadata(to) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(true),
+        Err(e) => return Err(e),
+        Ok(_) => {}
+    }
+    let (Some(parent), Some(from_name), Some(to_name)) =
+        (from.parent(), from.file_name(), to.file_name())
+    else {
+        return Ok(false);
+    };
+    if to.parent() != Some(parent) || !from_name.eq_ignore_ascii_case(to_name) {
+        return Ok(false);
+    }
+    let mut source_present = false;
+    for entry in std::fs::read_dir(parent)? {
+        let name = entry?.file_name();
+        if name == to_name {
+            return Ok(false);
+        }
+        source_present |= name == from_name;
+    }
+    Ok(source_present)
 }
 
 /// Every `.canvas` in the vault that points at `from` (or inside it, for a
 /// folder) points at `to` afterwards. Loads and saves through the core so
-/// unknown keys ride through. Returns how many boards changed.
-fn relink_canvases(root: &std::path::Path, from: &str, to: &str) -> usize {
+/// unknown keys ride through. Returns how many boards changed, and the ones
+/// that would not save, which still point at `from`.
+fn relink_canvases(root: &std::path::Path, from: &str, to: &str) -> (usize, Vec<String>) {
     let index = Index::load(root);
     let mut changed = 0;
+    let mut failed = vec![];
     for d in index.docs.iter().filter(|d| d.kind == DocKind::Canvas) {
         let Ok(mut canvas) = synapso_core::vault::Canvas::load(&d.path) else {
             continue;
@@ -692,11 +782,33 @@ fn relink_canvases(root: &std::path::Path, from: &str, to: &str) -> usize {
                 touched = true;
             }
         }
-        if touched && canvas.save(&d.path, stamp).is_ok() {
-            changed += 1;
+        if !touched {
+            continue;
+        }
+        match canvas.save(&d.path, stamp) {
+            Ok(_) => changed += 1,
+            Err(_) => failed.push(d.rel.clone()),
         }
     }
-    changed
+    (changed, failed)
+}
+
+/// The notes whose `[[links]]` reach `rel`, which a rename leaves pointing at
+/// the old name.
+fn linked_from(index: &Index, rel: &str) -> Vec<String> {
+    let mut from: Vec<String> = index
+        .backlinks(rel)
+        .iter()
+        .map(|l| l.from.clone())
+        .collect();
+    from.sort();
+    from.dedup();
+    from
+}
+
+/// `notes/plan.md` → `plan`: what a `[[link]]` calls it.
+fn stem_of(rel: &str) -> String {
+    synapso_core::vault::name(std::path::Path::new(rel))
 }
 
 pub fn new_folder(app: App, parent: &str) {
@@ -906,5 +1018,89 @@ mod tests {
         );
         assert_eq!(plain("/home/me/notes"), "/home/me/notes");
         assert_eq!(plain(r"C:\already"), r"C:\already");
+    }
+
+    /// A rename that only changes the case: the same file on a disk that
+    /// ignores case (macOS, Windows), a different one where case counts
+    /// (Linux, case-sensitive APFS), and `rename` would replace it there.
+    #[test]
+    fn case_only_rename_protects_a_separate_destination() {
+        let root = std::env::temp_dir().join("synapso-rename-case");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let from = root.join("Draft.md");
+        let to = root.join("draft.md");
+        std::fs::write(&from, "first draft").unwrap();
+        assert!(rename_target_is_free(&from, &to).unwrap());
+        if !to.exists() {
+            // case counts here: `draft.md` is a note of its own
+            std::fs::write(&to, "second draft").unwrap();
+            assert!(!rename_target_is_free(&from, &to).unwrap());
+            assert_eq!(std::fs::read_to_string(&from).unwrap(), "first draft");
+            assert_eq!(std::fs::read_to_string(&to).unwrap(), "second draft");
+        }
+        // case ignored: `plan.md` names `Plan.md`, which is another note than
+        // `a.md`, so renaming `a.md` to `plan` would replace it
+        std::fs::write(root.join("Plan.md"), "the plan").unwrap();
+        let a = root.join("a.md");
+        std::fs::write(&a, "a").unwrap();
+        let plan = root.join("plan.md");
+        if plan.exists() {
+            assert!(!rename_target_is_free(&a, &plan).unwrap());
+        }
+        std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    /// A rename moves the boards' cards along, and names what it does not
+    /// move: the notes whose `[[links]]` still use the old name.
+    #[test]
+    fn a_rename_relinks_its_boards_and_names_the_notes_still_linking() {
+        let root = std::env::temp_dir().join("synapso-rename-links");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let write = |rel: &str, text: &str| std::fs::write(root.join(rel), text).unwrap();
+        write("plan.md", "# plan");
+        write("a.md", "see [[plan]]");
+        write("b.md", "[[plan#goals]], and [[plan]] again");
+        write("c.md", "nothing here");
+        write(
+            "board.canvas",
+            r#"{"nodes":[{"id":"n","type":"file","file":"plan.md","x":0,"y":0,"width":100,"height":100}],"edges":[]}"#,
+        );
+
+        assert_eq!(
+            linked_from(&Index::load(&root), "plan.md"),
+            ["a.md", "b.md"]
+        );
+        std::fs::rename(root.join("plan.md"), root.join("roadmap.md")).unwrap();
+        assert_eq!(relink_canvases(&root, "plan.md", "roadmap.md"), (1, vec![]));
+        let board = synapso_core::vault::Canvas::load(&root.join("board.canvas")).unwrap();
+        assert_eq!(board.nodes[0].file.as_deref(), Some("roadmap.md"));
+    }
+
+    /// A board that will not save keeps the old name: the rename says which.
+    #[cfg(unix)]
+    #[test]
+    fn a_board_that_will_not_take_the_new_name_is_named() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = std::env::temp_dir().join("synapso-rename-stuck-board");
+        let locked = root.join("locked");
+        let open = |mode| std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(mode));
+        let _ = open(0o755);
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&locked).unwrap();
+        std::fs::write(root.join("plan.md"), "# plan").unwrap();
+        std::fs::write(
+            locked.join("board.canvas"),
+            r#"{"nodes":[{"id":"n","type":"file","file":"plan.md","x":0,"y":0,"width":100,"height":100}],"edges":[]}"#,
+        )
+        .unwrap();
+        // nothing new can be made in the folder, the save's temp included
+        open(0o555).unwrap();
+
+        let relinked = relink_canvases(&root, "plan.md", "roadmap.md");
+
+        open(0o755).unwrap();
+        assert_eq!(relinked, (0, vec!["locked/board.canvas".to_string()]));
     }
 }

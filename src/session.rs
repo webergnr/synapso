@@ -107,10 +107,10 @@ pub fn remember(root: &Path, rel: &str, open: bool) {
 
 /// A document or folder was renamed: its place on the rail and in the
 /// recents follows, and a folder's takes what is inside along.
-pub fn renamed(root: &Path, from: &str, to: &str) {
+pub fn renamed(root: &Path, from: &str, to: &str) -> std::io::Result<()> {
     let mut prefs = Prefs::load(root);
     prefs.rename(&color_key(from), &color_key(to));
-    let _ = prefs.save(root);
+    prefs.save(root)
 }
 
 #[cfg(test)]
@@ -197,7 +197,7 @@ mod tests {
         assert_eq!(s.tabs, ["plan.md"]);
         assert_eq!(s.canvases, ["b/plan.canvas"]);
         std::fs::rename(root.join("a"), root.join("c")).unwrap();
-        renamed(&root, "a/", "c/");
+        renamed(&root, "a/", "c/").unwrap();
         assert_eq!(restore(&Index::load(&root)).canvases, ["b/plan.canvas"]);
         let _ = std::fs::remove_dir_all(&root);
     }
@@ -272,6 +272,19 @@ mod tests {
         assert_eq!(next_canvas(&index, "a.canvas", live), "c.canvas");
         assert_eq!(next_canvas(&index, "c.canvas", live), "a.canvas");
         assert_eq!(next_canvas(&index, "c.canvas", |r| r == "c.canvas"), "");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// The colours and the rail's places live in the sidecar: when a rename
+    /// cannot write it there, the caller hears it.
+    #[test]
+    fn a_rename_that_cannot_reach_the_sidecar_says_so() {
+        // a folder holding something where the sidecar goes: no write lands
+        let root = vault(
+            "rename-no-sidecar",
+            &[("plan.md", "# plan"), (".synapso.json/x", "")],
+        );
+        assert!(renamed(&root, "plan.md", "roadmap.md").is_err());
         let _ = std::fs::remove_dir_all(&root);
     }
 }
