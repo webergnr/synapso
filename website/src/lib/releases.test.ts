@@ -21,7 +21,7 @@ test('v0.0.1: Apple Silicon and Windows x64 are offered, the rest says so', () =
   assert.deepEqual(mac.builds.map((b) => [b.arch, b.format, b.file]), [['arm64', '.zip', 'synapso-macos-arm64.zip']]);
   assert.deepEqual(mac.missing.map((m) => m.arch), ['x86_64']);
 
-  assert.deepEqual(win.builds.map((b) => b.archLabel), ['x64 (x86_64)']);
+  assert.deepEqual(win.builds.map((b) => b.archLabel), ['x64']);
   assert.deepEqual(win.missing, []);
 
   assert.deepEqual(linux.builds, []);

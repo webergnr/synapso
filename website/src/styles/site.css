@@ -51,7 +51,7 @@
   /* type */
   --fs-mega: clamp(2.35rem, 9.6vw, 9.75rem);
   --fs-statement: clamp(2.2rem, 8.4vw, 8.5rem);
-  --fs-h2: clamp(2rem, 4.6vw, 4.25rem);
+  --fs-h2: clamp(2.25rem, 5.4vw, 4.25rem);
   --fs-h3: clamp(1.15rem, 1.5vw, 1.375rem);
   --fs-lede: clamp(1.05rem, 1.25vw, 1.25rem);
   --fs-body: 1rem;
@@ -272,6 +272,21 @@ kbd {
   justify-content: space-between;
   gap: var(--sp-4);
   margin-top: var(--sp-3);
+}
+
+/* one grid for every two-column section: 12 columns, the left block takes
+   five, column six is air, the right block always starts at column seven */
+.split {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--sp-5);
+  row-gap: var(--sp-6);
+  align-items: start;
+}
+.split > .l { grid-column: 1 / span 5; }
+.split > .r { grid-column: 7 / -1; }
+@media (max-width: 960px) {
+  .split > .l, .split > .r { grid-column: 1 / -1; }
 }
 
 .section { position: relative; }

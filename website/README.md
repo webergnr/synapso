@@ -30,7 +30,7 @@ The site reads the app's own files in place, so it cannot drift from the app:
 | Every colour | `../design/tokens.css` (the dark theme), imported by `src/styles/site.css` |
 | Screenshots | `../docs/screenshots/*.png`, the ones the README uses; Astro turns them into AVIF/WebP at four widths |
 | Icon, favicon | `../assets/icon/` |
-| The canvas excerpt | `../fixture/seed/architecture.canvas`, trimmed by hand in `src/components/Canvas.astro` |
+| The canvas skeleton | `../fixture/seed/architecture.canvas`, reduced by hand to its key points in `src/components/Canvas.astro` |
 | Frame times | the README's *Performance* table, copied into `src/content/en.ts` |
 
 Every sentence of copy lives in `src/content/en.ts`. If the app stops doing

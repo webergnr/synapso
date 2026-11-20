@@ -31,9 +31,9 @@ const t = copy.graph;
       {t.pins.map((p, i) => <li><span class="n" aria-hidden="true">{i + 1}</span><strong>{p.label}</strong> {p.text}</li>)}
     </ol>
 
-    <div class="cols">
-      <p class="lede">{t.body}</p>
-      <p class="side">{t.inspector}</p>
+    <div class="cols split">
+      <p class="lede l">{t.body}</p>
+      <p class="side r">{t.inspector}</p>
     </div>
   </div>
 </section>
@@ -57,9 +57,10 @@ const t = copy.graph;
   }
   .pins li { position: absolute; transform: translate(-50%, -50%); box-shadow: 0 0 0 3px var(--page); }
   .key {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-3) var(--sp-6);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, auto));
+    justify-content: space-between;
+    gap: var(--sp-3) var(--sp-5);
     margin-top: var(--sp-4);
     font-family: var(--f-mono);
     font-size: var(--fs-label);
@@ -68,19 +69,16 @@ const t = copy.graph;
   .key li { display: inline-flex; align-items: center; gap: var(--sp-2); }
   .key strong { color: var(--ink); font-weight: 600; }
 
-  .cols {
-    display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    gap: var(--sp-7);
-    margin-top: var(--sp-7);
-  }
+  .cols { margin-top: var(--sp-7); }
   .cols .lede { color: var(--ink); max-width: 52ch; }
   .side { color: var(--ink-2); padding-left: var(--sp-5); border-left: 1px solid var(--line); max-width: 48ch; }
 
   @media (max-width: 860px) {
     .title { margin-left: 0; text-align: left; }
-    .cols { grid-template-columns: minmax(0, 1fr); gap: var(--sp-5); }
-    .pins li { width: 16px; height: 16px; font-size: 9px; }
-    .key { display: grid; }
+    .key { grid-template-columns: minmax(0, 1fr); }
+  }
+  /* on a phone the pins would cover what they point at: the key reads alone */
+  @media (max-width: 560px) {
+    .pins, .key .n { display: none; }
   }
 </style>

@@ -34,22 +34,22 @@ export const en = {
     lineB: 'See the',
     link: 'connections',
     lede:
-      'A native workspace for Markdown notes, canvases and the links between them. Your vault is a folder of plain files: no account, no cloud, no lock-in.',
+      'A native workspace for Markdown notes, canvases and the links between them. Your vault is a folder of plain files: no account, no database, no lock-in.',
     primary: 'Download Synapso',
     secondary: 'View on GitHub',
     noRelease: 'See every release',
     triad: [
       { key: 'Fast', text: 'Native Rust, drawn with Skia. Frames in under 5 ms at p50.' },
-      { key: 'Yours', text: '.md and .canvas files in a folder you own.' },
-      { key: 'Connected', text: '[[links]] tie notes, canvas cards and the graph together.' },
+      { key: 'Yours', text: 'Delete the app and the notes stay: they were never inside it.' },
+      { key: 'Connected', text: 'Notes link with [[ ]], sit on canvases as cards, and meet in the graph.' },
     ],
     triadLabel: 'Synapso in three lines',
     figure: 'Exploded view of a Synapso vault: the folder on disk, a canvas, a Markdown note and the graph, stacked, with one note threaded through all four.',
     bomTitle: 'One note, four views',
     bom: [
-      { part: 'graph', item: 'Graph', what: 'rings by hop around the note', fmt: 'derived' },
-      { part: 'note', item: 'Note', what: 'auth/auth-flow.md', fmt: 'Markdown' },
-      { part: 'canvas', item: 'Canvas', what: 'auth/architecture.canvas', fmt: 'JSON Canvas 1.0' },
+      { part: 'graph', item: 'Graph', what: 'rings by hop', fmt: 'derived' },
+      { part: 'note', item: 'Note', what: 'auth-flow.md', fmt: 'Markdown' },
+      { part: 'canvas', item: 'Canvas', what: 'architecture.canvas', fmt: 'JSON Canvas 1.0' },
       { part: 'vault', item: 'Vault', what: '~/Synapso', fmt: 'a plain folder' },
     ],
   },
@@ -98,7 +98,7 @@ export const en = {
       'Shapes, arrows, frames, pictures and notes as cards. Drag a note from the tree and it becomes a card; rename it and every board that points at it is rewritten.',
     format:
       'A board is saved as JSON Canvas 1.0, the same format Obsidian’s canvas uses, so it opens there too. Keys another editor wrote are kept and handed back on save.',
-    fileLabel: 'auth/architecture.canvas, on disk (trimmed)',
+    fileLabel: 'auth/architecture.canvas, on disk: the skeleton',
     toolsLabel: 'Tool rail',
     tools: [
       ['V', 'select'], ['R', 'rectangle'], ['O', 'ellipse'], ['Y', 'triangle'], ['A', 'arrow'],
@@ -116,11 +116,11 @@ export const en = {
       'The inspector lists backlinks with their context, outgoing links, and notes that mention this one without linking it, with a button that writes the link.',
     // pins on the screenshot, in percent of its box, and what each one marks
     pins: [
+      { x: 7.4, y: 14.9, label: 'Groups', text: 'top-level folders, each a toggle' },
       { x: 40.9, y: 39.2, label: 'Focus', text: 'the note you are on' },
-      { x: 46.0, y: 26.7, label: 'Ring 1', text: 'what it links to, one hop out' },
-      { x: 52.2, y: 12.4, label: 'Beyond', text: 'past the depth: a dot, not a card' },
-      { x: 85.6, y: 24.8, label: 'Backlinks', text: 'with the line each link sits in' },
-      { x: 7.4, y: 14.9, label: 'Groups', text: 'the top-level folders, each one a toggle' },
+      { x: 46.0, y: 26.7, label: 'Ring 1', text: 'one hop out' },
+      { x: 52.2, y: 12.4, label: 'Beyond', text: 'past the depth: a dot' },
+      { x: 85.6, y: 24.8, label: 'Backlinks', text: 'with their line' },
     ],
     alt: 'The Synapso graph: auth-flow.md in the centre, linked notes on rings by hop, and the inspector listing seven backlinks.',
   },
@@ -128,7 +128,7 @@ export const en = {
   keys: {
     id: 'keys',
     title: 'Hands stay on the keys.',
-    body: 'Every surface has a shortcut, and the app spells them for your platform.',
+    body: 'Every view and every search has a shortcut, and the app spells them for your platform.',
     toggle: 'Show shortcuts for',
     mac: 'macOS',
     pc: 'Windows · Linux',
@@ -148,7 +148,7 @@ export const en = {
     id: 'speed',
     title: 'Native, and it shows.',
     body:
-      'Rust, drawn with Skia in one pass. Only the visible lines of a note are laid out, nodes outside the view are culled, and text too small to read is skipped.',
+      'Rust, drawn with Skia. The canvas is painted in one pass, only the visible lines of a note are laid out, nodes outside the view are culled, and text too small to read is skipped.',
     chartTitle: 'CPU time per frame, release build',
     scenario: 'Scenario',
     budget: '6.25 ms budget (160 Hz)',
@@ -202,7 +202,7 @@ export const en = {
     size: 'Size',
     get: 'Download',
     unsigned: {
-      title: 'The builds are not signed yet',
+      title: 'Not signed yet.',
       macos: 'macOS blocks the first launch. Open it once, then System Settings → Privacy & Security → Open Anyway (on macOS 14 and older: right-click → Open).',
       windows: 'SmartScreen warns on first launch: More info → Run anyway.',
     },

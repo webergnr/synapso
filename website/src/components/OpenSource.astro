@@ -4,26 +4,20 @@ import type { Copy } from '../content/en';
 interface Props { copy: Copy }
 const { copy } = Astro.props;
 const t = copy.oss;
+const [primary, ...rest] = t.links;
 ---
 
 <section class="os section" id={t.id} aria-labelledby="os-h">
-  <div class="wrap grid">
-    <div class="lic" aria-hidden="true">
-      <span class="big">Apache</span>
-      <span class="big num">2.0</span>
-    </div>
-    <div class="text">
-      <h2 class="h2" id="os-h">{t.title}</h2>
+  <div class="wrap split">
+    <h2 class="h2 l" id="os-h">{t.title}</h2>
+    <div class="text r">
       <div class="prose"><p>{t.body}</p></div>
-      <ul class="links">
-        {t.links.map((l, i) => (
-          <li>
-            <a class:list={['btn', i === 0 ? 'btn-primary' : 'btn-ghost']} href={l.href} rel="noopener">
-              {l.text}<span class="arr" aria-hidden="true">↗</span>
-            </a>
-          </li>
-        ))}
-      </ul>
+      <div class="links">
+        <a class="btn btn-primary" href={primary.href} rel="noopener">{primary.text}<span class="arr" aria-hidden="true">↗</span></a>
+        <ul>
+          {rest.map((l) => <li><a class="wl" href={l.href} rel="noopener">{l.text}</a></li>)}
+        </ul>
+      </div>
       <div class="stack">
         <h3 class="label">{t.stackTitle}</h3>
         <ul>
@@ -36,27 +30,15 @@ const t = copy.oss;
 
 <style>
   .os { padding-block: var(--sp-10); }
-  .grid {
-    display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: var(--sp-8);
-    align-items: start;
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-4) var(--sp-6);
+    margin-top: var(--sp-6);
   }
-  .lic { display: grid; line-height: 0.82; container-type: inline-size; }
-  .big {
-    font-family: var(--f-display);
-    /* APACHE is ~6.4em at wdth 125: fill the column, never past it */
-    font-size: calc(100cqi / 6.6);
-    font-weight: 800;
-    font-stretch: 125%;
-    letter-spacing: -0.04em;
-    text-transform: uppercase;
-    color: transparent;
-    -webkit-text-stroke: 1.5px var(--line-2);
-  }
-  .big.num { color: var(--accent); -webkit-text-stroke: 0; }
-  .text .prose { margin-top: var(--sp-5); }
-  .links { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+  .links ul { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); }
+  .links .wl { font-family: var(--f-mono); font-size: var(--fs-mono); white-space: nowrap; }
   .stack { margin-top: var(--sp-7); padding-top: var(--sp-4); border-top: 1px solid var(--line); }
   .stack ul { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); margin-top: var(--sp-3); }
   .stack a {
@@ -67,14 +49,7 @@ const t = copy.oss;
     white-space: nowrap;
   }
   .stack a:hover { color: var(--accent); text-decoration: underline; }
-
-  @media (max-width: 960px) {
-    .grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); }
-    .lic { grid-auto-flow: column; justify-content: start; gap: 0.25em; }
-    .big { font-size: calc(100cqi / 10.5); }
-  }
   @media (max-width: 480px) {
     .links .btn { width: 100%; justify-content: space-between; }
-    .links li { flex: 1 1 100%; }
   }
 </style>

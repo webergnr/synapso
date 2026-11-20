@@ -14,13 +14,13 @@ const ticks = [0, 2, 4, 6, 8];
 ---
 
 <section class="sp section" id={t.id} aria-labelledby="sp-h">
-  <div class="wrap grid">
-    <div class="text">
+  <div class="wrap split">
+    <div class="text l">
       <h2 class="h2" id="sp-h">{t.title}</h2>
       <div class="prose"><p>{t.body}</p></div>
     </div>
 
-    <figure class="chart" style={`--budget:${pct(BUDGET)}`}>
+    <figure class="chart r" style={`--budget:${pct(BUDGET)}`}>
       <div class="cap-row" aria-hidden="true">
         <span class="label ttl">{t.chartTitle}</span>
         <span class="legend label">
@@ -70,12 +70,6 @@ const ticks = [0, 2, 4, 6, 8];
 
 <style>
   .sp { padding-top: var(--sp-10); }
-  .grid {
-    display: grid;
-    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-    gap: var(--sp-8);
-    align-items: start;
-  }
   .text .prose { margin-top: var(--sp-5); }
 
   table {
@@ -159,7 +153,6 @@ const ticks = [0, 2, 4, 6, 8];
   .notes p:last-child { color: var(--ink-2); }
 
   @media (max-width: 960px) {
-    .grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); }
   }
   /* phones: the scenario name gets its own line, the bar and numbers share the next */
   @media (max-width: 560px) {

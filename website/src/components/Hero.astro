@@ -130,7 +130,7 @@ const t = copy.hero;
     container-type: inline-size;
   }
   .figure {
-    grid-column: 6 / -1;
+    grid-column: 7 / -1;
     grid-row: 1;
     position: relative;
     z-index: 1;
@@ -144,8 +144,8 @@ const t = copy.hero;
   .mega {
     margin-top: var(--sp-6);
     font-family: var(--f-display);
-    /* "THINK IN NOTES." is 10.44em wide at wdth 125: fit it to the column */
-    font-size: calc(100cqi / 10.6);
+    /* sized to stop short of the drawing, which starts at column 7 */
+    font-size: calc(100cqi / 11.5);
     font-weight: 800;
     font-stretch: 125%;
     line-height: 0.88;
@@ -227,7 +227,7 @@ const t = copy.hero;
     position: absolute;
     right: var(--gutter);
     bottom: -88px;
-    width: min(360px, 48%);
+    width: min(420px, 54%);
   }
   .bom table {
     width: 100%;
@@ -271,6 +271,7 @@ const t = copy.hero;
   }
   .triad li {
     display: grid;
+    align-content: start;
     gap: var(--sp-2);
     padding: var(--sp-5) var(--sp-5) var(--sp-6) 0;
     border-top: 1px solid var(--line-2);

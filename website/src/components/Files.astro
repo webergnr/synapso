@@ -14,8 +14,8 @@ const t = copy.files;
     </h2>
     <p class="lede big">{t.lede}</p>
 
-    <div class="grid">
-      <figure class="tree">
+    <div class="grid split">
+      <figure class="tree l">
         <figcaption class="label">ls -a</figcaption>
         <ul>
           {t.tree.map((r) => (
@@ -30,7 +30,7 @@ const t = copy.files;
         </ul>
       </figure>
 
-      <div class="rules">
+      <div class="rules r">
         <h3 class="label">{t.rulesTitle}</h3>
         <ol>
           {t.rules.map((r) => <li>{r}</li>)}
@@ -46,9 +46,7 @@ const t = copy.files;
     padding-block: var(--sp-10) var(--sp-9);
     border-top: 1px solid var(--line-2);
     border-bottom: 1px solid var(--line-2);
-    background:
-      linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% 96px,
-      var(--bg-base);
+    background: var(--bg-base);
   }
   .statement {
     font-family: var(--f-display);
@@ -74,12 +72,7 @@ const t = copy.files;
     max-width: 40ch;
   }
 
-  .grid {
-    display: grid;
-    grid-template-columns: minmax(0, 6fr) minmax(0, 6fr);
-    gap: var(--sp-8);
-    margin-top: var(--sp-9);
-  }
+  .grid { margin-top: var(--sp-9); }
   .tree {
     font-family: var(--f-mono);
     font-size: var(--fs-mono);
@@ -87,7 +80,7 @@ const t = copy.files;
     border: 1px solid var(--line);
     padding: var(--sp-4) var(--sp-5) var(--sp-5);
   }
-  .tree figcaption { margin-bottom: var(--sp-3); color: var(--ink-3); text-transform: none; }
+  .tree figcaption { margin-bottom: var(--sp-3); color: var(--ink-2); text-transform: none; }
   .tree figcaption::before { content: '$ '; color: var(--accent); }
   .tree li {
     display: grid;
@@ -124,7 +117,6 @@ const t = copy.files;
   }
 
   @media (max-width: 960px) {
-    .grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-7); }
   }
   @media (max-width: 560px) {
     .statement { font-stretch: 100%; }

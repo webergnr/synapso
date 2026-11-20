@@ -9,8 +9,8 @@ const chords = (keys: string) => keys.split(' ');
 ---
 
 <section class="keys section" id={t.id} aria-labelledby="keys-h" data-keys>
-  <div class="wrap grid">
-    <div class="head">
+  <div class="wrap split">
+    <div class="head l">
       <h2 class="h2" id="keys-h">{t.title}</h2>
       <p class="lede">{t.body}</p>
       <div class="os" role="group" aria-label={t.toggle}>
@@ -18,7 +18,7 @@ const chords = (keys: string) => keys.split(' ');
         <button type="button" aria-pressed="false" data-os="pc">{t.pc}</button>
       </div>
     </div>
-    <dl class="list">
+    <dl class="list r">
       {t.rows.map((r) => (
         <div class="row">
           <dt>{chords(r.keys).map((k) => <kbd data-key={k}>{k}</kbd>)}</dt>
@@ -46,12 +46,6 @@ const chords = (keys: string) => keys.split(' ');
 
 <style>
   .keys { padding-top: var(--sp-10); }
-  .grid {
-    display: grid;
-    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-    gap: var(--sp-8);
-    align-items: start;
-  }
   .head { position: sticky; top: 96px; }
   .head .lede { margin-top: var(--sp-5); }
   .os {
@@ -91,7 +85,6 @@ const chords = (keys: string) => keys.split(' ');
   .row:hover dd { color: var(--ink); }
 
   @media (max-width: 960px) {
-    .grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); }
     .head { position: static; }
   }
   @media (max-width: 480px) {

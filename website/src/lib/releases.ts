@@ -25,7 +25,7 @@ export const PLATFORMS: { os: OS; name: string; expect: Arch[] }[] = [
 
 const ARCH_LABEL: Record<OS, Record<Arch, string>> = {
   macos: { arm64: 'Apple Silicon (arm64)', x86_64: 'Intel (x86_64)' },
-  windows: { arm64: 'ARM64', x86_64: 'x64 (x86_64)' },
+  windows: { arm64: 'ARM64', x86_64: 'x64' },
   linux: { arm64: 'ARM64 (aarch64)', x86_64: 'x86_64' },
 };
 

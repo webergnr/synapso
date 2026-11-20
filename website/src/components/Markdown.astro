@@ -10,8 +10,8 @@ const t = copy.markdown;
 ---
 
 <section class="md section" id={t.id} aria-labelledby="md-h">
-  <div class="wrap grid">
-    <div class="text">
+  <div class="wrap split">
+    <div class="text l">
       <h2 class="h2" id="md-h">{t.title}</h2>
       <div class="prose">
         {t.body.map((p) => <p>{p}</p>)}
@@ -21,18 +21,18 @@ const t = copy.markdown;
       </ul>
     </div>
 
-    <figure class="demo">
+    <figure class="demo r">
       <div class="sheet" data-sheet>
         <p class="file label"><span class="spine-dot" aria-hidden="true"></span>{t.demoFile}</p>
         <div class="lines" role="group" aria-label={t.demoLabel}>
-          <p class="ln l1" tabindex="0"><span class="syn"># </span>Auth Flow</p>
-          <p class="ln" tabindex="0">Tokens are minted <span class="syn">**</span><strong>once</strong><span class="syn">**</span> and cached locally. The storage layer is covered in <span class="syn">[[</span><span class="wl-d">adapter-design</span><span class="syn">]]</span>.</p>
+          <p class="ln l1" tabindex="-1"><span class="syn"># </span>Auth Flow</p>
+          <p class="ln" tabindex="-1">Tokens are minted <span class="syn">**</span><strong>once</strong><span class="syn">**</span> and cached locally. The storage layer is covered in <span class="syn">[[</span><span class="wl-d">adapter-design</span><span class="syn">]]</span>.</p>
           <p class="ln l2" tabindex="0" data-caret><span class="syn">## </span>Token exchange</p>
-          <p class="ln" tabindex="0">Session state lives in <span class="syn">`</span><code class="chip-d">TokenStore</code><span class="syn">`</span> and is rebuilt on launch.</p>
-          <p class="ln l2" tabindex="0"><span class="syn">## </span>Open items</p>
-          <p class="ln task done" tabindex="0"><span class="syn">- [x] </span><span class="box on" aria-hidden="true"></span><s>Refresh rotation on 401</s></p>
-          <p class="ln task" tabindex="0"><span class="syn">- [ ] </span><span class="box" aria-hidden="true"></span>Offline grace period — 72h?</p>
-          <p class="ln quote" tabindex="0"><span class="syn">&gt; </span>The gateway is the only component allowed to see the client secret.</p>
+          <p class="ln" tabindex="-1">Session state lives in <span class="syn">`</span><code class="chip-d">TokenStore</code><span class="syn">`</span> and is rebuilt on launch.</p>
+          <p class="ln l2" tabindex="-1"><span class="syn">## </span>Open items</p>
+          <p class="ln task done" tabindex="-1"><span class="syn">- [x] </span><span class="box on" aria-hidden="true"></span><s>Refresh rotation on 401</s></p>
+          <p class="ln task" tabindex="-1"><span class="syn">- [ ] </span><span class="box" aria-hidden="true"></span>Offline grace period — 72h?</p>
+          <p class="ln quote" tabindex="-1"><span class="syn">&gt; </span>The gateway is the only component allowed to see the client secret.</p>
         </div>
       </div>
       <figcaption class="figcode">
@@ -52,7 +52,13 @@ const t = copy.markdown;
       line.setAttribute('data-caret', '');
     };
     sheet.addEventListener('pointerover', (e) => move((e.target as Element).closest('.ln')));
-    sheet.addEventListener('focusin', (e) => move((e.target as Element).closest('.ln')));
+    // one tab stop for the whole note (the caret line); arrows walk the lines
+    sheet.addEventListener('focusin', (e) => {
+      const line = (e.target as Element).closest('.ln');
+      if (!line) return;
+      for (const l of sheet.querySelectorAll<HTMLElement>('.ln')) l.tabIndex = l === line ? 0 : -1;
+      move(line);
+    });
     sheet.addEventListener('keydown', (e) => {
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
       const line = (e.target as Element).closest('.ln');
@@ -67,12 +73,6 @@ const t = copy.markdown;
 
 <style>
   .md { padding-top: var(--sp-10); }
-  .grid {
-    display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: var(--sp-8);
-    align-items: start;
-  }
   .text .prose { margin-top: var(--sp-6); }
   .facts {
     margin-top: var(--sp-6);
@@ -112,7 +112,7 @@ const t = copy.markdown;
     gap: var(--sp-2);
     text-transform: none;
     letter-spacing: 0.02em;
-    color: var(--ink-3);
+    color: var(--ink-2);
     margin-bottom: var(--sp-4);
   }
   .spine-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--doc-1); }
@@ -179,7 +179,6 @@ const t = copy.markdown;
   .figcode .cap { font-size: var(--fs-small); color: var(--ink-2); }
 
   @media (max-width: 960px) {
-    .grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); }
     .demo { margin-top: 0; }
   }
   @media (max-width: 560px) {

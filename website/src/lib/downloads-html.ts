@@ -7,7 +7,7 @@ export interface DownloadsCopy {
   notAvailable: string;
   fromSource: string;
   get: string;
-  unsigned: { macos: string; windows: string };
+  unsigned: { title: string; macos: string; windows: string };
   yourSystem: string;
   linuxNote: string;
 }
@@ -15,7 +15,7 @@ export interface DownloadsCopy {
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const NOTE: Partial<Record<OS, keyof DownloadsCopy['unsigned']>> = { macos: 'macos', windows: 'windows' };
+const NOTE: Partial<Record<OS, 'macos' | 'windows'>> = { macos: 'macos', windows: 'windows' };
 
 export function platformsHTML(view: DownloadsView, t: DownloadsCopy): string {
   return view.platforms
@@ -47,7 +47,7 @@ export function platformsHTML(view: DownloadsView, t: DownloadsCopy): string {
       const noteKey = NOTE[p.os];
       const note =
         p.builds.length && noteKey
-          ? `<p class="pf-note">${esc(t.unsigned[noteKey])}</p>`
+          ? `<p class="pf-note"><strong>${esc(t.unsigned.title)}</strong> ${esc(t.unsigned[noteKey])}</p>`
           : p.os === 'linux' && !p.builds.length
             ? `<p class="pf-note">${esc(t.linuxNote)}</p>`
             : '';

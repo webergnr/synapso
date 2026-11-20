@@ -16,9 +16,9 @@ const images = { split, notes: note, canvas, graph, picker, light } as const;
 
 <section class="views section" id={t.id} aria-labelledby="views-h" data-views>
   <div class="wrap">
-    <div class="head">
-      <h2 class="h2" id="views-h">{t.title}</h2>
-      <p class="lede">{t.lede}</p>
+    <div class="head split">
+      <h2 class="h2 l" id="views-h">{t.title}</h2>
+      <p class="lede r">{t.lede}</p>
     </div>
 
     <div class="switch" role="tablist" aria-label={t.tablist}>
@@ -104,13 +104,8 @@ const images = { split, notes: note, canvas, graph, picker, light } as const;
 
 <style>
   .views { padding-top: var(--sp-10); }
-  .head {
-    display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    gap: var(--sp-5) var(--sp-7);
-    align-items: end;
-  }
-  .head .lede { justify-self: end; max-width: 42ch; }
+  .head { align-items: end; }
+  .head .lede { grid-column: 8 / -1; max-width: 42ch; }
 
   /* the status bar's view switch, at a larger size */
   .switch {
@@ -173,11 +168,17 @@ const images = { split, notes: note, canvas, graph, picker, light } as const;
   .code { color: var(--ink-2); white-space: nowrap; }
 
   @media (max-width: 860px) {
-    .head { grid-template-columns: minmax(0, 1fr); }
-    .head .lede { justify-self: start; }
+    .head .lede { grid-column: 1 / -1; }
     .figcode { flex-direction: column; gap: var(--sp-2); }
   }
   @media (max-width: 560px) {
+    .stage { aspect-ratio: 1 / 1; }
+    .panel { overflow: hidden; }
+    .panel :global(img) { height: 100%; object-fit: cover; object-position: var(--focus, 0% 0%); }
+    #panel-split { --focus: 0% 0%; }
+    #panel-canvas { --focus: 20% 30%; }
+    #panel-graph { --focus: 46% 40%; }
+    #panel-picker { --focus: 40% 20%; }
     .switch { width: 100%; }
     [role='tab'] { flex: 1 1 33%; justify-content: center; padding: 10px 8px; border-bottom: 1px solid var(--line); }
     .k { display: none; }
