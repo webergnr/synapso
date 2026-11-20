@@ -908,6 +908,12 @@ fn draw_frame(cv: &sk::Canvas, fc: &sk::FontCollection, f: &Frame, w: f32, h: f3
             cv.draw_rect(hr, &paint(p.surface_panel));
             cv.draw_rect(hr, &stroke(p.accent, 1.));
         }
+        // the grip that turns them all, as one node's
+        let top = KPoint::new(r.center().x, r.y0);
+        let grip = KPoint::new(top.x, top.y - geom::GRIP_GAP);
+        cv.draw_line(skp(top), skp(grip), &s);
+        cv.draw_circle(skp(grip), 4., &paint(p.surface_panel));
+        cv.draw_circle(skp(grip), 4., &stroke(p.accent, 1.));
     }
     // hover outline
     if let Under::Node(id) = &f.under

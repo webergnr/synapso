@@ -175,7 +175,8 @@ skipped.
 - `⇧1` fits everything, `⇧0` is 100%.
 - ⇧-click adds a node or an edge to the selection (again takes it out), and a
   ⇧-marquee adds what it catches. With more than one thing selected, a box
-  around them all has handles that resize the lot.
+  around them all has handles that resize the lot and a grip that turns it
+  (⇧ snaps 15°).
 
 ## The graph
 

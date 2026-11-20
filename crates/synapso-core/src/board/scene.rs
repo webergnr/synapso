@@ -22,7 +22,7 @@ use kurbo::{Point, Rect, Size, Vec2};
 use super::{
     anchor_point, caption_size, corner, distance_to_path, edge_middle, grip_point, handle_at,
     label_anchor, normalized, resize, resize_locked, route_edge, spanning, EdgeLine, Viewport,
-    CLICK_SLOP,
+    CLICK_SLOP, GRIP_GAP,
 };
 use crate::card::{card_columns, card_height, wrap};
 use crate::theme::TEXT_BASE;
@@ -84,6 +84,16 @@ enum Drag {
         /// Each node's box and text size when the gesture began.
         nodes: Vec<(String, Rect, f32)>,
     },
+    /// The grip of the box around several selected things: they all turn
+    /// about the box's centre, each also about its own.
+    Spin {
+        /// World centre the group turns about — fixed for the whole gesture.
+        centre: Point,
+        /// Where the pointer was, as a [`bearing`] from `centre`, at the press.
+        from: f64,
+        /// Each node's centre and angle when the gesture began.
+        nodes: Vec<(String, Point, f32)>,
+    },
     Connect {
         from: String,
         cur: Point,
@@ -131,7 +141,7 @@ pub enum Under {
     End(String, End),
     /// The middle of the selected edge — drag it to bend the line.
     Bend(String),
-    /// The grip that turns the one selected node.
+    /// The grip that turns the one selected node, or the box around several.
     Grip,
     /// A resize handle of the one selected node, or of the box around several.
     Handle((i8, i8)),
@@ -181,6 +191,12 @@ fn shape_tool(shape: Shape) -> Option<Tool> {
         Shape::Label => Tool::Text,
         _ => return None,
     })
+}
+
+/// Which way `p` lies from `centre`, in degrees clockwise from straight up —
+/// a grip sits above what it turns, so straight up is zero.
+fn bearing(p: Point, centre: Point) -> f64 {
+    (p.y - centre.y).atan2(p.x - centre.x).to_degrees() + 90.0
 }
 
 /// Which groups of the style bar the current selection understands.
@@ -1194,6 +1210,22 @@ impl Scene {
                         id: node.id.clone(),
                         centre: node.rect().center(),
                     });
+                } else if let Some(group) = self.group_box() {
+                    let centre = group.center();
+                    let nodes = self
+                        .moving_nodes()
+                        .into_iter()
+                        .filter_map(|id| {
+                            let n = self.canvas.node(&id)?;
+                            let (c, angle) = (n.rect().center(), n.angle());
+                            Some((id, c, angle))
+                        })
+                        .collect();
+                    self.drag = Some(Drag::Spin {
+                        centre,
+                        from: bearing(world, centre),
+                        nodes,
+                    });
                 }
                 Outcome::None
             }
@@ -1336,9 +1368,17 @@ impl Scene {
                 return Under::Handle(handle);
             }
         }
-        let group = self.group_box();
-        if let Some(handle) = group.and_then(|g| handle_at(g, world, 6.0 / self.view.zoom)) {
-            return Under::Handle(handle);
+        if let Some(group) = self.group_box() {
+            let tolerance = 6.0 / self.view.zoom;
+            // where the shell draws it: `GRIP_GAP` screen px over the top
+            let grip = Point::new(group.center().x, group.y0 - GRIP_GAP / self.view.zoom);
+            let reach = tolerance + 2.0 / self.view.zoom;
+            if (grip.x - world.x).abs() <= reach && (grip.y - world.y).abs() <= reach {
+                return Under::Grip;
+            }
+            if let Some(handle) = handle_at(group, world, tolerance) {
+                return Under::Handle(handle);
+            }
         }
         if let Some(node) = self.canvas.hit(world) {
             return Under::Node(node.id.clone());
@@ -1437,9 +1477,7 @@ impl Scene {
             Some(Drag::Rotate { id, centre }) => {
                 let (id, centre) = (id.clone(), *centre);
                 if let Some(node) = self.canvas.node_mut(&id) {
-                    // the grip sits above the node, so straight up is zero
-                    let degrees =
-                        (world.y - centre.y).atan2(world.x - centre.x).to_degrees() + 90.0;
+                    let degrees = bearing(world, centre);
                     // design: free by default, ⇧ locks to 15°
                     node.set_angle(if snap {
                         ((degrees / 15.0).round() * 15.0) as f32
@@ -1520,6 +1558,31 @@ impl Scene {
                     ));
                     if text {
                         node.set_text_size(size * sy as f32);
+                    }
+                }
+                Outcome::None
+            }
+            Some(Drag::Spin {
+                centre,
+                from,
+                nodes,
+            }) => {
+                let mut by = bearing(world, *centre) - *from;
+                // as one node turns: free by default, ⇧ locks to 15°
+                if snap {
+                    by = (by / 15.0).round() * 15.0;
+                }
+                let by = by as f32;
+                for (id, c, angle) in nodes.iter() {
+                    let Some(node) = self.canvas.node_mut(id) else {
+                        continue;
+                    };
+                    let size = node.rect().size();
+                    let at = vault::turn(*c, *centre, by.to_radians());
+                    node.set_rect(Rect::from_center_size(at, size));
+                    // a loose end is a place: it has no way to face
+                    if node.shape() != Shape::Point {
+                        node.set_angle(angle + by);
                     }
                 }
                 Outcome::None
@@ -1637,7 +1700,11 @@ impl Scene {
                 }
             }
             Some(
-                Drag::Move { .. } | Drag::Resize { .. } | Drag::Scale { .. } | Drag::Rotate { .. },
+                Drag::Move { .. }
+                | Drag::Resize { .. }
+                | Drag::Scale { .. }
+                | Drag::Rotate { .. }
+                | Drag::Spin { .. },
             ) => Outcome::Changed,
             Some(Drag::Free { points }) => self.commit_drawing(&points),
             Some(Drag::Reconnect { edge, end, .. }) => self.reconnect(&edge, end, world),
@@ -3216,6 +3283,42 @@ mod tests {
         let base = caption_size(Shape::Rect);
         assert_eq!(scene.canvas.nodes[1].text_size(base), base * 2.0);
         assert_eq!(scene.selected.len(), 2, "the group stays selected");
+    }
+
+    #[test]
+    fn the_group_grip_turns_every_node_about_the_box() {
+        let mut scene = scene_with(vec![
+            node("1", Shape::Rect, 0.0, 0.0, 100.0, 40.0),
+            node("2", Shape::Rect, 200.0, 60.0, 100.0, 40.0),
+        ]);
+        scene.selected = vec![Selection::Node("1".into()), Selection::Node("2".into())];
+        // the box is (0,0)-(300,100), centre (150,50); the grip over its top
+        let grip = Point::new(150.0, -GRIP_GAP);
+        assert_eq!(scene.under(grip), Under::Grip);
+        scene.handle(Event::Pressed(grip, 1), Tool::Select);
+        // straight right of the centre: a quarter turn, clockwise on screen
+        let right = Point::new(250.0, 50.0);
+        scene.handle(Event::Dragged(right, false), Tool::Select);
+        let out = scene.handle(Event::Released(right), Tool::Select);
+        assert!(matches!(out, Outcome::Changed));
+        let near = |a: Point, b: Point| (a - b).hypot() < 1e-3;
+        let (one, two) = (&scene.canvas.nodes[0], &scene.canvas.nodes[1]);
+        assert!(
+            near(one.rect().center(), Point::new(180.0, -50.0)),
+            "{:?}",
+            one.rect()
+        );
+        assert!(
+            near(two.rect().center(), Point::new(120.0, 150.0)),
+            "{:?}",
+            two.rect()
+        );
+        assert_eq!(
+            one.rect().size(),
+            Size::new(100.0, 40.0),
+            "turning never resizes"
+        );
+        assert!((one.angle() - 90.0).abs() < 1e-3 && (two.angle() - 90.0).abs() < 1e-3);
     }
 
     #[test]
