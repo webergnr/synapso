@@ -21,7 +21,7 @@ VERSION="${TAG#v}"
 VERSION="${VERSION%%[!0-9.]*}"
 echo "$VERSION" | grep -qE '^[0-9]+(\.[0-9]+){0,2}$' || VERSION="0.0.0"
 
-cargo test --release --locked
+cargo test --workspace --release --locked
 cargo build --release --locked
 
 # the .zip name promises arm64: if this ever runs on an Intel Mac, break loudly

@@ -367,7 +367,7 @@ tools/release-macos.sh v0.3.0            # build and zip
 tools/release-macos.sh v0.3.0 --upload   # and add it to a draft release
 ```
 
-It runs `cargo test --release --locked`, checks the binary really is arm64,
+It runs `cargo test --workspace --release --locked`, checks the binary really is arm64,
 assembles `Synapso.app`, signs it ad hoc and zips it with `ditto`. `--upload`
 only ever adds to a draft, refusing to touch a release somebody already
 published.
