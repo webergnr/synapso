@@ -474,16 +474,6 @@ impl Index {
         counts.into_iter().collect()
     }
 
-    pub fn children(&self, folder: &str) -> (Vec<&Folder>, Vec<&DocEntry>) {
-        let fs = self
-            .folders
-            .iter()
-            .filter(|f| parent_folder(&f.rel) == folder)
-            .collect();
-        let ds = self.docs.iter().filter(|d| d.folder == folder).collect();
-        (fs, ds)
-    }
-
     /// Adjacency for BFS, undirected.
     pub fn neighbours(&self) -> HashMap<&str, Vec<&str>> {
         let mut map: HashMap<&str, Vec<&str>> = HashMap::new();
