@@ -1,8 +1,9 @@
 name: website
 
 # Checks the landing page in website/: tests, types, a full static build.
-# Deploying is left to the host (see website/README.md); this only proves the
-# site builds from what is on the branch.
+# On main it also publishes the build to GitHub Pages. The URL comes from the
+# Pages settings (configure-pages): https://webergnr.github.io/synapso today,
+# the custom domain once one is set there, with no change to this file.
 on:
   pull_request:
     paths:
@@ -17,6 +18,8 @@ on:
       - "design/tokens.css"
       - "assets/icon/**"
       - ".github/workflows/website.yml"
+  # rebuild by hand, e.g. after setting a custom domain
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,6 +27,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
     defaults:
       run:
         working-directory: website
@@ -37,7 +43,34 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run check
-      # the token only lifts the API rate limit for reading the latest release
+      - id: pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      # the token only lifts the API rate limit for reading the latest release;
+      # on pull requests the URL stays unset and the build is served from /
       - run: npm run build
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          SITE_URL: ${{ steps.pages.outputs.origin }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+      - if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: website/dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

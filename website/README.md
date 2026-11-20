@@ -19,7 +19,8 @@ npm run preview    # serve dist/ to look at the real build
 ```
 
 `.github/workflows/website.yml` runs `test`, `check` and `build` on every pull
-request that touches the site, its screenshots, the tokens or the icon.
+request that touches the site, its screenshots, the tokens or the icon, and on
+`main` publishes the build to GitHub Pages (see [Publish](#publish)).
 
 ## Where things come from
 
@@ -87,10 +88,12 @@ Any static host works. Build settings, whichever host:
 
 - **Cloudflare Pages / Netlify / Vercel**: connect the repository and use the
   table above.
-- **GitHub Pages**: `SITE_URL=https://webergnr.github.io`,
-  `BASE_PATH=/synapso`, and a workflow that runs the build and publishes
-  `website/dist` with `actions/upload-pages-artifact` + `actions/deploy-pages`.
-  Pages has to be switched on in the repository settings first.
+- **GitHub Pages** (what this repository uses): `website.yml` publishes every
+  push to `main` that touches the site. `SITE_URL` and `BASE_PATH` come from
+  the Pages settings, so the site is served at `webergnr.github.io/synapso`
+  until a custom domain is set under Settings → Pages; after setting one, run
+  the workflow by hand (Actions → website → Run workflow) to rebuild for it.
+  Pages has to be on, with Source = GitHub Actions.
 
 ## Social card
 
