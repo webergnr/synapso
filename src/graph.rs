@@ -81,6 +81,22 @@ fn tilde(path: &std::path::Path, home: Option<&std::path::Path>) -> String {
     }
 }
 
+/// `s` in at most `cols` characters, keeping its end: a path loses its
+/// leading folders first (`…/reports/2026-11-12-demo`), so the vault's own
+/// name is the part that stays.
+fn elide_start(s: &str, cols: usize) -> String {
+    let n = s.chars().count();
+    if n <= cols {
+        return s.to_string();
+    }
+    let tail: String = s.chars().skip(n - cols.saturating_sub(1)).collect();
+    // cut at a separator when there is one, not mid-name
+    match tail.find(['/', '\\']) {
+        Some(i) => format!("…{}", &tail[i..]),
+        None => format!("…{tail}"),
+    }
+}
+
 /// `1 hop`, `2 hops`.
 fn hops(k: usize) -> String {
     format!("{k} hop{}", if k == 1 { "" } else { "s" })
@@ -1349,70 +1365,27 @@ fn left_panel(
 ) -> impl IntoElement {
     let gs = app.graph;
     let hidden = gs.read().hidden.clone();
+    let (w, pad) = (232., 12.);
+    // the vault's path, losing its leading folders to fit the panel's width
+    let cols = ((w - 2. * pad) / crate::note::advance(TEXT_XS)) as usize;
+    let vault = "vault · ";
     let root = tilde(&app.root(), std::env::home_dir().as_deref());
+    let root = elide_start(&root, cols.saturating_sub(vault.chars().count()));
     let n_unlinked = unlinked.len();
-    rect()
-        .width(Size::px(232.))
-        .height(Size::fill())
-        .background(c().surface_panel)
-        .border(Border::new().fill(c().border_subtle).width(BorderWidth {
-            right: 1.,
-            ..Default::default()
-        }))
-        .padding((14., 12.))
-        .spacing(10.)
-        .content(Content::Flex)
-        .child(
-            rect()
-                .spacing(2.)
-                .child(
-                    label()
-                        .text("graph")
-                        .font_size(TEXT_SM)
-                        .font_weight(FontWeight::MEDIUM),
-                )
-                .child(
-                    label()
-                        .text(format!("vault · {root}"))
-                        .font_size(TEXT_XS)
-                        .color(c().text_faint)
-                        .max_lines(1),
-                ),
-        )
-        .child(
-            rect()
-                .width(Size::fill())
-                .horizontal()
-                .cross_align(Alignment::Center)
-                .content(Content::Flex)
-                .spacing(6.)
-                .padding((6., 8.))
-                .background(c().surface_inset)
-                .border(Border::new().fill(c().border_subtle).width(1.))
-                .corner_radius(4.)
-                .child(label().text("⌕").color(c().text_faint))
-                .child(
-                    rect().width(Size::flex(1.)).child(
-                        Field::new(filter, |_| {}, |_| {})
-                            .placeholder("filter notes…")
-                            .quiet(),
-                    ),
-                )
-                .child(crate::tag("/")),
-        )
-        .child(
-            label()
-                .margin((6., 0., 0., 0.))
-                .text("GROUPS")
-                .font_size(TEXT_XS)
-                .letter_spacing(1.)
-                .color(c().text_faint),
-        )
-        .child(
-            rect()
-                .width(Size::fill())
-                .spacing(2.)
-                .children(groups.into_iter().zip(tones).map(|((g, n), tone)| {
+    let lists =
+        rect()
+            .width(Size::fill())
+            .spacing(10.)
+            .child(
+                label()
+                    .margin((6., 0., 0., 0.))
+                    .text("GROUPS")
+                    .font_size(TEXT_XS)
+                    .letter_spacing(1.)
+                    .color(c().text_faint),
+            )
+            .child(rect().width(Size::fill()).spacing(2.).children(
+                groups.into_iter().zip(tones).map(|((g, n), tone)| {
                     let shown = !hidden.contains(&g);
                     let name = if g.is_empty() {
                         "vault".to_string()
@@ -1440,13 +1413,21 @@ fn left_panel(
                                 .height(Size::px(14.))
                                 .background(c().tone(tone)),
                         )
-                        .child(rect().width(Size::flex(1.)).child(
-                            label().text(name).font_size(TEXT_SM).color(if shown {
-                                c().text_primary
-                            } else {
-                                c().text_faint
-                            }),
-                        ))
+                        .child(
+                            rect().width(Size::flex(1.)).child(
+                                label()
+                                    .text(name)
+                                    .width(Size::fill())
+                                    .font_size(TEXT_SM)
+                                    .color(if shown {
+                                        c().text_primary
+                                    } else {
+                                        c().text_faint
+                                    })
+                                    .max_lines(1)
+                                    .text_overflow(TextOverflow::Ellipsis),
+                            ),
+                        )
                         .child(
                             label()
                                 .text(n.to_string())
@@ -1455,58 +1436,122 @@ fn left_panel(
                         )
                         .child(toggle(shown))
                         .into_element()
-                })),
-        )
-        .child(
-            label()
-                .margin((10., 0., 0., 0.))
-                .text(format!("UNLINKED · {n_unlinked}"))
-                .font_size(TEXT_XS)
-                .letter_spacing(1.)
-                .color(c().text_faint),
-        )
+                }),
+            ))
+            .child(
+                label()
+                    .margin((10., 0., 0., 0.))
+                    .text(format!("UNLINKED · {n_unlinked}"))
+                    .font_size(TEXT_XS)
+                    .letter_spacing(1.)
+                    .color(c().text_faint),
+            )
+            .child(
+                rect()
+                    .width(Size::fill())
+                    .spacing(2.)
+                    .children(unlinked.into_iter().map(|(rel, t)| {
+                        let r = rel.clone();
+                        rect()
+                            .width(Size::fill())
+                            .height(Size::px(26.))
+                            .horizontal()
+                            .content(Content::Flex)
+                            .cross_align(Alignment::Center)
+                            .spacing(8.)
+                            .on_press(move |_| app.open(&r))
+                            .child(label().text("○").font_size(TEXT_XS).color(c().text_link))
+                            .child(
+                                rect().width(Size::flex(1.)).child(
+                                    label()
+                                        .text(base_name(&rel).to_string())
+                                        .width(Size::fill())
+                                        .font_size(TEXT_SM)
+                                        .color(c().text_muted)
+                                        .max_lines(1)
+                                        .text_overflow(TextOverflow::Ellipsis),
+                                ),
+                            )
+                            .child(
+                                label()
+                                    .text(ago(t))
+                                    .font_size(TEXT_XS)
+                                    .color(c().text_faint),
+                            )
+                            .into_element()
+                    })),
+            )
+            .child(
+                label()
+                    .width(Size::fill())
+                    .text("notes with no links in or out. they stay off the graph until linked.")
+                    .font_size(TEXT_XS)
+                    .line_height(1.5)
+                    .color(c().text_faint),
+            );
+    rect()
+        .width(Size::px(w))
+        .height(Size::fill())
+        .background(c().surface_panel)
+        .border(Border::new().fill(c().border_subtle).width(BorderWidth {
+            right: 1.,
+            ..Default::default()
+        }))
+        .padding((14., pad))
+        .spacing(10.)
+        .content(Content::Flex)
         .child(
             rect()
                 .width(Size::fill())
                 .spacing(2.)
-                .children(unlinked.into_iter().map(|(rel, t)| {
-                    let r = rel.clone();
-                    rect()
+                .child(
+                    label()
+                        .text("graph")
+                        .font_size(TEXT_SM)
+                        .font_weight(FontWeight::MEDIUM),
+                )
+                .child(
+                    // ⚠️ the count above is exact only for the monospaced font;
+                    // a fallback glyph (CJK, emoji) still ends in … at the edge
+                    label()
+                        .text(format!("{vault}{root}"))
                         .width(Size::fill())
-                        .height(Size::px(26.))
-                        .horizontal()
-                        .content(Content::Flex)
-                        .cross_align(Alignment::Center)
-                        .spacing(8.)
-                        .on_press(move |_| app.open(&r))
-                        .child(label().text("○").font_size(TEXT_XS).color(c().text_link))
-                        .child(
-                            rect().width(Size::flex(1.)).child(
-                                label()
-                                    .text(base_name(&rel).to_string())
-                                    .font_size(TEXT_SM)
-                                    .color(c().text_muted)
-                                    .max_lines(1),
-                            ),
-                        )
-                        .child(
-                            label()
-                                .text(ago(t))
-                                .font_size(TEXT_XS)
-                                .color(c().text_faint),
-                        )
-                        .into_element()
-                })),
+                        .font_size(TEXT_XS)
+                        .color(c().text_faint)
+                        .max_lines(1)
+                        .text_overflow(TextOverflow::Ellipsis),
+                ),
         )
         .child(
-            label()
+            rect()
                 .width(Size::fill())
-                .text("notes with no links in or out. they stay off the graph until linked.")
-                .font_size(TEXT_XS)
-                .line_height(1.5)
-                .color(c().text_faint),
+                .horizontal()
+                .cross_align(Alignment::Center)
+                .content(Content::Flex)
+                .spacing(6.)
+                .padding((6., 8.))
+                .background(c().surface_inset)
+                .border(Border::new().fill(c().border_subtle).width(1.))
+                .corner_radius(4.)
+                .child(label().text("⌕").color(c().text_faint))
+                .child(
+                    rect().width(Size::flex(1.)).child(
+                        Field::new(filter, |_| {}, |_| {})
+                            .placeholder("filter notes…")
+                            .quiet(),
+                    ),
+                )
+                .child(crate::tag("/")),
         )
-        .child(rect().width(Size::fill()).height(Size::flex(1.)))
+        // ⚠️ groups and notes scroll between the filter and the legend: laid
+        // out whole, a long list ran on under the legend (the spacer that kept
+        // the legend at the bottom went negative and pulled it up over them)
+        .child(
+            ScrollView::new()
+                .width(Size::fill())
+                .height(Size::flex(1.))
+                .child(lists),
+        )
         .child(
             rect()
                 .width(Size::fill())
@@ -2288,5 +2333,21 @@ mod tests {
             (CX - BEYOND_COL, CX + BEYOND_COL)
         );
         assert!(beyond.iter().all(|l| l.1 == 28.));
+    }
+
+    #[test]
+    fn a_long_vault_path_keeps_its_last_folders() {
+        let path = "~/Lab/agent/reports/2026-11-12-demo";
+        // fits: untouched
+        assert_eq!(elide_start(path, 35), path);
+        // the panel's 26 columns: leading folders go, cut at a separator
+        assert_eq!(elide_start(path, 26), "…/reports/2026-11-12-demo");
+        assert!(elide_start(path, 26).chars().count() <= 26);
+        // Windows separators too
+        assert_eq!(elide_start(r"C:\Users\me\vault", 10), r"…\me\vault");
+        // one name longer than the room: its end, mid-name
+        assert_eq!(elide_start("~/2026-11-12-demo", 6), "…-demo");
+        // no room at all: no panic
+        assert_eq!(elide_start("abc", 0), "…");
     }
 }
