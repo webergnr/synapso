@@ -76,6 +76,14 @@ enum Drag {
         handle: (i8, i8),
         orig: Rect,
     },
+    /// A handle of the box around several selected things: the box stretches
+    /// and every node keeps its place inside it.
+    Scale {
+        handle: (i8, i8),
+        orig: Rect,
+        /// Each node's box and text size when the gesture began.
+        nodes: Vec<(String, Rect, f32)>,
+    },
     Connect {
         from: String,
         cur: Point,
@@ -125,7 +133,7 @@ pub enum Under {
     Bend(String),
     /// The grip that turns the one selected node.
     Grip,
-    /// A resize handle of the one selected node.
+    /// A resize handle of the one selected node, or of the box around several.
     Handle((i8, i8)),
     Node(String),
     Edge(String),
@@ -285,6 +293,10 @@ pub struct Scene {
     /// Ctrl is held: a move snaps to the edges and centres of the nodes
     /// around it (`snap_move`). The shell sets it as it hands over a drag.
     pub align: bool,
+    /// ⇧ was held as the press landed: a click toggles what it hits in or
+    /// out of the selection, and a rubber band adds to it, instead of either
+    /// starting a fresh one. The shell sets it as it hands over a press.
+    pub extend: bool,
     /// The alignments the move snapped to, world units: what to draw as
     /// guides while it lasts.
     guides: Vec<(Point, Point)>,
@@ -353,6 +365,7 @@ impl Scene {
             pen_color: None,
             next: std::collections::HashMap::new(),
             align: false,
+            extend: false,
             guides: Vec::new(),
         }
     }
@@ -757,6 +770,48 @@ impl Scene {
         self.selected.push(what);
     }
 
+    /// ⇧-click: in if it was out, out if it was in. Whether it is in now.
+    fn toggle(&mut self, what: Selection) -> bool {
+        match self.selected.iter().position(|s| *s == what) {
+            Some(i) => {
+                self.selected.remove(i);
+                false
+            }
+            None => {
+                self.selected.push(what);
+                true
+            }
+        }
+    }
+
+    /// The box around everything selected, when more than one thing is —
+    /// what the group's handles hang on. A turned node counts by the corners
+    /// it shows, so the box holds what is drawn. `None` for one thing (it has
+    /// handles of its own) and for edges alone (they have no box).
+    pub fn group_box(&self) -> Option<Rect> {
+        if self.selected.len() < 2 {
+            return None;
+        }
+        self.selected
+            .iter()
+            .filter_map(|s| self.canvas.node(s.node()?))
+            .flat_map(|n| {
+                let (r, angle) = (n.rect(), n.radians());
+                [
+                    Point::new(r.x0, r.y0),
+                    Point::new(r.x1, r.y0),
+                    Point::new(r.x1, r.y1),
+                    Point::new(r.x0, r.y1),
+                ]
+                .map(|c| vault::turn(c, r.center(), angle))
+            })
+            .fold(None, |acc: Option<Rect>, p| {
+                Some(acc.map_or(Rect::from_points(p, p), |r| r.union_pt(p)))
+            })
+            // a flat box has no ratio to scale by
+            .filter(|r| r.width() > 1.0 && r.height() > 1.0)
+    }
+
     /// ⚠️ by id, not by building a `Selection` — the draw loop asks this once
     /// per edge per frame, and a `String` per ask is an allocation per frame.
     pub fn holds_node(&self, id: &str) -> bool {
@@ -1150,6 +1205,21 @@ impl Scene {
                         handle,
                         orig: node.rect(),
                     });
+                } else if let Some(orig) = self.group_box() {
+                    let nodes = self
+                        .moving_nodes()
+                        .into_iter()
+                        .filter_map(|id| {
+                            let n = self.canvas.node(&id)?;
+                            let size = n.text_size(caption_size(n.shape()));
+                            Some((id, n.rect(), size))
+                        })
+                        .collect();
+                    self.drag = Some(Drag::Scale {
+                        handle,
+                        orig,
+                        nodes,
+                    });
                 }
                 Outcome::None
             }
@@ -1162,18 +1232,26 @@ impl Scene {
                 // the card's `#Heading` / `#^id` goes along: a card that opens
                 // its note at the top is a link that forgot where it pointed
                 let section = node.section().map(str::to_string);
-                // grabbing something already in the group moves the group;
-                // grabbing anything else starts a fresh selection
-                if !self.holds_node(&id) {
-                    self.select_one(Selection::Node(id.clone()));
-                }
-                if clicks >= 2 {
-                    self.select_one(Selection::Node(id.clone()));
-                    if shape == Shape::File {
-                        return Outcome::OpenDoc(file.unwrap_or_default(), section);
+                if self.extend {
+                    // ⇧: this one goes in or out, the rest stay. Taken out,
+                    // there is nothing under the hand to drag
+                    if !self.toggle(Selection::Node(id.clone())) {
+                        return Outcome::None;
                     }
-                    self.begin_edit(Selection::Node(id.clone()));
-                    return Outcome::EditNode;
+                } else {
+                    // grabbing something already in the group moves the group;
+                    // grabbing anything else starts a fresh selection
+                    if !self.holds_node(&id) {
+                        self.select_one(Selection::Node(id.clone()));
+                    }
+                    if clicks >= 2 {
+                        self.select_one(Selection::Node(id.clone()));
+                        if shape == Shape::File {
+                            return Outcome::OpenDoc(file.unwrap_or_default(), section);
+                        }
+                        self.begin_edit(Selection::Node(id.clone()));
+                        return Outcome::EditNode;
+                    }
                 }
                 let ids = self
                     .moving_nodes()
@@ -1189,6 +1267,10 @@ impl Scene {
             // an edge has no position of its own — selecting it is the
             // whole gesture, and dragging from here would mean nothing
             Under::Edge(id) => {
+                if self.extend {
+                    self.toggle(Selection::Edge(id));
+                    return Outcome::None;
+                }
                 self.select_one(Selection::Edge(id.clone()));
                 if clicks >= 2 {
                     self.begin_edit(Selection::Edge(id));
@@ -1201,7 +1283,10 @@ impl Scene {
             // space+drag and the middle button (`Event::PanPressed`) —
             // and this is the gesture Figma, Excalidraw and Miro spend it on
             Under::Nothing => {
-                self.selected.clear();
+                // ⇧: a click that misses keeps what it would have added to
+                if !self.extend {
+                    self.selected.clear();
+                }
                 self.drag = Some(Drag::Marquee {
                     origin: world,
                     cur: world,
@@ -1250,6 +1335,10 @@ impl Scene {
             if let Some(handle) = handle_at(node.rect(), node.local(world), tolerance) {
                 return Under::Handle(handle);
             }
+        }
+        let group = self.group_box();
+        if let Some(handle) = group.and_then(|g| handle_at(g, world, 6.0 / self.view.zoom)) {
+            return Under::Handle(handle);
         }
         if let Some(node) = self.canvas.hit(world) {
             return Under::Node(node.id.clone());
@@ -1394,6 +1483,47 @@ impl Scene {
                 }
                 Outcome::None
             }
+            Some(Drag::Scale {
+                handle,
+                orig,
+                nodes,
+            }) => {
+                let next = if snap {
+                    resize_locked(*orig, *handle, world)
+                } else {
+                    resize(*orig, *handle, world)
+                };
+                let (sx, sy) = (next.width() / orig.width(), next.height() / orig.height());
+                let place = |p: Point| {
+                    Point::new(
+                        next.x0 + (p.x - orig.x0) * sx,
+                        next.y0 + (p.y - orig.y0) * sy,
+                    )
+                };
+                // the one-node rule: a corner (or ⇧) scales the text too,
+                // a side only the boxes, so paragraphs re-wrap
+                let text = snap || (handle.0 != 0 && handle.1 != 0);
+                for (id, from, size) in nodes.iter() {
+                    let Some(node) = self.canvas.node_mut(id) else {
+                        continue;
+                    };
+                    // a loose end is a place, not a box: it moves, never grows
+                    if node.shape() == Shape::Point {
+                        node.set_rect(Rect::from_center_size(place(from.center()), from.size()));
+                        continue;
+                    }
+                    // the upright box, mapped: a turned node keeps its angle
+                    // and its centre lands where the box puts it
+                    node.set_rect(Rect::from_points(
+                        place(from.origin()),
+                        place(Point::new(from.x1, from.y1)),
+                    ));
+                    if text {
+                        node.set_text_size(size * sy as f32);
+                    }
+                }
+                Outcome::None
+            }
             Some(Drag::Connect { cur, .. }) => {
                 *cur = world;
                 Outcome::None
@@ -1506,13 +1636,24 @@ impl Scene {
                     _ => Outcome::None,
                 }
             }
-            Some(Drag::Move { .. } | Drag::Resize { .. } | Drag::Rotate { .. }) => Outcome::Changed,
+            Some(
+                Drag::Move { .. } | Drag::Resize { .. } | Drag::Scale { .. } | Drag::Rotate { .. },
+            ) => Outcome::Changed,
             Some(Drag::Free { points }) => self.commit_drawing(&points),
             Some(Drag::Reconnect { edge, end, .. }) => self.reconnect(&edge, end, world),
             Some(Drag::Bend { .. }) => Outcome::Changed,
             // selecting is not a change to the file, so nothing is saved
             Some(Drag::Marquee { origin, cur }) => {
-                self.selected = self.enclosed(spanning(origin, cur));
+                let caught = self.enclosed(spanning(origin, cur));
+                if self.extend {
+                    for what in caught {
+                        if !self.selected.contains(&what) {
+                            self.selected.push(what);
+                        }
+                    }
+                } else {
+                    self.selected = caught;
+                }
                 Outcome::None
             }
             Some(Drag::Pan { .. }) | None => Outcome::None,
@@ -2997,6 +3138,84 @@ mod tests {
             kurbo::Size::new(160.0, 90.0)
         );
         assert_eq!(scene.canvas.nodes[0].rect().origin(), kurbo::Point::ORIGIN);
+    }
+
+    fn click(scene: &mut Scene, at: Point) {
+        scene.handle(Event::Pressed(at, 1), Tool::Select);
+        scene.handle(Event::Released(at), Tool::Select);
+    }
+
+    #[test]
+    fn shift_click_toggles_a_node_in_and_out_and_a_miss_keeps_the_rest() {
+        let mut scene = scene_with(vec![
+            node("1", Shape::Rect, 0.0, 0.0, 100.0, 40.0),
+            node("2", Shape::Rect, 200.0, 0.0, 100.0, 40.0),
+        ]);
+        let (one, two) = (Selection::Node("1".into()), Selection::Node("2".into()));
+        click(&mut scene, Point::new(20.0, 20.0));
+        scene.extend = true;
+        click(&mut scene, Point::new(220.0, 20.0));
+        assert_eq!(scene.selected, vec![one.clone(), two.clone()]);
+        click(&mut scene, Point::new(20.0, 20.0));
+        assert_eq!(
+            scene.selected,
+            vec![two.clone()],
+            "⇧ on a held one lets it go"
+        );
+        click(&mut scene, Point::new(500.0, 500.0));
+        assert_eq!(scene.selected, vec![two], "⇧ on nothing clears nothing");
+        scene.extend = false;
+        click(&mut scene, Point::new(20.0, 20.0));
+        assert_eq!(scene.selected, vec![one], "without ⇧ a click starts over");
+    }
+
+    #[test]
+    fn shift_marquee_adds_to_the_selection() {
+        let mut scene = scene_with(vec![
+            node("1", Shape::Rect, 0.0, 0.0, 100.0, 40.0),
+            node("2", Shape::Rect, 200.0, 0.0, 100.0, 40.0),
+        ]);
+        scene.selected = vec![Selection::Node("1".into())];
+        scene.extend = true;
+        scene.handle(Event::Pressed(Point::new(180.0, -20.0), 1), Tool::Select);
+        scene.handle(Event::Dragged(Point::new(320.0, 60.0), false), Tool::Select);
+        scene.handle(Event::Released(Point::new(320.0, 60.0)), Tool::Select);
+        assert_eq!(
+            scene.selected,
+            vec![Selection::Node("1".into()), Selection::Node("2".into())]
+        );
+    }
+
+    #[test]
+    fn a_group_handle_scales_every_node_in_the_box() {
+        let mut scene = scene_with(vec![
+            node("1", Shape::Rect, 0.0, 0.0, 100.0, 40.0),
+            node("2", Shape::Rect, 200.0, 60.0, 100.0, 40.0),
+        ]);
+        scene.selected = vec![Selection::Node("1".into()), Selection::Node("2".into())];
+        assert_eq!(scene.group_box(), Some(Rect::new(0.0, 0.0, 300.0, 100.0)));
+        // bottom-right corner of the box, dragged to twice the size
+        let corner = Point::new(300.0, 100.0);
+        assert_eq!(scene.under(corner), Under::Handle((1, 1)));
+        scene.handle(Event::Pressed(corner, 1), Tool::Select);
+        scene.handle(
+            Event::Dragged(Point::new(600.0, 200.0), false),
+            Tool::Select,
+        );
+        let out = scene.handle(Event::Released(Point::new(600.0, 200.0)), Tool::Select);
+        assert!(matches!(out, Outcome::Changed));
+        assert_eq!(
+            scene.canvas.nodes[0].rect(),
+            Rect::new(0.0, 0.0, 200.0, 80.0)
+        );
+        assert_eq!(
+            scene.canvas.nodes[1].rect(),
+            Rect::new(400.0, 120.0, 600.0, 200.0)
+        );
+        // a corner scales the text with the boxes, as on one node
+        let base = caption_size(Shape::Rect);
+        assert_eq!(scene.canvas.nodes[1].text_size(base), base * 2.0);
+        assert_eq!(scene.selected.len(), 2, "the group stays selected");
     }
 
     #[test]

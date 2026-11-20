@@ -173,6 +173,9 @@ skipped.
   the cursor, several in a cascade. While they hover, the pane tints, a pill
   says where they will be saved, and a ghost sits where they will land.
 - `⇧1` fits everything, `⇧0` is 100%.
+- ⇧-click adds a node or an edge to the selection (again takes it out), and a
+  ⇧-marquee adds what it catches. With more than one thing selected, a box
+  around them all has handles that resize the lot.
 
 ## The graph
 

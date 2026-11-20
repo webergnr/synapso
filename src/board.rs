@@ -254,6 +254,9 @@ struct Frame {
     /// What the stroke being drawn wears: the pen's thickness and colour.
     pen: (f32, Option<Color>),
     edge_handles: Option<(KPoint, bool, KPoint, bool)>,
+    /// The box around several selected things, world units: its handles
+    /// scale them all.
+    group: Option<kurbo::Rect>,
     /// The selected edge's bend handle, on screen.
     bend: Option<KPoint>,
     /// The alignments a Ctrl-move snapped to, world units.
@@ -301,6 +304,7 @@ fn frame_of(scene: &Scene, index: &Index) -> Frame {
                 .map(kcolor),
         ),
         edge_handles: scene.edge_handles(),
+        group: scene.group_box(),
         bend: scene.bend_handle(),
         guides: scene.guides().to_vec(),
         rotating: scene.is_rotating(),
@@ -892,6 +896,19 @@ fn draw_frame(cv: &sk::Canvas, fc: &sk::FontCollection, f: &Frame, w: f32, h: f3
         }
         cv.restore();
     }
+    // several selected: one box around them all, its handles where
+    // `Scene::under` looks for them
+    if let Some(g) = f.group {
+        let r = view.screen_rect(g);
+        let mut s = stroke(p.accent, 1.);
+        s.set_alpha_f(0.6);
+        cv.draw_rect(skr(r), &s);
+        for (_, q) in geom::handle_points(r) {
+            let hr = sk::SkRect::from_xywh(q.x as f32 - 3.5, q.y as f32 - 3.5, 7., 7.);
+            cv.draw_rect(hr, &paint(p.surface_panel));
+            cv.draw_rect(hr, &stroke(p.accent, 1.));
+        }
+    }
     // hover outline
     if let Under::Node(id) = &f.under
         && !selected_node(id)
@@ -1400,6 +1417,8 @@ impl Component for Board {
                     let double = t0.elapsed().as_millis() < 400 && (p0 - at).hypot() < 6.;
                     last_click.set((Instant::now(), at));
                     pressed.set(true);
+                    // ⇧: the click adds to the selection instead of replacing it
+                    scene.write().extend = app.shift_down();
                     handle(SEvent::Pressed(at, if double { 2 } else { 1 }));
                 }
             }
@@ -3529,6 +3548,7 @@ mod tests {
             drawing: None,
             pen: (vault::STROKES[0], None),
             edge_handles: None,
+            group: None,
             bend: None,
             guides: Vec::new(),
             rotating: false,
