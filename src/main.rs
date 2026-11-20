@@ -87,7 +87,7 @@ fn main() {
                         // that could not be written keeps the window open (the
                         // pane's toast says why); the same close again goes
                         // (`app::flush_panes`)
-                        if app::flush_panes().is_err() {
+                        if app::flush_panes("close").is_err() {
                             return CloseDecision::KeepOpen;
                         }
                         // ⚠️ leave HERE, saved, instead of answering `Close`:
@@ -490,7 +490,7 @@ fn app() -> impl IntoElement {
 /// until answered, so no script can drive it. What happens after the pick is
 /// `vault::set_root` (proved in `tests/open_vault.rs`) and a fresh session.
 pub fn open_vault(app: App) {
-    if !app.flush() {
+    if !app.flush("open vault") {
         return;
     }
     let Some(picked) = rfd::FileDialog::new()
@@ -558,7 +558,7 @@ fn dock_icon() {
 
 pub fn toggle_theme(app: App) {
     // whatever is typed goes to disk before the panes are rebuilt
-    if !app.flush() {
+    if !app.flush("theme") {
         return;
     }
     let mut dark = app.dark;
@@ -568,6 +568,11 @@ pub fn toggle_theme(app: App) {
 
 /// ⌘N: a note in the open note's folder, opened with its name ready to type.
 pub fn new_note(app: App, folder: Option<String>) {
+    // the new one takes a pane: not over an edit that is on screen only, and
+    // not after the file is made (a retry would make `untitled-2`)
+    if !app.flush("new") {
+        return;
+    }
     let root = app.root();
     let folder = folder.unwrap_or_else(|| index::parent_folder(&app.note.read()));
     let dir = root.join(&folder);
@@ -586,6 +591,11 @@ pub fn new_note(app: App, folder: Option<String>) {
 
 /// A canvas next to the open note, opened in the board.
 pub fn new_canvas(app: App, folder: Option<String>) {
+    // the new one takes a pane: not over an edit that is on screen only, and
+    // not after the file is made (a retry would make `untitled-2`)
+    if !app.flush("new") {
+        return;
+    }
     let root = app.root();
     let folder = folder.unwrap_or_else(|| index::parent_folder(&app.note.read()));
     let dir = root.join(&folder);
@@ -636,13 +646,14 @@ pub fn rename(app: App, rel: &str, new_name: &str) -> Result<String, String> {
     }
     let from = root.join(rel.trim_end_matches('/'));
     let to = root.join(new_rel.trim_end_matches('/'));
+    // what the panes hold reaches disk first: the rewrite below sees the board,
+    // and the note pane remounts from the moved file; ⚠️ not over an edit that
+    // is on screen only, and BEFORE the name is checked: the flush may have
+    // just made `plan-unsaved.md`, which a rename to that name would replace
+    app::flush_panes("rename").map_err(|why| format!("not renamed, not saved: {why}"))?;
     if !rename_target_is_free(&from, &to).map_err(|e| e.to_string())? {
         return Err(format!("{} already exists", new_rel.trim_end_matches('/')));
     }
-    // what the panes hold reaches disk first: the rewrite below sees the board,
-    // and the note pane remounts from the moved file; ⚠️ not over an edit that
-    // is on screen only
-    app::flush_panes().map_err(|why| format!("not renamed, not saved: {why}"))?;
     // ⚠️ `[[links]]` are not rewritten (no decision on that yet): the notes
     // that use the old name are named instead, read before the index moves on
     let linking = if is_folder {

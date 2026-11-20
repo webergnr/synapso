@@ -2913,7 +2913,7 @@ fn send_to_canvas(app: App, rel: &str, quote: &str) {
         return;
     }
     // the board is re-read and remounted below: not over its unsaved edit
-    if !app.flush() {
+    if !app.flush("send to canvas") {
         return;
     }
     let mut scene = synapso_core::board::Scene::load(app.root().join(&board));

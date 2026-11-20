@@ -273,6 +273,10 @@ impl Component for Step {
             // the bar's drag must not take a press meant for the button
             .on_pointer_down(|e: Event<PointerEventData>| e.stop_propagation())
             .on_press(move |_| {
+                // ⚠️ before the step: a refused open must leave history where it was
+                if !app.flush("open") {
+                    return;
+                }
                 let view = *app.view.peek();
                 let (note, canvas) = (app.note.peek().clone(), app.canvas.peek().clone());
                 let on_screen = |rel: &str| match view {
@@ -544,7 +548,7 @@ impl Component for WinButton {
                         // ⚠️ closing this way skips `main`'s on-close, which
                         // writes what the panes hold: write it here, and keep
                         // the window over an edit that is on screen only
-                        if app.flush() {
+                        if app.flush("close") {
                             Platform::get().close_window(id);
                         }
                     }

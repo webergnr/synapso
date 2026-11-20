@@ -2176,7 +2176,7 @@ fn copy_selection(scene: &Scene) {
 /// where the menu opened, its name ready to type in the breadcrumb.
 fn new_note_card(app: App, mut scene: State<Scene>, world: KPoint, folder: &str) {
     // the new note takes the note pane: not over an edit that is on screen only
-    if !app.flush() {
+    if !app.flush("new note") {
         return;
     }
     let root = app.root();

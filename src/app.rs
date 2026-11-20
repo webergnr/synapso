@@ -215,7 +215,7 @@ impl App {
     /// The graph is a toggle over the other three views.
     pub fn toggle_graph(&self) {
         // the graph replaces both panes, and a pane's pending save dies with it
-        if !self.flush() {
+        if !self.flush("graph") {
             return;
         }
         let mut view = self.view;
@@ -235,16 +235,20 @@ impl App {
 
     /// False when a refused flush kept the panes as they are.
     fn try_open(&self, rel: &str) -> bool {
-        // what is already open stays mounted, and keeps its edit
-        let here = *self.note.read() == rel || *self.canvas.read() == rel;
-        if !here && !self.flush() {
+        let kind = self.index.read().doc(rel).map(|d| d.kind);
+        // what is already open stays mounted, and keeps its edit. ⚠️ by the
+        // pane it goes to: a board gone from the index opens as a note
+        let here = match kind {
+            Some(DocKind::Canvas) => *self.canvas.read() == rel,
+            _ => *self.note.read() == rel,
+        };
+        if !here && !self.flush("open") {
             return false;
         }
         if !*self.tree_pinned.peek() {
             let mut t = self.tree;
             t.set(false);
         }
-        let kind = self.index.read().doc(rel).map(|d| d.kind);
         // tabs are notes only: a board joins the board switcher's list
         let mut list = if kind == Some(DocKind::Canvas) {
             self.canvases
@@ -349,8 +353,8 @@ impl App {
     /// Write what both panes hold before something unmounts them. False, with
     /// a toast, when an edit is still on screen only ([`flush_panes`]): the
     /// caller must stop.
-    pub fn flush(&self) -> bool {
-        match flush_panes() {
+    pub fn flush(&self, action: &'static str) -> bool {
+        match flush_panes(action) {
             Ok(()) => true,
             Err(why) => {
                 self.toast("not saved: do it again to leave it unsaved", why, None);
@@ -435,44 +439,70 @@ impl App {
 /// `-unsaved` rescue both failed): whatever was about to unmount the pane must
 /// not, or the edit dies with it (ADR-001: a refusal stops what comes after).
 ///
-/// ⚠️ The same refusal again within [`AGAIN`] goes through: that is the user
-/// choosing to leave the edit unsaved, and a vault that stays unwritable (a
-/// full disk, an unplugged drive) must not lock every tab, and the window,
-/// shut. Any other refusal, or one from long ago, stops again.
-pub fn flush_panes() -> Result<(), String> {
+/// ⚠️ The same action refused again, pressed anew ([`FRESH`]) within
+/// [`AGAIN`], goes through: that is the user choosing to leave the edit
+/// unsaved, and a vault that stays unwritable (a full disk, an unplugged
+/// drive) must not lock every tab, and the window, shut. Another action,
+/// another reason, or a refusal from long ago stops again.
+pub fn flush_panes(action: &'static str) -> Result<(), String> {
     let note = crate::note::flush_note();
     let board = crate::board::flush_board();
     let now = std::time::Instant::now();
-    REFUSED.with(|last| insist(&mut last.borrow_mut(), note.or(board), now))
+    REFUSED.with(|last| insist(&mut last.borrow_mut(), note.or(board), action, now))
+}
+
+/// A refused flush, remembered so the user's repeat of it can go through.
+struct Refusal {
+    why: String,
+    /// What it stopped: only the same action again is a repeat.
+    action: &'static str,
+    at: std::time::Instant,
+    /// The repeat went through: what that action goes on to do (`open`, after
+    /// ⌘N made the note) goes through too, until [`AGAIN`] runs out.
+    released: bool,
 }
 
 thread_local! {
-    /// The last refused flush: why, and when (`insist`).
-    static REFUSED: std::cell::RefCell<Option<(String, std::time::Instant)>> =
-        const { std::cell::RefCell::new(None) };
+    /// The last refused flush (`insist`).
+    static REFUSED: std::cell::RefCell<Option<Refusal>> = const { std::cell::RefCell::new(None) };
 }
 
 /// How soon the same refusal again is a repeat: while its toast is up (3 s),
 /// and a little after.
 const AGAIN: std::time::Duration = std::time::Duration::from_secs(5);
 
+/// A repeat sooner than this is a held key's, not a second press: keys repeat
+/// after about half a second, and each repeat starts the clock again.
+const FRESH: std::time::Duration = std::time::Duration::from_secs(1);
+
 fn insist(
-    last: &mut Option<(String, std::time::Instant)>,
+    last: &mut Option<Refusal>,
     why: Option<String>,
+    action: &'static str,
     now: std::time::Instant,
 ) -> Result<(), String> {
     let Some(why) = why else {
         *last = None;
         return Ok(());
     };
-    let repeat = last
-        .as_ref()
-        .is_some_and(|(was, at)| *was == why && now.duration_since(*at) < AGAIN);
-    if repeat {
-        *last = None;
-        return Ok(());
+    if let Some(r) = last.as_mut().filter(|r| r.why == why) {
+        let age = now.duration_since(r.at);
+        let pass = if r.released {
+            age < AGAIN
+        } else {
+            r.action == action && (FRESH..AGAIN).contains(&age)
+        };
+        if pass {
+            r.released = true;
+            return Ok(());
+        }
     }
-    *last = Some((why.clone(), now));
+    *last = Some(Refusal {
+        why: why.clone(),
+        action,
+        at: now,
+        released: false,
+    });
     Err(why)
 }
 
@@ -547,32 +577,54 @@ mod tests {
     }
 
     /// A refused flush stops what was about to unmount the pane. Only the same
-    /// refusal again, right after, goes through: that is the user choosing to
+    /// action again, pressed anew, goes through: that is the user choosing to
     /// leave the edit unsaved. A write that works clears the slate.
     #[test]
-    fn a_refusal_stops_once_and_only_its_quick_repeat_goes_through() {
+    fn a_refusal_stops_once_and_only_a_fresh_repeat_goes_through() {
         let full = || Some("disk full".to_string());
         let t0 = std::time::Instant::now();
-        let at = |s: u64| t0 + std::time::Duration::from_secs(s);
+        let at = |ms: u64| t0 + std::time::Duration::from_millis(ms);
+        let stop = Err("disk full".to_string());
         let mut last = None;
-        assert_eq!(insist(&mut last, None, at(0)), Ok(()));
-        assert_eq!(insist(&mut last, full(), at(0)), Err("disk full".into()));
-        assert_eq!(insist(&mut last, full(), at(1)), Ok(()), "asked again");
-        assert_eq!(insist(&mut last, full(), at(2)), Err("disk full".into()));
-        let later = at(2) + AGAIN;
+        assert_eq!(insist(&mut last, None, "graph", at(0)), Ok(()));
+        assert_eq!(insist(&mut last, full(), "graph", at(0)), stop);
+        // a held key repeats in well under a second, and keeps the clock back
+        assert_eq!(insist(&mut last, full(), "graph", at(500)), stop, "held");
         assert_eq!(
-            insist(&mut last, full(), later),
-            Err("disk full".into()),
-            "a refusal long ago is not a repeat"
+            insist(&mut last, full(), "graph", at(1000)),
+            stop,
+            "held on"
+        );
+        // another action is not a repeat: the close after a refused ⌘G stops
+        assert_eq!(
+            insist(&mut last, full(), "close", at(3000)),
+            stop,
+            "another action"
         );
         assert_eq!(
-            insist(&mut last, Some("read-only".into()), later),
+            insist(&mut last, full(), "close", at(4500)),
+            Ok(()),
+            "close again"
+        );
+        // and what it goes on to do goes through with it, for a while
+        assert_eq!(
+            insist(&mut last, full(), "open", at(4500)),
+            Ok(()),
+            "released"
+        );
+        assert_eq!(
+            insist(&mut last, full(), "open", at(3000) + AGAIN),
+            stop,
+            "long after"
+        );
+        assert_eq!(
+            insist(&mut last, Some("read-only".into()), "open", at(9000)),
             Err("read-only".into()),
-            "nor is another one"
+            "another reason"
         );
-        assert_eq!(insist(&mut last, None, later), Ok(()));
+        assert_eq!(insist(&mut last, None, "open", at(9500)), Ok(()));
         assert_eq!(
-            insist(&mut last, Some("read-only".into()), later),
+            insist(&mut last, Some("read-only".into()), "open", at(10_000)),
             Err("read-only".into()),
             "a write that worked in between"
         );
@@ -601,8 +653,8 @@ mod tests {
         let mut last = None;
         let now = std::time::Instant::now();
         let why = |s: &Saved| s.unsaved().map(str::to_string);
-        assert_eq!(insist(&mut last, why(&rescued), now), Ok(()));
-        assert!(insist(&mut last, why(&failed), now).is_err());
+        assert_eq!(insist(&mut last, why(&rescued), "open", now), Ok(()));
+        assert!(insist(&mut last, why(&failed), "open", now).is_err());
     }
 
     /// Every flush whose answer is dropped is one where nothing unmounts the
