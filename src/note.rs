@@ -278,10 +278,7 @@ impl Component for NotePane {
             FLUSH.with(move |f| {
                 *f.borrow_mut() = Some(Box::new(move || {
                     let saved = save();
-                    let why = match &saved {
-                        Some(Saved::Failed(e)) => Some(e.clone()),
-                        _ => None,
-                    };
+                    let why = saved.as_ref().and_then(Saved::unsaved).map(str::to_string);
                     report(saved, false);
                     why
                 }))
@@ -2915,7 +2912,10 @@ fn send_to_canvas(app: App, rel: &str, quote: &str) {
         app.toast("no canvas open", "open one from the tree first", None);
         return;
     }
-    crate::board::flush_board();
+    // the board is re-read and remounted below: not over its unsaved edit
+    if !app.flush() {
+        return;
+    }
     let mut scene = synapso_core::board::Scene::load(app.root().join(&board));
     if scene.broken.is_some() {
         return;

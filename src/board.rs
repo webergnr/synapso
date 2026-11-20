@@ -1243,7 +1243,12 @@ impl Component for Board {
         FLUSH.with(|f| {
             *f.borrow_mut() = Some(Box::new(move || {
                 let result = save_board(app, scene, &here.read());
-                refused(&scene.read(), result)
+                let why = refused(&scene.read(), result);
+                // the window's close has no other voice (the note's says so too)
+                if let Some(why) = &why {
+                    app.toast("canvas not saved", why.clone(), None);
+                }
+                why
             }))
         });
         use_drop(|| FLUSH.with(|f| *f.borrow_mut() = None));
@@ -2170,6 +2175,10 @@ fn copy_selection(scene: &Scene) {
 /// The menu's "new note here": a fresh note in the board's folder, pinned
 /// where the menu opened, its name ready to type in the breadcrumb.
 fn new_note_card(app: App, mut scene: State<Scene>, world: KPoint, folder: &str) {
+    // the new note takes the note pane: not over an edit that is on screen only
+    if !app.flush() {
+        return;
+    }
     let root = app.root();
     let dir = root.join(folder);
     let path = vault::unique_path(&dir, "untitled", "md");
@@ -2179,7 +2188,6 @@ fn new_note_card(app: App, mut scene: State<Scene>, world: KPoint, folder: &str)
     let rel = crate::index::rel_of(&root, &path);
     scene.write().attach_ref(None, world, &rel, None);
     app.reindex();
-    crate::note::flush_note();
     let mut n = app.note;
     n.set(rel.clone());
     let mut tabs = app.tabs;

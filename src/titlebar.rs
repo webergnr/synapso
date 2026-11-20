@@ -503,6 +503,7 @@ struct WinButton {
 
 impl Component for WinButton {
     fn render(&self) -> impl IntoElement {
+        let app = use_consume::<App>();
         let mut hover = use_state(|| false);
         let hov = *hover.read();
         let what = self.what;
@@ -541,10 +542,11 @@ impl Component for WinButton {
                     }
                     WinAction::Close => {
                         // ⚠️ closing this way skips `main`'s on-close, which
-                        // writes what the panes hold: write it here
-                        crate::note::flush_note();
-                        crate::board::flush_board();
-                        Platform::get().close_window(id);
+                        // writes what the panes hold: write it here, and keep
+                        // the window over an edit that is on screen only
+                        if app.flush() {
+                            Platform::get().close_window(id);
+                        }
                     }
                 }
             })

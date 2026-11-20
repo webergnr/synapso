@@ -304,6 +304,17 @@ pub enum Saved {
     Failed(String),
 }
 
+impl Saved {
+    /// Why the edit is on screen only, if it is. A rescue is on disk, so it
+    /// counts as written.
+    pub fn unsaved(&self) -> Option<&str> {
+        match self {
+            Saved::Failed(why) => Some(why),
+            _ => None,
+        }
+    }
+}
+
 /// Save a note over its file if the file is still the one we loaded
 /// (`expected`). Otherwise, or when the write fails, the edit goes to a rescue
 /// beside it: `rescued`, the one this note already writes to, or a fresh

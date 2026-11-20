@@ -83,10 +83,23 @@ fn main() {
             .with_window(
                 WindowConfig::new(app)
                     .with_on_close(|_, _| {
-                        // nothing typed is lost to the close button
-                        note::flush_note();
-                        board::flush_board();
-                        CloseDecision::Close
+                        // nothing typed is lost to the close button: an edit
+                        // that could not be written keeps the window open (the
+                        // pane's toast says why); the same close again goes
+                        // (`app::flush_panes`)
+                        if app::flush_panes().is_err() {
+                            return CloseDecision::KeepOpen;
+                        }
+                        // ⚠️ leave HERE, saved, instead of answering `Close`:
+                        // Freya would drop the window inside this callback and
+                        // the run loop then turns once more, and on a Mac with a
+                        // Touch Bar AppKit's Touch Bar finder takes its observer
+                        // off the dead `WinitView` and aborts the app
+                        // (NSRangeException, "nextResponder"). One window, so
+                        // closing it is quitting.
+                        // A second window would need the fix in the fork instead
+                        // (drop the window after the run loop stops)
+                        std::process::exit(0)
                     })
                     .with_size(1600., 940.)
                     .with_background(DARK.bg_base)
@@ -477,8 +490,9 @@ fn app() -> impl IntoElement {
 /// until answered, so no script can drive it. What happens after the pick is
 /// `vault::set_root` (proved in `tests/open_vault.rs`) and a fresh session.
 pub fn open_vault(app: App) {
-    note::flush_note();
-    board::flush_board();
+    if !app.flush() {
+        return;
+    }
     let Some(picked) = rfd::FileDialog::new()
         .set_title("open a folder of .md files")
         .set_directory(app.root())
@@ -544,8 +558,9 @@ fn dock_icon() {
 
 pub fn toggle_theme(app: App) {
     // whatever is typed goes to disk before the panes are rebuilt
-    crate::note::flush_note();
-    crate::board::flush_board();
+    if !app.flush() {
+        return;
+    }
     let mut dark = app.dark;
     let d = *dark.read();
     dark.set(!d);
@@ -626,9 +641,9 @@ pub fn rename(app: App, rel: &str, new_name: &str) -> Result<String, String> {
         return Err(format!("{} already exists", new_rel.trim_end_matches('/')));
     }
     // what the panes hold reaches disk first: the rewrite below sees the board,
-    // and the note pane remounts from the moved file
-    note::flush_note();
-    board::flush_board();
+    // and the note pane remounts from the moved file; ⚠️ not over an edit that
+    // is on screen only
+    app::flush_panes().map_err(|why| format!("not renamed, not saved: {why}"))?;
     std::fs::rename(&from, &to).map_err(|e| e.to_string())?;
     let rewired = relink_canvases(&root, rel, &new_rel);
     // the colour moves with it

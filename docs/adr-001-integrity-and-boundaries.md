@@ -61,6 +61,11 @@ the board's is in `Scene::save`.
 - A note in conflict is not retried on every autosave beat (only on `⌘S` or on
   reload); otherwise the same message would cover the status bar forever.
 - `⌘K → reload vault` discards unsaved edits and **says which**.
+- **(2026-11-20)** An edit that neither its file nor its `-unsaved` rescue
+  took stops whatever would unmount its pane: another note, ⌘G, ⌘O, the
+  theme, a rename, closing the window. The same refusal again within 5 s goes
+  through: the user chose to leave the edit unsaved, and an unwritable vault
+  must not lock the window shut (`app::flush_panes`).
 - Undo stays snapshot-based and stays local. It does not become collaborative
   undo: that one is per actor, and restoring a whole snapshot over someone
   else's work is exactly what must not happen.
