@@ -236,17 +236,38 @@ pub fn sanitize(name: &str) -> String {
 /// the same file never share (and clobber) one temp file; `sync_all` forces
 /// the bytes to disk before the rename, so a crash right after cannot leave
 /// a truncated file in place.
+///
+/// ⚠️ The temp is created new, never opened: whatever already has its name (a
+/// temp an earlier attempt left, or a link planted in a vault someone sent,
+/// which `create` would follow and write through, outside the vault) is
+/// skipped for the next free name. A write that fails removes its temp.
 pub fn write(path: &Path, text: &str) -> io::Result<()> {
-    let tmp = path.with_file_name(format!(
-        ".{}.{}.tmp",
+    let prefix = format!(
+        ".{}.{}",
         path.file_name().unwrap_or_default().to_string_lossy(),
         std::process::id()
-    ));
-    let mut f = fs::File::create(&tmp)?;
-    f.write_all(text.as_bytes())?;
-    f.sync_all()?;
-    drop(f); // Windows refuses to rename a file whose handle is still open
-    fs::rename(&tmp, path)
+    );
+    let mut tmp = path.with_file_name(format!("{prefix}.tmp"));
+    let mut suffix = 2;
+    let mut file = loop {
+        match fs::File::create_new(&tmp) {
+            Ok(file) => break file,
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {
+                tmp = path.with_file_name(format!("{prefix}.{suffix}.tmp"));
+                suffix += 1;
+            }
+            Err(e) => return Err(e),
+        }
+    };
+    let written = file
+        .write_all(text.as_bytes())
+        .and_then(|()| file.sync_all());
+    drop(file); // Windows refuses to rename a file whose handle is still open
+    let result = written.and_then(|()| fs::rename(&tmp, path));
+    if result.is_err() {
+        let _ = fs::remove_file(&tmp);
+    }
+    result
 }
 
 /// ⚠️ Fallible on purpose. A permission error or half-written file used to
@@ -2320,5 +2341,51 @@ mod tests {
             "the rescue's error, not the conflict"
         );
         assert_eq!(fs::read_to_string(&note).unwrap(), "someone else's, longer");
+    }
+
+    /// A temp left by an earlier attempt is not ours to overwrite, and a
+    /// write that fails takes its own temp away with it.
+    #[test]
+    fn a_write_preserves_a_preexisting_temp_and_cleans_up_its_failed_replacement() {
+        let dir = std::env::temp_dir().join("synapso-write-exclusive");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let note = dir.join("note.md");
+        let stale = dir.join(format!(".note.md.{}.tmp", std::process::id()));
+        fs::write(&stale, "pending content").unwrap();
+
+        write(&note, "saved note").unwrap();
+        assert_eq!(fs::read_to_string(&note).unwrap(), "saved note");
+        assert_eq!(fs::read_to_string(&stale).unwrap(), "pending content");
+
+        let directory = dir.join("other.md");
+        fs::create_dir(&directory).unwrap();
+        assert!(write(&directory, "replacement").is_err());
+        assert!(directory.is_dir());
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 3, "no temp left");
+    }
+
+    /// A vault someone sent can hold a link where a save puts its temp: the
+    /// save must not write through it, outside the vault.
+    #[cfg(unix)]
+    #[test]
+    fn a_link_planted_at_the_temp_name_is_never_written_through() {
+        let dir = std::env::temp_dir().join("synapso-write-planted-link");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let outside = dir.join("outside.txt");
+        fs::write(&outside, "not the vault's").unwrap();
+        let vault = dir.join("vault");
+        fs::create_dir_all(&vault).unwrap();
+        let planted = vault.join(format!(".note.md.{}.tmp", std::process::id()));
+        std::os::unix::fs::symlink(&outside, &planted).unwrap();
+
+        write(&vault.join("note.md"), "the note").unwrap();
+
+        assert_eq!(fs::read_to_string(&outside).unwrap(), "not the vault's");
+        assert_eq!(
+            fs::read_to_string(vault.join("note.md")).unwrap(),
+            "the note"
+        );
     }
 }
