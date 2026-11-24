@@ -1,6 +1,9 @@
 //! The app's shared state: one `App` of signal handles, provided at the root
 //! and consumed by whatever pane needs it.
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use freya::prelude::*;
 
@@ -116,6 +119,8 @@ pub struct App {
     pub tree: State<bool>,
     /// Docked beside the rail (5a) instead of floating over the note (5c).
     pub tree_pinned: State<bool>,
+    /// Tree folders opened or closed by hand; the rest follow `tree::rows`.
+    pub tree_open: State<HashMap<String, bool>>,
     pub dark: State<bool>,
     pub overlay: State<Overlay>,
     pub toast: State<Option<Toast>>,

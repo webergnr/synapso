@@ -3,7 +3,7 @@
 //! it. "pin" docks it beside the rail instead (5a with the rail outside).
 //! Folders are groups: each row wears its resolved colour line, and a note
 //! without its own colour shows its folder's.
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use freya::animation::*;
 use freya::prelude::*;
@@ -13,7 +13,7 @@ use crate::{
     app::App,
     base_name,
     field::Field,
-    index::{DocKind, Index},
+    index::{DocEntry, DocKind, Folder, Index, parent_folder},
     theme::*,
 };
 
@@ -112,17 +112,38 @@ enum Row {
     },
 }
 
-fn rows(index: &Index, collapsed: &HashSet<String>) -> Vec<Row> {
+/// `chosen` = folders opened or closed by hand. One never touched starts open
+/// only when a note or canvas lives somewhere below it: a code or scratch
+/// folder with thousands of subfolders stays one closed row until asked for.
+fn rows(index: &Index, chosen: &HashMap<String, bool>) -> Vec<Row> {
+    // grouped by parent in one pass: asking for each folder's children
+    // scanned the whole vault once per folder, 5 s on 8k folders
+    type Kids<'a> = HashMap<String, (Vec<&'a Folder>, Vec<&'a DocEntry>)>;
+    let mut kids = Kids::new();
+    for f in &index.folders {
+        kids.entry(parent_folder(&f.rel)).or_default().0.push(f);
+    }
+    let mut held = HashSet::new();
+    for d in &index.docs {
+        kids.entry(d.folder.clone()).or_default().1.push(d);
+        let mut up = d.folder.clone();
+        // a folder already in means all of its parents are too
+        while !up.is_empty() && held.insert(up.clone()) {
+            up = parent_folder(&up);
+        }
+    }
     fn walk(
-        index: &Index,
+        kids: &Kids<'_>,
         folder: &str,
         depth: usize,
-        collapsed: &HashSet<String>,
+        open_of: &dyn Fn(&str) -> bool,
         out: &mut Vec<Row>,
     ) {
-        let (folders, docs) = index.children(folder);
+        let Some((folders, docs)) = kids.get(folder) else {
+            return;
+        };
         for f in folders {
-            let open = !collapsed.contains(&f.rel);
+            let open = open_of(&f.rel);
             out.push(Row::Folder {
                 rel: f.rel.clone(),
                 name: f.name.clone(),
@@ -130,7 +151,7 @@ fn rows(index: &Index, collapsed: &HashSet<String>) -> Vec<Row> {
                 open,
             });
             if open {
-                walk(index, &f.rel, depth + 1, collapsed, out);
+                walk(kids, &f.rel, depth + 1, open_of, out);
             }
         }
         for d in docs {
@@ -141,17 +162,18 @@ fn rows(index: &Index, collapsed: &HashSet<String>) -> Vec<Row> {
             });
         }
     }
+    let open_of = |rel: &str| chosen.get(rel).copied().unwrap_or(held.contains(rel));
     let mut out = vec![];
-    walk(index, "", 0, collapsed, &mut out);
+    walk(&kids, "", 0, &open_of, &mut out);
     out
 }
 
 impl Component for Tree {
     fn render(&self) -> impl IntoElement {
         let app = use_consume::<App>();
-        let collapsed = use_state(HashSet::<String>::new);
+        let chosen = app.tree_open;
         let index = app.index.read();
-        let list = rows(&index, &collapsed.read());
+        let list = rows(&index, &chosen.read());
         drop(index);
         let mut tree = app.tree;
         let mut pinned = app.tree_pinned;
@@ -228,7 +250,7 @@ impl Component for Tree {
                     .child(
                         rect().width(Size::fill()).padding((6., 0.)).children(
                             list.into_iter()
-                                .map(|row| TreeRow { row, collapsed }.into_element()),
+                                .map(|row| TreeRow { row, chosen }.into_element()),
                         ),
                     ),
             )
@@ -289,7 +311,7 @@ fn hide_btn(text: &'static str, mut f: impl FnMut() + 'static) -> impl IntoEleme
 #[derive(PartialEq)]
 struct TreeRow {
     row: Row,
-    collapsed: State<HashSet<String>>,
+    chosen: State<HashMap<String, bool>>,
 }
 
 impl Component for TreeRow {
@@ -302,7 +324,7 @@ impl Component for TreeRow {
     fn render(&self) -> impl IntoElement {
         let app = use_consume::<App>();
         let mut hover = use_state(|| false);
-        let mut collapsed = self.collapsed;
+        let mut chosen = self.chosen;
         let index = app.index.read();
         let naming = app.naming.read().clone();
         let mut name_value = use_state(String::new);
@@ -466,11 +488,8 @@ impl Component for TreeRow {
                 }
             })
             .on_press(move |_| match &row {
-                Row::Folder { rel, .. } => {
-                    let mut set = collapsed.write();
-                    if !set.remove(rel) {
-                        set.insert(rel.clone());
-                    }
+                Row::Folder { rel, open, .. } => {
+                    chosen.write().insert(rel.clone(), !open);
                 }
                 Row::Doc { .. } => app.open(&rel_click),
             })
@@ -773,5 +792,60 @@ mod tests {
         assert_eq!(spine_alpha(true, false, Tone::Neutral), 0.6);
         assert_eq!(spine_alpha(false, false, Tone::Slot(0)), 0.5);
         assert_eq!(spine_alpha(false, false, Tone::Neutral), 0.5);
+    }
+
+    fn folder_rows(list: &[Row]) -> Vec<(&str, bool)> {
+        list.iter()
+            .filter_map(|r| match r {
+                Row::Folder { rel, open, .. } => Some((rel.as_str(), *open)),
+                Row::Doc { .. } => None,
+            })
+            .collect()
+    }
+
+    /// A folder with a note or canvas somewhere below starts open; one with
+    /// none (a code or scratch folder, an empty one) starts as one closed row,
+    /// so thousands of subfolders cost nothing until asked for.
+    #[test]
+    fn a_folder_without_notes_starts_closed() {
+        let root = std::env::temp_dir().join(format!("synapso-tree-closed-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        for (rel, text) in [
+            ("notes/deep/a.md", ""),
+            ("scratch/x/y.txt", ""),
+            ("scratch/x/z/w.log", ""),
+        ] {
+            let path = root.join(rel);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, text).unwrap();
+        }
+        std::fs::create_dir_all(root.join("notes/empty")).unwrap();
+        let index = Index::load(&root);
+        let list = rows(&index, &Default::default());
+        assert_eq!(
+            folder_rows(&list),
+            [
+                ("notes/", true),
+                ("notes/deep/", true),
+                ("notes/empty/", false),
+                ("scratch/", false),
+            ]
+        );
+        // a click wins either way: scratch/ opened shows its child, still closed;
+        // notes/ closed hides what's under it
+        let chosen = HashMap::from([
+            ("scratch/".to_string(), true),
+            ("notes/".to_string(), false),
+        ]);
+        assert_eq!(
+            folder_rows(&rows(&index, &chosen)),
+            [("notes/", false), ("scratch/", true), ("scratch/x/", false)]
+        );
+        // a note made in a folder opened by hand: it stays open
+        std::fs::write(root.join("scratch/n.md"), "").unwrap();
+        let index = Index::load(&root);
+        let chosen = HashMap::from([("scratch/".to_string(), true)]);
+        assert!(folder_rows(&rows(&index, &chosen)).contains(&("scratch/", true)));
+        let _ = std::fs::remove_dir_all(&root);
     }
 }
