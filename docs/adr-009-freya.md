@@ -38,7 +38,7 @@ The Freya shell is the app. The Floem shell, its fork pin and the owned note
 surface are deleted.
 
 - **Freya comes from our fork**, `webergnr/freya`, branch `synapso`, pinned by
-  rev in `Cargo.toml`. It is upstream 0.5.0-rc.10 plus five commits of ours:
+  rev in `Cargo.toml`. It is upstream 0.5.0-rc.10 plus six commits of ours:
   - rotated labels are rasterised at 4× and downsampled, so the rail's
     vertical tabs aren't jagged;
   - ⇥ and the arrows don't move focus while a text field holds it — without
@@ -58,6 +58,14 @@ surface are deleted.
     out at the text's own size and drawn under a scale effect, so it matches
     the board's text at any zoom. Its cursor was scaled with it, thick when
     zoomed in and faint when zoomed out.
+  - an auto-hidden scrollbar shows only while the pointer is over its scroll
+    view (`fa68d74a`, with a test in
+    `crates/freya-components/tests/scrollbar_hover.rs`). Upstream shows it
+    for 800 ms after any move, scroll or mount, so every list flashed its bar
+    when it opened and kept it a moment after the pointer left. Leaving the
+    window counts as leaving; a thumb drag keeps it. The flag is set on every
+    move, not on pointer over: a press marks a node hovered without an over
+    event, so a list first touched by a press would never show its bar.
   All are small and self-contained, and all are candidates for upstream.
   On top of them sit two upstream fixes picked ahead of a release (`3cbd8e3e`,
   `ab0e94ca`; upstream #2259 and #2425): a keyed list that gained, lost and
