@@ -177,7 +177,8 @@ impl Index {
                     .unwrap_or_default()
                     .to_string_lossy()
                     .to_string();
-                if name.starts_with('.') {
+                // a vault that is also a code folder: its dependency tree is not notes
+                if name.starts_with('.') || name == "node_modules" {
                     continue;
                 }
                 if path.is_dir() {
@@ -773,6 +774,26 @@ mod tests {
         std::os::unix::fs::symlink(&root, root.join("a/up")).unwrap();
         let index = Index::load(&root);
         assert_eq!(index.docs.len(), 1);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// A vault that is also a code folder carries `node_modules`, thousands of
+    /// folders and a README per package: none of it is the user's notes.
+    #[test]
+    fn node_modules_is_not_part_of_the_vault() {
+        let root = vault(
+            "node-modules",
+            &[
+                ("a.md", ""),
+                ("node_modules/pkg/README.md", ""),
+                ("app/node_modules/dep/CHANGELOG.md", ""),
+            ],
+        );
+        let index = Index::load(&root);
+        let docs: Vec<_> = index.docs.iter().map(|d| d.rel.as_str()).collect();
+        assert_eq!(docs, ["a.md"]);
+        let folders: Vec<_> = index.folders.iter().map(|f| f.rel.as_str()).collect();
+        assert_eq!(folders, ["app/"]);
         let _ = std::fs::remove_dir_all(&root);
     }
 }
