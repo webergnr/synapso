@@ -236,17 +236,38 @@ pub fn sanitize(name: &str) -> String {
 /// the same file never share (and clobber) one temp file; `sync_all` forces
 /// the bytes to disk before the rename, so a crash right after cannot leave
 /// a truncated file in place.
+///
+/// ⚠️ The temp is created new, never opened: whatever already has its name (a
+/// temp an earlier attempt left, or a link planted in a vault someone sent,
+/// which `create` would follow and write through, outside the vault) is
+/// skipped for the next free name. A write that fails removes its temp.
 pub fn write(path: &Path, text: &str) -> io::Result<()> {
-    let tmp = path.with_file_name(format!(
-        ".{}.{}.tmp",
+    let prefix = format!(
+        ".{}.{}",
         path.file_name().unwrap_or_default().to_string_lossy(),
         std::process::id()
-    ));
-    let mut f = fs::File::create(&tmp)?;
-    f.write_all(text.as_bytes())?;
-    f.sync_all()?;
-    drop(f); // Windows refuses to rename a file whose handle is still open
-    fs::rename(&tmp, path)
+    );
+    let mut tmp = path.with_file_name(format!("{prefix}.tmp"));
+    let mut suffix = 2;
+    let mut file = loop {
+        match fs::File::create_new(&tmp) {
+            Ok(file) => break file,
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {
+                tmp = path.with_file_name(format!("{prefix}.{suffix}.tmp"));
+                suffix += 1;
+            }
+            Err(e) => return Err(e),
+        }
+    };
+    let written = file
+        .write_all(text.as_bytes())
+        .and_then(|()| file.sync_all());
+    drop(file); // Windows refuses to rename a file whose handle is still open
+    let result = written.and_then(|()| fs::rename(&tmp, path));
+    if result.is_err() {
+        let _ = fs::remove_file(&tmp);
+    }
+    result
 }
 
 /// ⚠️ Fallible on purpose. A permission error or half-written file used to
@@ -291,6 +312,49 @@ pub fn write_checked(path: &Path, text: &str, expected: Stamp) -> io::Result<Sta
     }
     write(path, text)?;
     Ok(stamp(path))
+}
+
+/// What saving a note came to.
+#[derive(Debug, PartialEq)]
+pub enum Saved {
+    /// The file has it; the stamp to expect next time.
+    Wrote(Stamp),
+    /// The file would not take it, so it went to this `-unsaved` file beside it.
+    Rescued(PathBuf),
+    /// Neither took it: the edit is on screen only.
+    Failed(String),
+}
+
+impl Saved {
+    /// Why the edit is on screen only, if it is. A rescue is on disk, so it
+    /// counts as written.
+    pub fn unsaved(&self) -> Option<&str> {
+        match self {
+            Saved::Failed(why) => Some(why),
+            _ => None,
+        }
+    }
+}
+
+/// Save a note over its file if the file is still the one we loaded
+/// (`expected`). Otherwise, or when the write fails, the edit goes to a rescue
+/// beside it: `rescued`, the one this note already writes to, or a fresh
+/// `name-unsaved.md` that never takes over a rescue left by someone else.
+pub fn save_note(path: &Path, text: &str, expected: Stamp, rescued: Option<&Path>) -> Saved {
+    if let Ok(stamp) = write_checked(path, text, expected) {
+        return Saved::Wrote(stamp);
+    }
+    let target = rescued.map_or_else(
+        || {
+            let dir = path.parent().unwrap_or(path);
+            unique_path(dir, &format!("{}-unsaved", name(path)), "md")
+        },
+        Path::to_path_buf,
+    );
+    match write(&target, text) {
+        Ok(()) => Saved::Rescued(target),
+        Err(e) => Saved::Failed(e.to_string()),
+    }
 }
 
 /// Deleted files go here instead of away. Hidden, and inside the vault, so a
@@ -2184,5 +2248,144 @@ mod tests {
         assert_eq!(sanitize("CON"), "con-note");
         assert_eq!(sanitize("lpt1"), "lpt1-note");
         assert_eq!(sanitize("console"), "console");
+    }
+
+    /// A scratch vault of its own per test: they run in parallel.
+    fn save_note_vault(case: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("synapso-save-note-{case}"));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// A folder where the note should be: `rename` will not put a file over a
+    /// folder that holds something, on any of the three systems, so the write
+    /// fails while the stamp still matches.
+    fn unwritable(dir: &Path, name: &str) -> PathBuf {
+        let path = dir.join(name);
+        fs::create_dir_all(path.join("inside")).unwrap();
+        path
+    }
+
+    #[test]
+    fn a_note_save_writes_the_file_and_carries_its_stamp() {
+        let dir = save_note_vault("ok");
+        let note = dir.join("plan.md");
+        fs::write(&note, "old").unwrap();
+
+        let saved = save_note(&note, "new", stamp(&note), None);
+
+        assert_eq!(fs::read_to_string(&note).unwrap(), "new");
+        assert_eq!(saved, Saved::Wrote(stamp(&note)));
+    }
+
+    /// The file changed under us: the edit goes beside it, to one rescue file
+    /// that stays the same across saves, and never over a rescue an earlier
+    /// session left.
+    #[test]
+    fn a_note_changed_on_disk_goes_to_one_stable_unsaved_file() {
+        let dir = save_note_vault("conflict");
+        let note = dir.join("plan.md");
+        fs::write(&note, "loaded").unwrap();
+        let loaded = stamp(&note);
+        fs::write(&note, "someone else's, longer").unwrap();
+        fs::write(dir.join("plan-unsaved.md"), "an older rescue").unwrap();
+
+        let first = save_note(&note, "mine", loaded, None);
+        let rescue = dir.join("plan-unsaved-2.md");
+        assert_eq!(first, Saved::Rescued(rescue.clone()));
+        assert_eq!(fs::read_to_string(&rescue).unwrap(), "mine");
+
+        let second = save_note(&note, "mine, more", loaded, Some(&rescue));
+        assert_eq!(second, Saved::Rescued(rescue.clone()), "the same rescue");
+        assert_eq!(fs::read_to_string(&rescue).unwrap(), "mine, more");
+
+        assert_eq!(fs::read_to_string(&note).unwrap(), "someone else's, longer");
+        assert_eq!(
+            fs::read_to_string(dir.join("plan-unsaved.md")).unwrap(),
+            "an older rescue"
+        );
+    }
+
+    /// A write that fails for another reason than a conflict is rescued too.
+    #[test]
+    fn a_note_that_will_not_write_is_rescued_beside_it() {
+        let dir = save_note_vault("failed");
+        let note = unwritable(&dir, "plan.md");
+
+        let saved = save_note(&note, "mine", stamp(&note), None);
+
+        let rescue = dir.join("plan-unsaved.md");
+        assert_eq!(saved, Saved::Rescued(rescue.clone()));
+        assert_eq!(fs::read_to_string(&rescue).unwrap(), "mine");
+    }
+
+    /// The file and the rescue both refused: nothing on disk holds the edit,
+    /// and the caller hears why the rescue failed, the reason it is unsaved.
+    #[test]
+    fn a_rescue_that_will_not_write_either_is_a_failure() {
+        let dir = save_note_vault("failed-twice");
+        let note = dir.join("plan.md");
+        fs::write(&note, "loaded").unwrap();
+        let loaded = stamp(&note);
+        fs::write(&note, "someone else's, longer").unwrap();
+        let rescue = unwritable(&dir, "plan-unsaved.md");
+
+        let saved = save_note(&note, "mine", loaded, Some(&rescue));
+
+        let Saved::Failed(why) = saved else {
+            panic!("{saved:?}")
+        };
+        assert_ne!(
+            why, "changed on disk",
+            "the rescue's error, not the conflict"
+        );
+        assert_eq!(fs::read_to_string(&note).unwrap(), "someone else's, longer");
+    }
+
+    /// A temp left by an earlier attempt is not ours to overwrite, and a
+    /// write that fails takes its own temp away with it.
+    #[test]
+    fn a_write_preserves_a_preexisting_temp_and_cleans_up_its_failed_replacement() {
+        let dir = std::env::temp_dir().join("synapso-write-exclusive");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let note = dir.join("note.md");
+        let stale = dir.join(format!(".note.md.{}.tmp", std::process::id()));
+        fs::write(&stale, "pending content").unwrap();
+
+        write(&note, "saved note").unwrap();
+        assert_eq!(fs::read_to_string(&note).unwrap(), "saved note");
+        assert_eq!(fs::read_to_string(&stale).unwrap(), "pending content");
+
+        let directory = dir.join("other.md");
+        fs::create_dir(&directory).unwrap();
+        assert!(write(&directory, "replacement").is_err());
+        assert!(directory.is_dir());
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 3, "no temp left");
+    }
+
+    /// A vault someone sent can hold a link where a save puts its temp: the
+    /// save must not write through it, outside the vault.
+    #[cfg(unix)]
+    #[test]
+    fn a_link_planted_at_the_temp_name_is_never_written_through() {
+        let dir = std::env::temp_dir().join("synapso-write-planted-link");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let outside = dir.join("outside.txt");
+        fs::write(&outside, "not the vault's").unwrap();
+        let vault = dir.join("vault");
+        fs::create_dir_all(&vault).unwrap();
+        let planted = vault.join(format!(".note.md.{}.tmp", std::process::id()));
+        std::os::unix::fs::symlink(&outside, &planted).unwrap();
+
+        write(&vault.join("note.md"), "the note").unwrap();
+
+        assert_eq!(fs::read_to_string(&outside).unwrap(), "not the vault's");
+        assert_eq!(
+            fs::read_to_string(vault.join("note.md")).unwrap(),
+            "the note"
+        );
     }
 }
