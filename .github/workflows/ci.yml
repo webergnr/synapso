@@ -1,13 +1,14 @@
 name: ci
 
-# The gate every PR walks through before it can merge: format, lint, test.
+# The gate every PR walks through before it can merge: format, lint, test on
+# Windows and on macOS, then the dependencies (advisories, licenses, sources).
 #
-# ⚠️ This runs on GitHub's hosted Windows image, not macOS. The self-hosted
-# box it used while the account's minutes were blocked is not always on, and
-# jobs queued for it died after 24h with no gate at all. Windows costs 2x
-# minutes, macOS 10x; a gate on the wrong OS is still worth more than none:
-# the compiler, the lints and every test are the same, and what Windows cannot
-# catch is layout on a Mac, which no CI was checking anyway.
+# ⚠️ Both systems, because each has code only it compiles: `cfg(windows)`
+# here, `cfg(target_os = "macos")` and the objc2 calls in the macOS job. With
+# Windows alone, the macOS code first compiled in release.yml, on main, after
+# the merge. Hosted runners, macOS included, are free on a public repository;
+# the self-hosted box of the private days is gone (its queued jobs died after
+# 24h with no gate at all).
 #
 # A fork's PR runs here too: the hosted image is a disposable VM, so the
 # fork's workflow code touches nothing of ours. Whether a first-time
@@ -63,3 +64,31 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo test --workspace --locked
+
+  # the same lints and tests where `cfg(target_os = "macos")` compiles (fmt is
+  # the same on every system: the Windows job has it)
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy --no-self-update
+          rustup default stable
+          rustc --version; cargo --version
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - run: cargo test --workspace --locked
+
+  # RustSec advisories (fails on a vulnerability; unmaintained, unsound and
+  # yanked crates are printed as warnings), then the licenses and sources
+  # deny.toml allows. Reads Cargo.lock only: nothing is built.
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # v2.90.1
+        with:
+          tool: cargo-audit,cargo-deny
+      - run: cargo audit
+      - run: cargo deny check licenses sources
