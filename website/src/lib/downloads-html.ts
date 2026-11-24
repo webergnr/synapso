@@ -9,6 +9,7 @@ export interface DownloadsCopy {
   published: string;
   unknown: string;
   allReleases: string;
+  nightly: string;
   notAvailable: string;
   fromSource: string;
   get: string;
@@ -30,7 +31,8 @@ export function releaseHTML(view: DownloadsView, t: DownloadsCopy): string {
 <span>${esc(t.published)} ${esc(date)}</span>` : ''}`
     : `<span class="warn">${esc(t.unknown)}</span>`;
   return `${line}
-<a class="all" href="${RELEASES_URL}">${esc(t.allReleases)} ↗</a>`;
+<a class="all" href="${RELEASES_URL}">${esc(t.allReleases)} ↗</a>
+<a class="all" href="${RELEASES_URL}/tag/nightly">${esc(t.nightly)} ↗</a>`;
 }
 
 export function platformsHTML(view: DownloadsView, t: DownloadsCopy): string {
