@@ -60,6 +60,11 @@ objc2-foundation = { version = "0.3.2", default-features = false, features = [
     "NSData",
 ] }
 
+# Headless runs of the note pane (`note.rs`'s find tests): keys in, the
+# buffer out, no window. Same fork and rev as `freya` above.
+[dev-dependencies]
+freya-testing = { git = "https://github.com/webergnr/freya", rev = "fa68d74a" }
+
 [profile.dev]
 opt-level = 1
 # Skia and the layout engine are slow unoptimised; the app's own code stays quick to build
