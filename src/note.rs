@@ -196,6 +196,14 @@ impl Component for NotePane {
         // which re-scroll the pin's settle timer belongs to: only the latest
         // lets go
         let mut pin_gen = use_state(|| 0u64);
+        // each fenced block's sideways scroll, by its place among the blocks
+        let mut code_x = use_state(std::collections::HashMap::<usize, f32>::new);
+        // the block under the pointer: its scrollbar shows, as the app's do
+        let code_hover = use_state(|| None::<usize>);
+        // the caret the sideways scroll last followed. ⚠️ not a state: it
+        // changes on every key, and a render per key just to remember it is
+        // the cost the follow would add
+        let followed = use_hook(|| Rc::new(std::cell::Cell::new(None::<(usize, usize)>)));
 
         let publish = move |editable: &UseEditable| {
             let mut caret = caret;
@@ -522,6 +530,50 @@ impl Component for NotePane {
                 .map(|i| ed.get_visible_selection(EditorLine::Paragraph(i)))
                 .collect()
         };
+        // a code line wider than the sheet scrolls sideways with its block
+        // (CB-001), and the caret pulls its block along when it moved past
+        // an edge. A scroll the wheel made stays until the caret moves.
+        let code_w = *width.read() - PAD_LEFT - PAD_RIGHT - 2. * CODE_PAD;
+        let blocks = code_blocks(&kinds);
+        let mut wide = std::collections::HashMap::<usize, f32>::new();
+        for (line, block) in lines.iter().zip(&blocks) {
+            if let Some(b) = block {
+                let w = wide.entry(*b).or_default();
+                *w = w.max(cells(line) as f32 * advance(12.));
+            }
+        }
+        // how far each block that doesn't fit scrolls
+        let room: std::collections::HashMap<usize, f32> = wide
+            .into_iter()
+            .filter_map(|(b, w)| sideways_max(w, code_w).map(|max| (b, max)))
+            .collect();
+        if followed.get() != Some((cursor_row, cursor_col)) {
+            followed.set(Some((cursor_row, cursor_col)));
+            if let (Some(Some(b)), Some(line)) = (blocks.get(cursor_row), lines.get(cursor_row))
+                && let Some(max) = room.get(b)
+            {
+                let x = cells(&line[..byte_at(line, cursor_col)]) as f32 * advance(12.);
+                let off = code_x.peek().get(b).copied().unwrap_or(0.).min(*max);
+                let to = reveal(off, x, code_w).clamp(0., *max);
+                if to != off {
+                    code_x.write().insert(*b, to);
+                }
+            }
+        }
+        let sideways: Vec<Option<Sideways>> = blocks
+            .iter()
+            .map(|b| {
+                let b = (*b)?;
+                let max = *room.get(&b)?;
+                Some(Sideways {
+                    block: b,
+                    offset: code_x.read().get(&b).copied().unwrap_or(0.).min(max),
+                    max,
+                    width: code_w + max,
+                    hovered: *code_hover.read() == Some(b),
+                })
+            })
+            .collect();
         let focused = a11y.is_focused();
         let query = app.find.read().clone().unwrap_or_default();
         let hits: Vec<Vec<(usize, usize)>> = lines.iter().map(|l| find_in(l, &query)).collect();
@@ -609,6 +661,9 @@ impl Component for NotePane {
                     editable,
                     caret,
                     touched,
+                    sideways,
+                    code_x,
+                    code_hover,
                 });
                 let heights: Rc<Vec<f32>> = Rc::new(
                     (0..sheet.lines.len())
@@ -775,6 +830,9 @@ impl Component for NotePane {
                                         cursor: cursor.map(|(_, c)| c),
                                         caret: sheet.caret,
                                         touched: sheet.touched,
+                                        sideways: sheet.sideways[i],
+                                        code_x: sheet.code_x,
+                                        code_hover: sheet.code_hover,
                                     })
                                     .into_element()
                             },
@@ -1221,6 +1279,97 @@ struct Sheet {
     editable: UseEditable,
     caret: State<Caret>,
     touched: State<u64>,
+    sideways: Vec<Option<Sideways>>,
+    code_x: State<std::collections::HashMap<usize, f32>>,
+    code_hover: State<Option<usize>>,
+}
+
+/// A fenced block wider than the sheet: its lines scroll sideways together.
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Sideways {
+    /// Its place among the note's blocks, the key of its offset.
+    block: usize,
+    /// How far it is scrolled, and how far it goes.
+    offset: f32,
+    max: f32,
+    /// What a line of it is laid out in: the window and all it scrolls.
+    width: f32,
+    /// The pointer is over it: its scrollbar shows.
+    hovered: bool,
+}
+
+/// A code row's padding on each side.
+const CODE_PAD: f32 = 16.;
+
+/// Room past a code line's end, and past the edge the caret crosses: four
+/// columns, so the caret has some of what comes next in view.
+fn code_margin() -> f32 {
+    4. * advance(12.)
+}
+
+/// Which fenced block each line is in, counted from the top: a block keeps
+/// its sideways scroll while lines come and go around it.
+fn code_blocks(kinds: &[Kind]) -> Vec<Option<usize>> {
+    let mut n = 0usize;
+    kinds
+        .iter()
+        .map(|k| match k {
+            Kind::FenceOpen => {
+                n += 1;
+                Some(n - 1)
+            }
+            Kind::Code | Kind::FenceClose => Some(n.saturating_sub(1)),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The mono columns a code line takes: one per character, two for the wide
+/// ones a fallback font draws (CJK, emoji), four for a tab. Over rather
+/// than under: a block that scrolls a little past its end beats a tail
+/// nobody can reach.
+fn cells(line: &str) -> usize {
+    line.chars()
+        .map(|c| match c {
+            '\t' => 4,
+            c if c >= '\u{1100}' => 2,
+            _ => 1,
+        })
+        .sum()
+}
+
+/// How far a block whose widest line is `wide` scrolls in a window `w`
+/// wide: `None` when every line fits, so nothing about it changes.
+fn sideways_max(wide: f32, w: f32) -> Option<f32> {
+    (wide + CARET_W > w).then(|| wide + code_margin() - w)
+}
+
+/// The caret's width on a line (the paragraph's default).
+const CARET_W: f32 = 2.;
+
+/// The offset that keeps a caret at `x` in a window `w` wide scrolled to
+/// `off`: the same while it is in view, else the edge it crossed moved past
+/// it by a margin.
+fn reveal(off: f32, x: f32, w: f32) -> f32 {
+    if x < off {
+        (x - code_margin()).max(0.)
+    } else if x + CARET_W > off + w {
+        x + code_margin() - w
+    } else {
+        off
+    }
+}
+
+/// A wheel's sideways movement: a trackpad's own, or a mouse wheel turned
+/// by ⇧ (macOS sends that one as sideways already).
+fn sideways_delta(dx: f64, dy: f64, shift: bool) -> f32 {
+    if dx != 0. {
+        dx as f32
+    } else if shift {
+        dy as f32
+    } else {
+        0.
+    }
 }
 
 /// JetBrains Mono advances 600/1000 em, so a line's wrap is arithmetic.
@@ -1732,6 +1881,10 @@ struct SheetLine {
     cursor: Option<usize>,
     caret: State<Caret>,
     touched: State<u64>,
+    /// A code line of a block too wide for the sheet.
+    sideways: Option<Sideways>,
+    code_x: State<std::collections::HashMap<usize, f32>>,
+    code_hover: State<Option<usize>>,
 }
 
 const HIDDEN: f32 = 0.1;
@@ -2158,9 +2311,16 @@ impl Component for SheetLine {
                 },
             )
             .spans_iter(spans.into_iter());
-        // chips, washes and dashed underlines go behind the text
+        // chips, washes and dashed underlines go behind the text. A code
+        // line of a wide block is laid out at all its block scrolls, and
+        // slid by the block's offset: a press maps on the slid layout, so
+        // it lands on the character under the pointer
+        let sideways = self.sideways;
         let para = rect()
-            .width(Size::fill())
+            .width(sideways.map_or(Size::fill(), |s| Size::px(s.width)))
+            .maybe(sideways.is_some(), |r| {
+                r.offset_x(-sideways.map_or(0., |s| s.offset))
+            })
             .background(rich::painter(holder.read().clone(), decos))
             .child(para);
 
@@ -2284,13 +2444,53 @@ impl Component for SheetLine {
                 } else {
                     String::new()
                 };
+                let mut code_x = self.code_x;
+                let mut hover = self.code_hover;
+                // a thin bar under the block, while the pointer is over it:
+                // where the window sits in all the block scrolls
+                let bar = sideways.filter(|s| last && s.hovered).map(|s| {
+                    let w = s.width - s.max;
+                    rect()
+                        .position(Position::new_absolute().left(0.).bottom(2.))
+                        .layer(Layer::Relative(1))
+                        .width(Size::px(w))
+                        .child(
+                            rect()
+                                .margin((0., 0., 0., s.offset * w / s.width))
+                                .width(Size::px(w * w / s.width))
+                                .height(Size::px(3.))
+                                .corner_radius(1.5)
+                                .background(c().border_strong),
+                        )
+                });
                 row.background(c().surface_inset)
+                    .maybe(sideways.is_some(), |row| {
+                        row.on_pointer_move(move |_| {
+                            hover.set_if_modified(sideways.map(|s| s.block));
+                        })
+                        .on_pointer_leave(move |_| hover.set_if_modified(None))
+                        .on_wheel(move |e: Event<WheelEventData>| {
+                            let Some(s) = sideways else { return };
+                            let shift = crate::app::shift_held();
+                            let d = sideways_delta(e.delta_x, e.delta_y, shift);
+                            let off = code_x.peek().get(&s.block).copied().unwrap_or(0.);
+                            let to = (off.min(s.max) - d).clamp(0., s.max);
+                            if to != off {
+                                code_x.write().insert(s.block, to);
+                            }
+                            // ⇧ makes it sideways: the sheet must not read
+                            // it as its own (it swaps it back to vertical)
+                            if shift {
+                                e.stop_propagation();
+                            }
+                        })
+                    })
                     .border(Border::new().fill(c().border_subtle).width(sides))
                     .corner_radius({
                         let (t, b) = (if first { r } else { 0. }, if last { r } else { 0. });
                         (t, t, b, b)
                     })
-                    .padding((0., 16.))
+                    .padding((0., CODE_PAD))
                     .height(Size::px(snap(if (first || last) && !revealed {
                         12.
                     } else {
@@ -2298,6 +2498,7 @@ impl Component for SheetLine {
                     })))
                     .overflow(Overflow::Clip)
                     .child(para)
+                    .maybe_child(bar)
                     .maybe_child((!lang.is_empty()).then(|| {
                         label()
                             .position(Position::new_absolute().right(10.).top(2.))
@@ -3444,7 +3645,8 @@ mod find_tests {
         }
     }
 
-    /// `text` as `a.md` in a vault of its own, open in a note pane.
+    /// `text` as `a.md` in a vault of its own, open in a note pane, in the
+    /// app's own font (the code rows' arithmetic counts its advance).
     fn pane(tag: &str, text: &str) -> (TestingRunner, App, std::path::PathBuf) {
         let root = std::env::temp_dir().join(format!("synapso-find-{tag}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
@@ -3458,13 +3660,19 @@ mod find_tests {
                 move || {
                     let app = use_provide_context(|| shell(&root));
                     held.set(Some(app));
-                    NotePane { rel: "a.md".into() }
+                    rect()
+                        .expanded()
+                        .font_family(FONT)
+                        .child(NotePane { rel: "a.md".into() })
                 }
             },
             (1200., 800.).into(),
             |_| {},
             1.0,
         );
+        for f in [crate::JB_REGULAR, crate::JB_BOLD] {
+            r.set_fonts(std::collections::HashMap::from([(FONT, f)]));
+        }
         settle(&mut r);
         let app = held.get().expect("the pane rendered");
         (r, app, file)
@@ -3552,5 +3760,142 @@ mod find_tests {
         type_text(&mut r, "X");
         // the caret a fresh note opens with, at its start
         assert_eq!(written(&mut r, &file), "Xalpha beta");
+    }
+
+    /// The laid-out paragraph that shows exactly `text`: where it sits, and
+    /// how wide its (first) line is. ⚠️ a one-line paragraph is laid out at
+    /// unbounded width: all of a long code line is there, its row clips it.
+    fn laid_out(r: &TestingRunner, text: &str) -> (Area, f32) {
+        r.find(|node, el| {
+            let p = Paragraph::try_downcast(el)?;
+            let joined: String = p.spans.iter().map(|s| s.text.as_ref()).collect();
+            if joined != text {
+                return None;
+            }
+            let held = p.sk_paragraph.0.borrow();
+            let sk = &held.as_ref()?.paragraph;
+            Some((node.layout().area, sk.longest_line()))
+        })
+        .unwrap_or_else(|| panic!("no paragraph shows {text:?}"))
+    }
+
+    const NONE: Modifiers = Modifiers::empty();
+
+    /// 300 columns, 7.2px apart at 12px, with spaces a wrap could break at.
+    fn long_code() -> (String, String) {
+        let long = "012345678 ".repeat(30);
+        let note = format!("intro\n```\n{long}\nshort\n```\nafter");
+        (long, note)
+    }
+
+    #[test]
+    fn the_caret_stays_in_view_on_a_long_code_line() {
+        let (long, note) = long_code();
+        let (mut r, app, _file) = pane("code-caret", &note);
+        let (_, w) = laid_out(&r, "short");
+        assert!(
+            (w - 5. * advance(12.)).abs() < 0.5,
+            "the app's mono font is the one laid out: {w}"
+        );
+        // onto the long line, then its end
+        for _ in 0..2 {
+            key(
+                &mut r,
+                Key::Named(NamedKey::ArrowDown),
+                Code::ArrowDown,
+                NONE,
+            );
+        }
+        let end = Modifiers::META;
+        key(
+            &mut r,
+            Key::Named(NamedKey::ArrowRight),
+            Code::ArrowRight,
+            end,
+        );
+        assert_eq!((app.caret.peek().row, app.caret.peek().col), (2, 300));
+        let (area, w) = laid_out(&r, &long);
+        let caret_x = area.min_x() + w;
+        assert!(
+            caret_x > PAD_LEFT && caret_x < 1200. - PAD_RIGHT,
+            "the caret at the line's end is on screen: x {caret_x}"
+        );
+        // typing there keeps it on screen, and ⌘← brings the start back
+        type_text(&mut r, "7");
+        let typed = format!("{long}7");
+        let (area, w) = laid_out(&r, &typed);
+        assert!(area.min_x() + w < 1200. - PAD_RIGHT);
+        key(
+            &mut r,
+            Key::Named(NamedKey::ArrowLeft),
+            Code::ArrowLeft,
+            end,
+        );
+        let (area, _) = laid_out(&r, &typed);
+        let (short, _) = laid_out(&r, "short");
+        assert_eq!(area.min_x(), short.min_x(), "the block moves as one");
+        assert!(area.min_x() > PAD_LEFT, "column 0 is on screen again");
+    }
+
+    #[test]
+    fn a_sideways_swipe_scrolls_the_whole_block_and_clicks_still_land() {
+        let (long, note) = long_code();
+        let (mut r, app, _file) = pane("code-swipe", &note);
+        let (start, _) = laid_out(&r, &long);
+        let (short0, _) = laid_out(&r, "short");
+        let y = start.center().y;
+        // a trackpad's sideways swipe: content moves left by 200px
+        r.scroll(((start.min_x() + 100.) as f64, y as f64), (-200., 0.));
+        settle(&mut r);
+        let (moved, _) = laid_out(&r, &long);
+        let (short, _) = laid_out(&r, "short");
+        assert_eq!(moved.min_x(), start.min_x() - 200.);
+        assert_eq!(
+            short.min_x(),
+            short0.min_x() - 200.,
+            "its lines move together"
+        );
+        // a click on what is now under the pointer: column 50 of the line
+        let at = start.min_x() + 50. * advance(12.) + 1. - 200.;
+        r.click_cursor((at as f64, y as f64));
+        settle(&mut r);
+        assert_eq!((app.caret.peek().row, app.caret.peek().col), (2, 50));
+        // the outer sheet did not scroll down for a sideways swipe
+        assert_eq!(moved.min_y(), start.min_y());
+    }
+
+    #[test]
+    fn sideways_scroll_arithmetic() {
+        // a trackpad's sideways move; ⇧ turns a mouse wheel; else nothing
+        assert_eq!(sideways_delta(-30., 5., false), -30.);
+        assert_eq!(sideways_delta(0., -40., true), -40.);
+        assert_eq!(sideways_delta(0., -40., false), 0.);
+        // wide characters and tabs count over, never under
+        assert_eq!(cells("ab"), 2);
+        assert_eq!(cells("a\t日😀"), 1 + 4 + 2 + 2);
+        // a block that fits has no scroll at all
+        assert_eq!(sideways_max(100., 200.), None);
+        let near = |a: f32, b: f32| (a - b).abs() < 1e-3;
+        assert!(near(
+            sideways_max(300., 200.).unwrap(),
+            100. + code_margin()
+        ));
+        // the caret in view keeps the offset; past an edge, it moves
+        assert_eq!(reveal(50., 120., 200.), 50.);
+        assert_eq!(reveal(50., 10., 200.), 0.);
+        assert!(near(reveal(0., 260., 200.), 60. + code_margin()));
+    }
+
+    #[test]
+    fn a_code_block_that_fits_does_not_move() {
+        let (mut r, _app, _file) = pane("code-fits", "```\nshort\n```\nafter");
+        let (before, _) = laid_out(&r, "short");
+        r.scroll(
+            ((before.min_x() + 10.) as f64, before.center().y as f64),
+            (-200., 0.),
+        );
+        settle(&mut r);
+        let (after, _) = laid_out(&r, "short");
+        assert_eq!(after, before);
     }
 }
