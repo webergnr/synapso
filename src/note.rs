@@ -3965,6 +3965,18 @@ mod find_tests {
 
     const NONE: Modifiers = Modifiers::empty();
 
+    /// ⌘ and an arrow, the line's or the note's end: as the Mac spells it,
+    /// and as Home/End (with Ctrl for the note's) elsewhere, where ⌘+arrow
+    /// is no such key (`keys::line_ends`).
+    fn cmd_arrow(r: &mut TestingRunner, arrow: NamedKey) {
+        let (k, m) = if crate::keys::is_mac() {
+            (Key::Named(arrow), Modifiers::META)
+        } else {
+            crate::keys::line_ends(&Key::Named(arrow), Modifiers::META, true).expect("an arrow")
+        };
+        key(r, k, Code::Unidentified, m);
+    }
+
     /// 300 columns, 7.2px apart at 12px, with spaces a wrap could break at.
     fn long_code() -> (String, String) {
         let long = "012345678 ".repeat(30);
@@ -3990,13 +4002,7 @@ mod find_tests {
                 NONE,
             );
         }
-        let end = Modifiers::META;
-        key(
-            &mut r,
-            Key::Named(NamedKey::ArrowRight),
-            Code::ArrowRight,
-            end,
-        );
+        cmd_arrow(&mut r, NamedKey::ArrowRight);
         assert_eq!((app.caret.peek().row, app.caret.peek().col), (2, 300));
         let (area, w) = laid_out(&r, &long);
         let caret_x = area.min_x() + w;
@@ -4009,12 +4015,7 @@ mod find_tests {
         let typed = format!("{long}7");
         let (area, w) = laid_out(&r, &typed);
         assert!(area.min_x() + w < 1200. - PAD_RIGHT);
-        key(
-            &mut r,
-            Key::Named(NamedKey::ArrowLeft),
-            Code::ArrowLeft,
-            end,
-        );
+        cmd_arrow(&mut r, NamedKey::ArrowLeft);
         let (area, _) = laid_out(&r, &typed);
         let (short, _) = laid_out(&r, "short");
         assert_eq!(area.min_x(), short.min_x(), "the block moves as one");
@@ -4181,19 +4182,8 @@ mod find_tests {
         text.push_str("beta last");
         let (mut r, app, file) = pane("near", &text);
         // the caret at the start of the last line
-        let cmd = Modifiers::META;
-        key(
-            &mut r,
-            Key::Named(NamedKey::ArrowDown),
-            Code::ArrowDown,
-            cmd,
-        );
-        key(
-            &mut r,
-            Key::Named(NamedKey::ArrowLeft),
-            Code::ArrowLeft,
-            cmd,
-        );
+        cmd_arrow(&mut r, NamedKey::ArrowDown);
+        cmd_arrow(&mut r, NamedKey::ArrowLeft);
         open_find(&mut r, app);
         type_text(&mut r, "beta");
         key(&mut r, Key::Named(NamedKey::Escape), Code::Escape, NONE);
@@ -4274,13 +4264,7 @@ mod find_tests {
     fn a_unicode_line_separator_keeps_the_rows_in_step() {
         let text = "a\u{2028}b\nc\rd";
         let (mut r, app, file) = pane("ls", text);
-        let cmd = Modifiers::META;
-        key(
-            &mut r,
-            Key::Named(NamedKey::ArrowDown),
-            Code::ArrowDown,
-            cmd,
-        );
+        cmd_arrow(&mut r, NamedKey::ArrowDown);
         assert_eq!((app.caret.peek().row, app.caret.peek().col), (3, 1));
         for line in ["a", "b", "c", "d"] {
             laid_out(&r, line);
