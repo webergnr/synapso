@@ -532,6 +532,11 @@ impl Component for NotePane {
             .collect();
         let total = flat.len();
         let current = (total > 0).then(|| flat[*app.find_at.read() % total]);
+        // the same hit in the editor's units, from the top of the buffer
+        let hit = current.map(|(l, a, b)| {
+            let start = u16_at(&text, lines[..l].iter().map(|s| s.len() + 1).sum());
+            (start + a, start + b)
+        });
         let dirty = app.dirty.read().contains(&rel);
         let tone = app.index.read().tone(&rel);
         let color = c().tone(tone);
@@ -567,12 +572,15 @@ impl Component for NotePane {
             )
             .child(breadcrumb(app, &rel, dirty, color))
             .child(format_bar(fmt_request, fmt_menu))
-            .maybe_child(
-                app.find
-                    .read()
-                    .is_some()
-                    .then(|| FindBar { total }.into_element()),
-            )
+            .maybe_child(app.find.read().is_some().then(|| {
+                FindBar {
+                    total,
+                    hit,
+                    editable,
+                    note: a11y,
+                }
+                .into_element()
+            }))
             .maybe_child(broken.then(|| {
                 rect()
                     .width(Size::fill())
@@ -2656,10 +2664,16 @@ fn find_in(line: &str, query: &str) -> Vec<(usize, usize)> {
         .collect()
 }
 
-/// ⌘F: floats at the top right of the note. ⏎/↓ next, ↑ previous, Esc closes.
+/// ⌘F: floats at the top right of the note. ⏎/↓ next, ↑ previous, Esc closes
+/// and hands the keyboard back to the note with the current hit selected.
 #[derive(PartialEq)]
 struct FindBar {
     total: usize,
+    /// The current hit, in the editor's UTF-16 units.
+    hit: Option<(usize, usize)>,
+    editable: UseEditable,
+    /// The note's own focus.
+    note: AccessibilityId,
 }
 
 impl Component for FindBar {
@@ -2675,6 +2689,7 @@ impl Component for FindBar {
             at.set(0);
         }
         let total = self.total;
+        let (hit, editable, note) = (self.hit, self.editable, self.note);
         let at = *app.find_at.read();
         let step = move |d: i32| {
             let mut a = app.find_at;
@@ -2711,6 +2726,15 @@ impl Component for FindBar {
                         query,
                         move |_| step(1),
                         move |_| {
+                            // as Zed and VS Code leave it: the hit selected,
+                            // so typing replaces it and ⌘Z brings it back.
+                            // ⚠️ the field going away leaves the keyboard
+                            // with no one, so the note asks for it back
+                            if let Some(range) = hit {
+                                let mut editable = editable;
+                                editable.editor_mut().write().set_selection(range);
+                            }
+                            note.request_focus();
                             let mut f = app.find;
                             f.set(None);
                         },
@@ -3356,5 +3380,177 @@ mod fmt_menu_tests {
             Some(20.)
         );
         assert_eq!(click_floor(Kind::Blank, "", false, 20.), None);
+    }
+}
+
+/// ⌘F driven headless: the note pane alone over a one-note vault, keys in,
+/// the file out.
+#[cfg(test)]
+mod find_tests {
+    use std::{cell::Cell, collections::HashSet, path::Path, rc::Rc, time::Duration};
+
+    use freya_testing::prelude::*;
+
+    use super::*;
+    use crate::{
+        app::{App, GraphState, Overlay, View},
+        index::{DocKind, Index},
+    };
+
+    /// The shell's state as `main.rs` starts it, over `root`, the note open.
+    fn shell(root: &Path) -> App {
+        App {
+            graph: State::create(GraphState {
+                focus: "a.md".into(),
+                history: vec![],
+                branch: false,
+                depth: 2,
+                hidden: HashSet::new(),
+                week: 0,
+            }),
+            index: State::create(Index::load(root)),
+            tabs: State::create(vec!["a.md".into()]),
+            canvases: State::create(vec![]),
+            note: State::create("a.md".into()),
+            canvas: State::create(String::new()),
+            pane: State::create(DocKind::Note),
+            view: State::create(View::Split),
+            split: State::create(0.42),
+            tree: State::create(false),
+            tree_pinned: State::create(false),
+            tree_open: State::create(Default::default()),
+            last_view: State::create(View::Split),
+            dark: State::create(true),
+            overlay: State::create(Overlay::None),
+            toast: State::create(None),
+            caret: State::create(Caret::default()),
+            dirty: State::create(HashSet::new()),
+            color_pick: State::create(None),
+            flush: State::create(0),
+            naming: State::create(None),
+            last_undo: State::create(None),
+            drag_doc: State::create(None),
+            drop_at: State::create(None),
+            board_rev: State::create(0),
+            note_rev: State::create(0),
+            reveal: State::create(None),
+            land: State::create(None),
+            find: State::create(None),
+            find_at: State::create(0),
+            insert: State::create(None),
+            tree_menu: State::create(None),
+            canvas_zoom: State::create(1.0),
+            note_menu: State::create(None),
+        }
+    }
+
+    /// `text` as `a.md` in a vault of its own, open in a note pane.
+    fn pane(tag: &str, text: &str) -> (TestingRunner, App, std::path::PathBuf) {
+        let root = std::env::temp_dir().join(format!("synapso-find-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let file = root.join("a.md");
+        std::fs::write(&file, text).unwrap();
+        let held = Rc::new(Cell::new(None::<App>));
+        let (mut r, _) = TestingRunner::new(
+            {
+                let held = held.clone();
+                move || {
+                    let app = use_provide_context(|| shell(&root));
+                    held.set(Some(app));
+                    NotePane { rel: "a.md".into() }
+                }
+            },
+            (1200., 800.).into(),
+            |_| {},
+            1.0,
+        );
+        settle(&mut r);
+        let app = held.get().expect("the pane rendered");
+        (r, app, file)
+    }
+
+    fn settle(r: &mut TestingRunner) {
+        r.handle_events_immediately();
+        r.sync_and_update();
+        r.poll(Duration::from_millis(5), Duration::from_millis(60));
+    }
+
+    fn key(r: &mut TestingRunner, key: Key, code: Code, modifiers: Modifiers) {
+        for name in [KeyboardEventName::KeyDown, KeyboardEventName::KeyUp] {
+            r.send_event(PlatformEvent::Keyboard {
+                name,
+                key: key.clone(),
+                code,
+                modifiers,
+            });
+            r.sync_and_update();
+        }
+        settle(r);
+    }
+
+    fn type_text(r: &mut TestingRunner, text: &str) {
+        r.write_text(text);
+        settle(r);
+    }
+
+    /// ⌘F as the shell's chord leaves it: an empty query, the bar mounted.
+    fn open_find(r: &mut TestingRunner, app: App) {
+        r.run_in(|| {
+            let mut find = app.find;
+            find.set(Some(String::new()));
+        });
+        settle(r);
+    }
+
+    /// The buffer as written to disk by the pane's own "write now".
+    fn written(r: &mut TestingRunner, file: &Path) -> String {
+        r.run_in(flush_note);
+        std::fs::read_to_string(file).unwrap()
+    }
+
+    #[test]
+    fn esc_leaves_the_current_hit_selected_so_typing_replaces_it() {
+        // a hit past multi-byte and two-unit characters, on a later line
+        let text = "ação 😀 beta\nbeta gamma";
+        let (mut r, app, file) = pane("hit", text);
+        open_find(&mut r, app);
+        type_text(&mut r, "beta");
+        // ⏎ steps to the second hit, at the start of line 2
+        key(
+            &mut r,
+            Key::Named(NamedKey::Enter),
+            Code::Enter,
+            Modifiers::empty(),
+        );
+        key(
+            &mut r,
+            Key::Named(NamedKey::Escape),
+            Code::Escape,
+            Modifiers::empty(),
+        );
+        assert_eq!(*app.find.peek(), None, "Esc closes the bar");
+        type_text(&mut r, "X");
+        assert_eq!(written(&mut r, &file), "ação 😀 beta\nX gamma");
+        // ⌘Z (Ctrl+Z off the Mac) brings the word back
+        let undo = Modifiers::ctrl_or_meta();
+        key(&mut r, Key::Character("z".into()), Code::KeyZ, undo);
+        assert_eq!(written(&mut r, &file), text);
+    }
+
+    #[test]
+    fn esc_with_no_hit_leaves_the_caret_where_it_was() {
+        let (mut r, app, file) = pane("miss", "alpha beta");
+        open_find(&mut r, app);
+        type_text(&mut r, "zzz");
+        key(
+            &mut r,
+            Key::Named(NamedKey::Escape),
+            Code::Escape,
+            Modifiers::empty(),
+        );
+        type_text(&mut r, "X");
+        // the caret a fresh note opens with, at its start
+        assert_eq!(written(&mut r, &file), "Xalpha beta");
     }
 }

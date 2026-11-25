@@ -1465,6 +1465,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "freya-testing"
+version = "0.5.0-rc.10"
+source = "git+https://github.com/webergnr/freya?rev=fa68d74a#fa68d74a788c9880a6a564c84616209577eeb602"
+dependencies = [
+ "accesskit",
+ "freya-clipboard",
+ "freya-components",
+ "freya-core",
+ "freya-engine",
+ "futures-channel",
+ "ragnarok",
+ "torin",
+]
+
+[[package]]
 name = "freya-winit"
 version = "0.5.0-rc.10"
 source = "git+https://github.com/webergnr/freya?rev=fa68d74a#fa68d74a788c9880a6a564c84616209577eeb602"
@@ -3805,6 +3820,7 @@ version = "0.1.0"
 dependencies = [
  "freya",
  "freya-engine",
+ "freya-testing",
  "freya-winit",
  "kurbo",
  "objc2 0.6.4",
