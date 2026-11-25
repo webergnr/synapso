@@ -2974,18 +2974,31 @@ fn guide(line: &str) -> Option<Element> {
 }
 
 /// Case-insensitive hits of `query` in `line`, as UTF-16 ranges.
+///
+/// ⚠️ lowercasing can change a character's length (İ, the Kelvin sign, ẞ):
+/// the line is lowered one character at a time, each lowered byte keeping
+/// the character of `line` it came from, so a hit maps back to whole
+/// characters wherever it is (ED-011: such a line once lost all its hits).
 fn find_in(line: &str, query: &str) -> Vec<(usize, usize)> {
     if query.trim().is_empty() {
         return vec![];
     }
-    let hay = line.to_lowercase();
-    let q = query.to_lowercase();
-    // lowercasing can change byte lengths; only trust same-length lines
-    if hay.len() != line.len() {
-        return vec![];
+    let mut hay = String::with_capacity(line.len());
+    let mut from = Vec::with_capacity(line.len());
+    for (i, c) in line.char_indices() {
+        let before = hay.len();
+        hay.extend(c.to_lowercase());
+        from.extend(std::iter::repeat_n(
+            (i, i + c.len_utf8()),
+            hay.len() - before,
+        ));
     }
+    let q: String = query.chars().flat_map(char::to_lowercase).collect();
     hay.match_indices(&q)
-        .map(|(at, m)| (u16_at(line, at), u16_at(line, at + m.len())))
+        .map(|(at, m)| {
+            let (start, end) = (from[at].0, from[at + m.len() - 1].1);
+            (u16_at(line, start), u16_at(line, end))
+        })
         .collect()
 }
 
@@ -4305,5 +4318,17 @@ mod find_tests {
             typing.iter().all(|a| *a == 255),
             "typing holds it: {typing:?}"
         );
+    }
+
+    /// A line whose lowercase is longer or shorter than itself (İ, the
+    /// Kelvin sign, ẞ) still has its hits, where they are (ED-011).
+    #[test]
+    fn find_keeps_the_hits_of_a_line_whose_lowercase_changes_length() {
+        assert_eq!(find_in("AÇÃO beta", "ação"), vec![(0, 4)]);
+        assert_eq!(find_in("İstanbul beta", "beta"), vec![(9, 13)]);
+        assert_eq!(find_in("20 \u{212A} beta", "beta"), vec![(5, 9)]);
+        // a hit on such a character is the whole character
+        assert_eq!(find_in("20 \u{212A} beta", "k"), vec![(3, 4)]);
+        assert_eq!(find_in("STRAẞE", "straße"), vec![(0, 6)]);
     }
 }
