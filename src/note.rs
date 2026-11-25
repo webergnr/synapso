@@ -1958,6 +1958,41 @@ struct SheetLine {
 
 const HIDDEN: f32 = 0.1;
 
+/// The caret's alpha on the line that holds it (`at`: where on the line,
+/// and the line's length, so a key that keeps the column still counts):
+/// it blinks at rest, as macOS's does, and holds lit while it moves
+/// (ED-015). Freya's own `use_cursor_blink`, which `freya` doesn't
+/// re-export, with its timings: half a second of rest, a 100 ms fade, 750
+/// ms between.
+fn use_caret_blink(at: Option<(usize, usize)>) -> u8 {
+    let mut rested = use_state(|| None::<(usize, usize)>);
+    let last = use_hook(|| Rc::new(std::cell::Cell::new(None::<(usize, usize)>)));
+    if last.get() != at {
+        last.set(at);
+        if let Some(here) = at {
+            let last = last.clone();
+            spawn(async move {
+                freya::prelude::timer(std::time::Duration::from_millis(500)).await;
+                if last.get() == Some(here) {
+                    rested.set(Some(here));
+                }
+            });
+        }
+    }
+    let idle = at.is_some() && *rested.read() == at;
+    let blink = use_animation_with_dependencies(&idle, |conf, idle| {
+        if *idle {
+            conf.on_creation(OnCreation::Run);
+            conf.on_change(OnChange::Rerun);
+            conf.on_finish(OnFinish::reverse_with_delay(
+                std::time::Duration::from_millis(750),
+            ));
+        }
+        AnimNum::new(255., 0.).time(100)
+    });
+    blink.read().value() as u8
+}
+
 thread_local! {
     /// Where the last press that unfolded its line went down, in window
     /// coordinates; cleared once the pointer leaves it.
@@ -2202,6 +2237,7 @@ impl Component for SheetLine {
         let kind = self.kind;
         let cut = prefix_len(kind, &line).min(line.len());
         let (head, body) = line.split_at(cut);
+        let caret_alpha = use_caret_blink(self.cursor.map(|c| (c, line.len())));
 
         let (size, weight, color, line_height) = match kind {
             Kind::Heading(l) => {
@@ -2351,7 +2387,7 @@ impl Component for SheetLine {
                 p.min_height(Size::px(floor.unwrap_or_default()))
             })
             .cursor_index(self.cursor)
-            .cursor_color(c().accent)
+            .cursor_color(c().accent.with_a(caret_alpha))
             .cursor_mode(CursorMode::Expanded)
             .highlights((!highlights.is_empty()).then_some(highlights))
             .highlight_color(if search { c().search_hl } else { c().selection })
@@ -4235,5 +4271,39 @@ mod find_tests {
         // one unit for one: the editor's offsets all hold
         let fixed = plain_breaks("x\u{2028}y").unwrap();
         assert_eq!(fixed.encode_utf16().count(), 3);
+    }
+
+    /// The caret's alpha on the line that holds it, every 20 ms for `ms`.
+    fn caret_alphas(r: &mut TestingRunner, ms: u64) -> Vec<u8> {
+        let mut seen = vec![];
+        for _ in 0..ms / 20 {
+            r.poll(Duration::from_millis(5), Duration::from_millis(20));
+            let a = r.find(|_, el| {
+                let p = Paragraph::try_downcast(el)?;
+                p.cursor_index.map(|_| p.cursor_style_data.color.a())
+            });
+            seen.extend(a);
+        }
+        seen
+    }
+
+    /// The caret blinks at rest and holds still while it moves (ED-015).
+    #[test]
+    fn the_caret_blinks_at_rest_and_holds_while_typing() {
+        let (mut r, _app, _file) = pane("blink", "alpha");
+        let rest = caret_alphas(&mut r, 1600);
+        assert!(!rest.is_empty(), "the caret is drawn");
+        assert_eq!(rest[0], 255, "lit when it lands");
+        assert!(rest.iter().any(|a| *a < 100), "it blinks: {rest:?}");
+        // typing: lit the whole time, for the half second after each key
+        let mut typing = vec![];
+        for c in ["a", "b", "c"] {
+            r.write_text(c);
+            typing.extend(caret_alphas(&mut r, 200));
+        }
+        assert!(
+            typing.iter().all(|a| *a == 255),
+            "typing holds it: {typing:?}"
+        );
     }
 }
