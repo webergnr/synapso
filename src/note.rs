@@ -172,7 +172,12 @@ impl Component for NotePane {
         let mut editable = use_editable(
             {
                 let loaded = loaded.read().clone();
-                move || loaded.unwrap_or_default()
+                // the editor's lines are the sheet's rows (ED-019). Not
+                // written back for this alone: only an edit saves
+                move || {
+                    let text = loaded.unwrap_or_default();
+                    plain_breaks(&text).unwrap_or(text)
+                }
             },
             EditableConfig::new,
         );
@@ -196,6 +201,17 @@ impl Component for NotePane {
         // which re-scroll the pin's settle timer belongs to: only the latest
         // lets go
         let mut pin_gen = use_state(|| 0u64);
+        // each fenced block's sideways scroll, by its place among the blocks
+        let mut code_x = use_state(std::collections::HashMap::<usize, f32>::new);
+        // the block under the pointer: its scrollbar shows, as the app's do
+        let code_hover = use_state(|| None::<usize>);
+        // the caret the sideways scroll last followed. ⚠️ not a state: it
+        // changes on every key, and a render per key just to remember it is
+        // the cost the follow would add
+        let followed = use_hook(|| Rc::new(std::cell::Cell::new(None::<(usize, usize)>)));
+        // bumped by ⌘F with the bar already open: the bar mounts again, and
+        // its field takes the keyboard back
+        let mut find_gen = use_state(|| 0u64);
 
         let publish = move |editable: &UseEditable| {
             let mut caret = caret;
@@ -212,6 +228,13 @@ impl Component for NotePane {
             move || {
                 publish(&editable);
                 a11y.request_focus();
+                // a find bar left open goes with the note it searched: it
+                // would mount again here and take the keyboard (ED-018), as
+                // VS Code and TextEdit leave each document's own bar shut
+                let mut find = app.find;
+                if find.peek().is_some() {
+                    find.set(None);
+                }
                 // the keyboard is the note's now, and so is ⌘W (`View::pane`):
                 // the graph's round trip and ⌘O remount it with no press
                 let mut pane = app.pane;
@@ -321,8 +344,34 @@ impl Component for NotePane {
                 if !a11y.is_focused() || app.color_pick.read().is_some() {
                     return;
                 }
+                // the find bar open and the note typing: Esc shuts it, as
+                // VS Code's does with the editor focused (ED-017), and ⌘F
+                // takes the keyboard back to its field (ED-016)
+                if app.find.read().is_some() {
+                    if matches!(e.key, Key::Named(NamedKey::Escape)) {
+                        let mut find = app.find;
+                        find.set(None);
+                        return;
+                    }
+                    if crate::ctrl(&e)
+                        && e.code == Code::KeyF
+                        && !e.modifiers.contains(Modifiers::SHIFT)
+                    {
+                        *find_gen.write() += 1;
+                        return;
+                    }
+                }
                 if crate::ctrl(&e) && e.code == Code::KeyS {
                     report(save(), true);
+                    return;
+                }
+                // ⌘Z while the trash's toast shows is the toast's: the shell
+                // takes the trash back, and the note's text stays as it is
+                if crate::ctrl(&e)
+                    && e.code == Code::KeyZ
+                    && !e.modifiers.contains(Modifiers::SHIFT)
+                    && crate::toast::live_undo(app).is_some()
+                {
                     return;
                 }
                 // the shell's chords are not text
@@ -371,6 +420,33 @@ impl Component for NotePane {
                     publish(&editable);
                     touch();
                     app.reindex();
+                    return;
+                }
+                // ⌘V of text broken where the sheet doesn't break (U+2028 from
+                // a web page or a PDF): pasted with plain newlines (ED-019)
+                if crate::ctrl(&e)
+                    && e.code == Code::KeyV
+                    && let Some(pasted) = freya::clipboard::Clipboard::get()
+                        .ok()
+                        .and_then(|t| plain_breaks(&t))
+                {
+                    e.prevent_default();
+                    let ed = editable.editor().read();
+                    let text = ed.text().to_string();
+                    let (from, to) = match ed.selection() {
+                        TextSelection::Cursor(p) => (*p, *p),
+                        TextSelection::Range { from, to } => ((*from).min(*to), (*from).max(*to)),
+                    };
+                    drop(ed);
+                    let at = byte_at(&text, from);
+                    let edit = crate::format::Edit {
+                        range: at..byte_at(&text, to),
+                        caret: at + pasted.len(),
+                        text: pasted,
+                    };
+                    apply(&mut editable, &edit);
+                    publish(&editable);
+                    touch();
                     return;
                 }
                 let before = editable.editor().read().text().to_string();
@@ -522,6 +598,50 @@ impl Component for NotePane {
                 .map(|i| ed.get_visible_selection(EditorLine::Paragraph(i)))
                 .collect()
         };
+        // a code line wider than the sheet scrolls sideways with its block
+        // (CB-001), and the caret pulls its block along when it moved past
+        // an edge. A scroll the wheel made stays until the caret moves.
+        let code_w = *width.read() - PAD_LEFT - PAD_RIGHT - 2. * CODE_PAD;
+        let blocks = code_blocks(&kinds);
+        let mut wide = std::collections::HashMap::<usize, f32>::new();
+        for (line, block) in lines.iter().zip(&blocks) {
+            if let Some(b) = block {
+                let w = wide.entry(*b).or_default();
+                *w = w.max(cells(line) as f32 * advance(12.));
+            }
+        }
+        // how far each block that doesn't fit scrolls
+        let room: std::collections::HashMap<usize, f32> = wide
+            .into_iter()
+            .filter_map(|(b, w)| sideways_max(w, code_w).map(|max| (b, max)))
+            .collect();
+        if followed.get() != Some((cursor_row, cursor_col)) {
+            followed.set(Some((cursor_row, cursor_col)));
+            if let (Some(Some(b)), Some(line)) = (blocks.get(cursor_row), lines.get(cursor_row))
+                && let Some(max) = room.get(b)
+            {
+                let x = cells(&line[..byte_at(line, cursor_col)]) as f32 * advance(12.);
+                let off = code_x.peek().get(b).copied().unwrap_or(0.).min(*max);
+                let to = reveal(off, x, code_w).clamp(0., *max);
+                if to != off {
+                    code_x.write().insert(*b, to);
+                }
+            }
+        }
+        let sideways: Vec<Option<Sideways>> = blocks
+            .iter()
+            .map(|b| {
+                let b = (*b)?;
+                let max = *room.get(&b)?;
+                Some(Sideways {
+                    block: b,
+                    offset: code_x.read().get(&b).copied().unwrap_or(0.).min(max),
+                    max,
+                    width: code_w + max,
+                    hovered: *code_hover.read() == Some(b),
+                })
+            })
+            .collect();
         let focused = a11y.is_focused();
         let query = app.find.read().clone().unwrap_or_default();
         let hits: Vec<Vec<(usize, usize)>> = lines.iter().map(|l| find_in(l, &query)).collect();
@@ -578,6 +698,7 @@ impl Component for NotePane {
                     hit,
                     editable,
                     note: a11y,
+                    generation: *find_gen.read(),
                 }
                 .into_element()
             }))
@@ -609,6 +730,9 @@ impl Component for NotePane {
                     editable,
                     caret,
                     touched,
+                    sideways,
+                    code_x,
+                    code_hover,
                 });
                 let heights: Rc<Vec<f32>> = Rc::new(
                     (0..sheet.lines.len())
@@ -775,6 +899,9 @@ impl Component for NotePane {
                                         cursor: cursor.map(|(_, c)| c),
                                         caret: sheet.caret,
                                         touched: sheet.touched,
+                                        sideways: sheet.sideways[i],
+                                        code_x: sheet.code_x,
+                                        code_hover: sheet.code_hover,
                                     })
                                     .into_element()
                             },
@@ -1221,6 +1348,97 @@ struct Sheet {
     editable: UseEditable,
     caret: State<Caret>,
     touched: State<u64>,
+    sideways: Vec<Option<Sideways>>,
+    code_x: State<std::collections::HashMap<usize, f32>>,
+    code_hover: State<Option<usize>>,
+}
+
+/// A fenced block wider than the sheet: its lines scroll sideways together.
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Sideways {
+    /// Its place among the note's blocks, the key of its offset.
+    block: usize,
+    /// How far it is scrolled, and how far it goes.
+    offset: f32,
+    max: f32,
+    /// What a line of it is laid out in: the window and all it scrolls.
+    width: f32,
+    /// The pointer is over it: its scrollbar shows.
+    hovered: bool,
+}
+
+/// A code row's padding on each side.
+const CODE_PAD: f32 = 16.;
+
+/// Room past a code line's end, and past the edge the caret crosses: four
+/// columns, so the caret has some of what comes next in view.
+fn code_margin() -> f32 {
+    4. * advance(12.)
+}
+
+/// Which fenced block each line is in, counted from the top: a block keeps
+/// its sideways scroll while lines come and go around it.
+fn code_blocks(kinds: &[Kind]) -> Vec<Option<usize>> {
+    let mut n = 0usize;
+    kinds
+        .iter()
+        .map(|k| match k {
+            Kind::FenceOpen => {
+                n += 1;
+                Some(n - 1)
+            }
+            Kind::Code | Kind::FenceClose => Some(n.saturating_sub(1)),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The mono columns a code line takes: one per character, two for the wide
+/// ones a fallback font draws (CJK, emoji), four for a tab. Over rather
+/// than under: a block that scrolls a little past its end beats a tail
+/// nobody can reach.
+fn cells(line: &str) -> usize {
+    line.chars()
+        .map(|c| match c {
+            '\t' => 4,
+            c if c >= '\u{1100}' => 2,
+            _ => 1,
+        })
+        .sum()
+}
+
+/// How far a block whose widest line is `wide` scrolls in a window `w`
+/// wide: `None` when every line fits, so nothing about it changes.
+fn sideways_max(wide: f32, w: f32) -> Option<f32> {
+    (wide + CARET_W > w).then(|| wide + code_margin() - w)
+}
+
+/// The caret's width on a line (the paragraph's default).
+const CARET_W: f32 = 2.;
+
+/// The offset that keeps a caret at `x` in a window `w` wide scrolled to
+/// `off`: the same while it is in view, else the edge it crossed moved past
+/// it by a margin.
+fn reveal(off: f32, x: f32, w: f32) -> f32 {
+    if x < off {
+        (x - code_margin()).max(0.)
+    } else if x + CARET_W > off + w {
+        x + code_margin() - w
+    } else {
+        off
+    }
+}
+
+/// A wheel's sideways movement: a trackpad's own, or a mouse wheel turned
+/// by ⇧ (macOS sends that one as sideways already).
+fn sideways_delta(dx: f64, dy: f64, shift: bool) -> f32 {
+    if dx != 0. {
+        dx as f32
+    } else if shift {
+        dy as f32
+    } else {
+        0.
+    }
 }
 
 /// JetBrains Mono advances 600/1000 em, so a line's wrap is arithmetic.
@@ -1732,9 +1950,48 @@ struct SheetLine {
     cursor: Option<usize>,
     caret: State<Caret>,
     touched: State<u64>,
+    /// A code line of a block too wide for the sheet.
+    sideways: Option<Sideways>,
+    code_x: State<std::collections::HashMap<usize, f32>>,
+    code_hover: State<Option<usize>>,
 }
 
 const HIDDEN: f32 = 0.1;
+
+/// The caret's alpha on the line that holds it (`at`: where on the line,
+/// and the line's length, so a key that keeps the column still counts):
+/// it blinks at rest, as macOS's does, and holds lit while it moves
+/// (ED-015). Freya's own `use_cursor_blink`, which `freya` doesn't
+/// re-export, with its timings: half a second of rest, a 100 ms fade, 750
+/// ms between.
+fn use_caret_blink(at: Option<(usize, usize)>) -> u8 {
+    let mut rested = use_state(|| None::<(usize, usize)>);
+    let last = use_hook(|| Rc::new(std::cell::Cell::new(None::<(usize, usize)>)));
+    if last.get() != at {
+        last.set(at);
+        if let Some(here) = at {
+            let last = last.clone();
+            spawn(async move {
+                freya::prelude::timer(std::time::Duration::from_millis(500)).await;
+                if last.get() == Some(here) {
+                    rested.set(Some(here));
+                }
+            });
+        }
+    }
+    let idle = at.is_some() && *rested.read() == at;
+    let blink = use_animation_with_dependencies(&idle, |conf, idle| {
+        if *idle {
+            conf.on_creation(OnCreation::Run);
+            conf.on_change(OnChange::Rerun);
+            conf.on_finish(OnFinish::reverse_with_delay(
+                std::time::Duration::from_millis(750),
+            ));
+        }
+        AnimNum::new(255., 0.).time(100)
+    });
+    blink.read().value() as u8
+}
 
 thread_local! {
     /// Where the last press that unfolded its line went down, in window
@@ -1980,6 +2237,7 @@ impl Component for SheetLine {
         let kind = self.kind;
         let cut = prefix_len(kind, &line).min(line.len());
         let (head, body) = line.split_at(cut);
+        let caret_alpha = use_caret_blink(self.cursor.map(|c| (c, line.len())));
 
         let (size, weight, color, line_height) = match kind {
             Kind::Heading(l) => {
@@ -2124,12 +2382,24 @@ impl Component for SheetLine {
                     editor_line: EditorLine::Paragraph(index),
                     holder: &holder.read(),
                 });
+                // a drag moves the caret: the status bar follows its end,
+                // not the press (ED-036)
+                let ed = editable.editor().read();
+                let (row, col) = (ed.cursor_row(), ed.cursor_col());
+                drop(ed);
+                let now = caret.peek();
+                if (now.row, now.col) != (row, col) {
+                    drop(now);
+                    let mut c = caret.write();
+                    c.row = row;
+                    c.col = col;
+                }
             })
             .maybe(floor.is_some(), |p| {
                 p.min_height(Size::px(floor.unwrap_or_default()))
             })
             .cursor_index(self.cursor)
-            .cursor_color(c().accent)
+            .cursor_color(c().accent.with_a(caret_alpha))
             .cursor_mode(CursorMode::Expanded)
             .highlights((!highlights.is_empty()).then_some(highlights))
             .highlight_color(if search { c().search_hl } else { c().selection })
@@ -2158,9 +2428,16 @@ impl Component for SheetLine {
                 },
             )
             .spans_iter(spans.into_iter());
-        // chips, washes and dashed underlines go behind the text
+        // chips, washes and dashed underlines go behind the text. A code
+        // line of a wide block is laid out at all its block scrolls, and
+        // slid by the block's offset: a press maps on the slid layout, so
+        // it lands on the character under the pointer
+        let sideways = self.sideways;
         let para = rect()
-            .width(Size::fill())
+            .width(sideways.map_or(Size::fill(), |s| Size::px(s.width)))
+            .maybe(sideways.is_some(), |r| {
+                r.offset_x(-sideways.map_or(0., |s| s.offset))
+            })
             .background(rich::painter(holder.read().clone(), decos))
             .child(para);
 
@@ -2284,13 +2561,53 @@ impl Component for SheetLine {
                 } else {
                     String::new()
                 };
+                let mut code_x = self.code_x;
+                let mut hover = self.code_hover;
+                // a thin bar under the block, while the pointer is over it:
+                // where the window sits in all the block scrolls
+                let bar = sideways.filter(|s| last && s.hovered).map(|s| {
+                    let w = s.width - s.max;
+                    rect()
+                        .position(Position::new_absolute().left(0.).bottom(2.))
+                        .layer(Layer::Relative(1))
+                        .width(Size::px(w))
+                        .child(
+                            rect()
+                                .margin((0., 0., 0., s.offset * w / s.width))
+                                .width(Size::px(w * w / s.width))
+                                .height(Size::px(3.))
+                                .corner_radius(1.5)
+                                .background(c().border_strong),
+                        )
+                });
                 row.background(c().surface_inset)
+                    .maybe(sideways.is_some(), |row| {
+                        row.on_pointer_move(move |_| {
+                            hover.set_if_modified(sideways.map(|s| s.block));
+                        })
+                        .on_pointer_leave(move |_| hover.set_if_modified(None))
+                        .on_wheel(move |e: Event<WheelEventData>| {
+                            let Some(s) = sideways else { return };
+                            let shift = crate::app::shift_held();
+                            let d = sideways_delta(e.delta_x, e.delta_y, shift);
+                            let off = code_x.peek().get(&s.block).copied().unwrap_or(0.);
+                            let to = (off.min(s.max) - d).clamp(0., s.max);
+                            if to != off {
+                                code_x.write().insert(s.block, to);
+                            }
+                            // ⇧ makes it sideways: the sheet must not read
+                            // it as its own (it swaps it back to vertical)
+                            if shift {
+                                e.stop_propagation();
+                            }
+                        })
+                    })
                     .border(Border::new().fill(c().border_subtle).width(sides))
                     .corner_radius({
                         let (t, b) = (if first { r } else { 0. }, if last { r } else { 0. });
                         (t, t, b, b)
                     })
-                    .padding((0., 16.))
+                    .padding((0., CODE_PAD))
                     .height(Size::px(snap(if (first || last) && !revealed {
                         12.
                     } else {
@@ -2298,6 +2615,7 @@ impl Component for SheetLine {
                     })))
                     .overflow(Overflow::Clip)
                     .child(para)
+                    .maybe_child(bar)
                     .maybe_child((!lang.is_empty()).then(|| {
                         label()
                             .position(Position::new_absolute().right(10.).top(2.))
@@ -2604,6 +2922,25 @@ fn sheet_key(e: &KeyboardEventData, editable: &UseEditable) -> Option<crate::for
     }
 }
 
+/// `text` with the line breaks the editor's rope knows besides `\n` (ropey's
+/// VT, FF, NEL, U+2028, U+2029, and a CR on its own) turned into `\n`, or
+/// `None` when it has none. The sheet splits on `\n` alone, so each of
+/// those put the rows out of step with the editor's lines (ED-019). One
+/// unit for one: every caret offset still holds. A CRLF is one break to
+/// both, and stays.
+fn plain_breaks(text: &str) -> Option<String> {
+    let odd = |(i, c): (usize, char)| match c {
+        '\u{0B}' | '\u{0C}' | '\u{85}' | '\u{2028}' | '\u{2029}' => true,
+        '\r' => !text[i + 1..].starts_with('\n'),
+        _ => false,
+    };
+    text.char_indices().any(odd).then(|| {
+        text.char_indices()
+            .map(|(i, c)| if odd((i, c)) { '\n' } else { c })
+            .collect()
+    })
+}
+
 /// One replacement into the editor's rope, the caret where the rule put it.
 fn apply(editable: &mut UseEditable, edit: &crate::format::Edit) {
     let text = editable.editor().read().text().to_string();
@@ -2649,22 +2986,53 @@ fn guide(line: &str) -> Option<Element> {
 }
 
 /// Case-insensitive hits of `query` in `line`, as UTF-16 ranges.
+///
+/// ⚠️ lowercasing can change a character's length (İ, the Kelvin sign, ẞ):
+/// the line is lowered one character at a time, each lowered byte keeping
+/// the character of `line` it came from, so a hit maps back to whole
+/// characters wherever it is (ED-011: such a line once lost all its hits).
 fn find_in(line: &str, query: &str) -> Vec<(usize, usize)> {
     if query.trim().is_empty() {
         return vec![];
     }
-    let hay = line.to_lowercase();
-    let q = query.to_lowercase();
-    // lowercasing can change byte lengths; only trust same-length lines
-    if hay.len() != line.len() {
-        return vec![];
+    let mut hay = String::with_capacity(line.len());
+    let mut from = Vec::with_capacity(line.len());
+    for (i, c) in line.char_indices() {
+        let before = hay.len();
+        hay.extend(c.to_lowercase());
+        from.extend(std::iter::repeat_n(
+            (i, i + c.len_utf8()),
+            hay.len() - before,
+        ));
     }
+    let q: String = query.chars().flat_map(char::to_lowercase).collect();
     hay.match_indices(&q)
-        .map(|(at, m)| (u16_at(line, at), u16_at(line, at + m.len())))
+        .map(|(at, m)| {
+            let (start, end) = (from[at].0, from[at + m.len() - 1].1);
+            (u16_at(line, start), u16_at(line, end))
+        })
         .collect()
 }
 
-/// ⌘F: floats at the top right of the note. ⏎/↓ next, ↑ previous, Esc closes
+/// The hit ⌘F starts on, counted as the bar counts them: the first at or
+/// after `caret` (UTF-16 from the buffer's start), as Zed and VS Code do;
+/// past the last one, the first.
+fn hit_from(text: &str, query: &str, caret: usize) -> usize {
+    let mut start = 0;
+    let mut k = 0;
+    for line in text.split('\n') {
+        for (a, _) in find_in(line, query) {
+            if start + a >= caret {
+                return k;
+            }
+            k += 1;
+        }
+        start += line.encode_utf16().count() + 1;
+    }
+    0
+}
+
+/// ⌘F: floats at the top right of the note. ⏎/↓ next, ⇧⏎/↑ previous, Esc closes
 /// and hands the keyboard back to the note with the current hit selected.
 #[derive(PartialEq)]
 struct FindBar {
@@ -2674,22 +3042,36 @@ struct FindBar {
     editable: UseEditable,
     /// The note's own focus.
     note: AccessibilityId,
+    /// A new one mounts the bar again: ⌘F while it is open.
+    generation: u64,
 }
 
 impl Component for FindBar {
+    fn render_key(&self) -> DiffKey {
+        (&self.generation).into()
+    }
+
     fn render(&self) -> impl IntoElement {
         let app = use_consume::<App>();
         let mut query = use_state(|| app.find.read().clone().unwrap_or_default());
-        // mirror the field into the shared query
+        let total = self.total;
+        let (hit, editable, note) = (self.hit, self.editable, self.note);
+        // mirror the field into the shared query, starting from the hit at
+        // or after the caret (ED-012)
         let q = query.read().clone();
         if app.find.read().as_deref() != Some(q.as_str()) {
             let mut f = app.find;
             f.set(Some(q.clone()));
+            let ed = editable.editor().read();
+            let caret = match ed.selection() {
+                TextSelection::Cursor(p) => *p,
+                TextSelection::Range { from, to } => (*from).min(*to),
+            };
+            let first = hit_from(ed.text().as_ref(), &q, caret);
+            drop(ed);
             let mut at = app.find_at;
-            at.set(0);
+            at.set(first);
         }
-        let total = self.total;
-        let (hit, editable, note) = (self.hit, self.editable, self.note);
         let at = *app.find_at.read();
         let step = move |d: i32| {
             let mut a = app.find_at;
@@ -2740,7 +3122,11 @@ impl Component for FindBar {
                         },
                     )
                     .placeholder("find in note")
-                    .on_arrow(step),
+                    // ⌘F again: the query selected, so typing replaces it
+                    .select_all()
+                    .on_arrow(step)
+                    // ⇧⏎ is the previous hit, as in Zed and VS Code (ED-013)
+                    .on_back(move |_| step(-1)),
                 ),
             )
             .child(
@@ -3428,7 +3814,6 @@ mod find_tests {
             color_pick: State::create(None),
             flush: State::create(0),
             naming: State::create(None),
-            last_undo: State::create(None),
             drag_doc: State::create(None),
             drop_at: State::create(None),
             board_rev: State::create(0),
@@ -3444,7 +3829,8 @@ mod find_tests {
         }
     }
 
-    /// `text` as `a.md` in a vault of its own, open in a note pane.
+    /// `text` as `a.md` in a vault of its own, open in a note pane, in the
+    /// app's own font (the code rows' arithmetic counts its advance).
     fn pane(tag: &str, text: &str) -> (TestingRunner, App, std::path::PathBuf) {
         let root = std::env::temp_dir().join(format!("synapso-find-{tag}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
@@ -3458,13 +3844,19 @@ mod find_tests {
                 move || {
                     let app = use_provide_context(|| shell(&root));
                     held.set(Some(app));
-                    NotePane { rel: "a.md".into() }
+                    rect()
+                        .expanded()
+                        .font_family(FONT)
+                        .child(NotePane { rel: "a.md".into() })
                 }
             },
             (1200., 800.).into(),
             |_| {},
             1.0,
         );
+        for f in [crate::JB_REGULAR, crate::JB_BOLD] {
+            r.set_fonts(std::collections::HashMap::from([(FONT, f)]));
+        }
         settle(&mut r);
         let app = held.get().expect("the pane rendered");
         (r, app, file)
@@ -3552,5 +3944,520 @@ mod find_tests {
         type_text(&mut r, "X");
         // the caret a fresh note opens with, at its start
         assert_eq!(written(&mut r, &file), "Xalpha beta");
+    }
+
+    /// The laid-out paragraph that shows exactly `text`: where it sits, and
+    /// how wide its (first) line is. ⚠️ a one-line paragraph is laid out at
+    /// unbounded width: all of a long code line is there, its row clips it.
+    fn laid_out(r: &TestingRunner, text: &str) -> (Area, f32) {
+        r.find(|node, el| {
+            let p = Paragraph::try_downcast(el)?;
+            let joined: String = p.spans.iter().map(|s| s.text.as_ref()).collect();
+            if joined != text {
+                return None;
+            }
+            let held = p.sk_paragraph.0.borrow();
+            let sk = &held.as_ref()?.paragraph;
+            Some((node.layout().area, sk.longest_line()))
+        })
+        .unwrap_or_else(|| panic!("no paragraph shows {text:?}"))
+    }
+
+    const NONE: Modifiers = Modifiers::empty();
+
+    /// ⌘ and an arrow, the line's or the note's end: as the Mac spells it,
+    /// and as Home/End (with Ctrl for the note's) elsewhere, where ⌘+arrow
+    /// is no such key (`keys::line_ends`).
+    fn cmd_arrow(r: &mut TestingRunner, arrow: NamedKey) {
+        let (k, m) = if crate::keys::is_mac() {
+            (Key::Named(arrow), Modifiers::META)
+        } else {
+            crate::keys::line_ends(&Key::Named(arrow), Modifiers::META, true).expect("an arrow")
+        };
+        key(r, k, Code::Unidentified, m);
+    }
+
+    /// 300 columns, 7.2px apart at 12px, with spaces a wrap could break at.
+    fn long_code() -> (String, String) {
+        let long = "012345678 ".repeat(30);
+        let note = format!("intro\n```\n{long}\nshort\n```\nafter");
+        (long, note)
+    }
+
+    #[test]
+    fn the_caret_stays_in_view_on_a_long_code_line() {
+        let (long, note) = long_code();
+        let (mut r, app, _file) = pane("code-caret", &note);
+        let (_, w) = laid_out(&r, "short");
+        assert!(
+            (w - 5. * advance(12.)).abs() < 0.5,
+            "the app's mono font is the one laid out: {w}"
+        );
+        // onto the long line, then its end
+        for _ in 0..2 {
+            key(
+                &mut r,
+                Key::Named(NamedKey::ArrowDown),
+                Code::ArrowDown,
+                NONE,
+            );
+        }
+        cmd_arrow(&mut r, NamedKey::ArrowRight);
+        assert_eq!((app.caret.peek().row, app.caret.peek().col), (2, 300));
+        let (area, w) = laid_out(&r, &long);
+        let caret_x = area.min_x() + w;
+        assert!(
+            caret_x > PAD_LEFT && caret_x < 1200. - PAD_RIGHT,
+            "the caret at the line's end is on screen: x {caret_x}"
+        );
+        // typing there keeps it on screen, and ⌘← brings the start back
+        type_text(&mut r, "7");
+        let typed = format!("{long}7");
+        let (area, w) = laid_out(&r, &typed);
+        assert!(area.min_x() + w < 1200. - PAD_RIGHT);
+        cmd_arrow(&mut r, NamedKey::ArrowLeft);
+        let (area, _) = laid_out(&r, &typed);
+        let (short, _) = laid_out(&r, "short");
+        assert_eq!(area.min_x(), short.min_x(), "the block moves as one");
+        assert!(area.min_x() > PAD_LEFT, "column 0 is on screen again");
+    }
+
+    #[test]
+    fn a_sideways_swipe_scrolls_the_whole_block_and_clicks_still_land() {
+        let (long, note) = long_code();
+        let (mut r, app, _file) = pane("code-swipe", &note);
+        let (start, _) = laid_out(&r, &long);
+        let (short0, _) = laid_out(&r, "short");
+        let y = start.center().y;
+        // a trackpad's sideways swipe: content moves left by 200px
+        r.scroll(((start.min_x() + 100.) as f64, y as f64), (-200., 0.));
+        settle(&mut r);
+        let (moved, _) = laid_out(&r, &long);
+        let (short, _) = laid_out(&r, "short");
+        assert_eq!(moved.min_x(), start.min_x() - 200.);
+        assert_eq!(
+            short.min_x(),
+            short0.min_x() - 200.,
+            "its lines move together"
+        );
+        // a click on what is now under the pointer: column 50 of the line
+        let at = start.min_x() + 50. * advance(12.) + 1. - 200.;
+        r.click_cursor((at as f64, y as f64));
+        settle(&mut r);
+        assert_eq!((app.caret.peek().row, app.caret.peek().col), (2, 50));
+        // the outer sheet did not scroll down for a sideways swipe
+        assert_eq!(moved.min_y(), start.min_y());
+    }
+
+    #[test]
+    fn sideways_scroll_arithmetic() {
+        // a trackpad's sideways move; ⇧ turns a mouse wheel; else nothing
+        assert_eq!(sideways_delta(-30., 5., false), -30.);
+        assert_eq!(sideways_delta(0., -40., true), -40.);
+        assert_eq!(sideways_delta(0., -40., false), 0.);
+        // wide characters and tabs count over, never under
+        assert_eq!(cells("ab"), 2);
+        assert_eq!(cells("a\t日😀"), 1 + 4 + 2 + 2);
+        // a block that fits has no scroll at all
+        assert_eq!(sideways_max(100., 200.), None);
+        let near = |a: f32, b: f32| (a - b).abs() < 1e-3;
+        assert!(near(
+            sideways_max(300., 200.).unwrap(),
+            100. + code_margin()
+        ));
+        // the caret in view keeps the offset; past an edge, it moves
+        assert_eq!(reveal(50., 120., 200.), 50.);
+        assert_eq!(reveal(50., 10., 200.), 0.);
+        assert!(near(reveal(0., 260., 200.), 60. + code_margin()));
+    }
+
+    #[test]
+    fn a_code_block_that_fits_does_not_move() {
+        let (mut r, _app, _file) = pane("code-fits", "```\nshort\n```\nafter");
+        let (before, _) = laid_out(&r, "short");
+        r.scroll(
+            ((before.min_x() + 10.) as f64, before.center().y as f64),
+            (-200., 0.),
+        );
+        settle(&mut r);
+        let (after, _) = laid_out(&r, "short");
+        assert_eq!(after, before);
+    }
+
+    /// Two notes, `a.md` open, the pane showing whichever `app.note` names
+    /// (the shell's own switch).
+    fn two(tag: &str) -> (TestingRunner, App, std::path::PathBuf) {
+        let root = std::env::temp_dir().join(format!("synapso-two-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("a.md"), "alpha").unwrap();
+        std::fs::write(root.join("b.md"), "beta").unwrap();
+        let held = Rc::new(Cell::new(None::<App>));
+        let (mut r, _) = TestingRunner::new(
+            {
+                let held = held.clone();
+                let root = root.clone();
+                move || {
+                    let app = use_provide_context(|| shell(&root));
+                    held.set(Some(app));
+                    let rel = app.note.read().clone();
+                    NotePane { rel }
+                }
+            },
+            (1200., 800.).into(),
+            |_| {},
+            1.0,
+        );
+        settle(&mut r);
+        let app = held.get().expect("the pane rendered");
+        (r, app, root.join("b.md"))
+    }
+
+    /// A click at the start of the line that shows `text`: the note's
+    /// keyboard, the caret there.
+    fn click_line(r: &mut TestingRunner, text: &str) {
+        let (area, _) = laid_out(r, text);
+        r.click_cursor(((area.min_x() + 1.) as f64, area.center().y as f64));
+        settle(r);
+    }
+
+    #[test]
+    fn the_find_bar_closes_when_the_note_changes() {
+        let (mut r, app, b) = two("switch");
+        open_find(&mut r, app);
+        type_text(&mut r, "gamma");
+        r.run_in(flush_note);
+        r.run_in(|| {
+            let mut n = app.note;
+            n.set("b.md".into());
+        });
+        settle(&mut r);
+        type_text(&mut r, "Y");
+        assert_eq!(*app.find.peek(), None, "the bar went with its note");
+        assert_eq!(written(&mut r, &b), "Ybeta", "the keyboard is the note's");
+    }
+
+    #[test]
+    fn cmd_f_with_the_bar_open_takes_the_keyboard_back_to_the_field() {
+        let (mut r, app, file) = pane("refind", "alpha beta gamma");
+        open_find(&mut r, app);
+        type_text(&mut r, "gamma");
+        click_line(&mut r, "alpha beta gamma");
+        key(
+            &mut r,
+            Key::Character("f".into()),
+            Code::KeyF,
+            Modifiers::ctrl_or_meta(),
+        );
+        // the field has the keyboard, its query selected: typing replaces it
+        type_text(&mut r, "q");
+        assert_eq!(app.find.peek().as_deref(), Some("q"));
+        assert_eq!(written(&mut r, &file), "alpha beta gamma");
+    }
+
+    #[test]
+    fn esc_in_the_note_closes_the_find_bar() {
+        let (mut r, app, file) = pane("escnote", "alpha beta");
+        open_find(&mut r, app);
+        type_text(&mut r, "beta");
+        click_line(&mut r, "alpha beta");
+        key(
+            &mut r,
+            Key::Named(NamedKey::Escape),
+            Code::Escape,
+            Modifiers::empty(),
+        );
+        assert_eq!(*app.find.peek(), None, "Esc in the note closes the bar");
+        // and the note keeps the keyboard and its caret
+        type_text(&mut r, "X");
+        assert_eq!(written(&mut r, &file), "Xalpha beta");
+    }
+
+    #[test]
+    fn find_starts_at_the_first_hit_after_the_caret() {
+        let mut text = String::from("beta first\n");
+        for _ in 0..40 {
+            text.push_str("filler line\n");
+        }
+        text.push_str("beta last");
+        let (mut r, app, file) = pane("near", &text);
+        // the caret at the start of the last line
+        cmd_arrow(&mut r, NamedKey::ArrowDown);
+        cmd_arrow(&mut r, NamedKey::ArrowLeft);
+        open_find(&mut r, app);
+        type_text(&mut r, "beta");
+        key(&mut r, Key::Named(NamedKey::Escape), Code::Escape, NONE);
+        type_text(&mut r, "X");
+        let out = written(&mut r, &file);
+        assert!(
+            out.starts_with("beta first"),
+            "the hit above stays: {out:?}"
+        );
+        assert!(out.ends_with("X last"), "the hit at the caret is current");
+    }
+
+    #[test]
+    fn shift_enter_in_find_goes_to_the_previous_hit() {
+        let (mut r, app, file) = pane("prev", "beta one beta two beta");
+        open_find(&mut r, app);
+        type_text(&mut r, "beta");
+        // from the first hit, back round to the last
+        let shift = Modifiers::SHIFT;
+        key(&mut r, Key::Named(NamedKey::Enter), Code::Enter, shift);
+        key(&mut r, Key::Named(NamedKey::Escape), Code::Escape, NONE);
+        type_text(&mut r, "X");
+        assert_eq!(written(&mut r, &file), "beta one beta two X");
+    }
+
+    /// ⌃ is the Mac's text-system modifier (⌃A, ⌃E…, the fork's to answer),
+    /// never ⌘: ⌃B is no bold and ⌃F no find (ED-010).
+    #[test]
+    fn control_letters_are_not_command_chords_on_the_mac() {
+        if !crate::keys::is_mac() {
+            return;
+        }
+        let (mut r, _app, file) = pane("ctrl", "abc");
+        let ctrl = Modifiers::CONTROL;
+        key(&mut r, Key::Character("b".into()), Code::KeyB, ctrl);
+        key(&mut r, Key::Character("e".into()), Code::KeyE, ctrl);
+        let text = written(&mut r, &file);
+        assert!(!text.contains("**"), "⌃B made bold: {text:?}");
+        assert!(!text.contains('`'), "⌃E made inline code: {text:?}");
+        // and the fork's editor (155724b4) types no letter for them either
+        assert_eq!(text, "abc", "⌃+letter types nothing");
+    }
+
+    /// ⌘Z takes the trash back while its toast shows, and only then: a
+    /// later toast, or the trash's own gone, leaves ⌘Z to the note (ED-023).
+    #[test]
+    fn cmd_z_takes_the_trash_back_only_while_its_toast_shows() {
+        let (mut r, app, file) = pane("trash", "gui");
+        let trashed = crate::app::Undo::Trash(vec![]);
+        r.run_in(|| app.toast("outra.md moved to trash", "", Some(trashed.clone())));
+        let live = r.run_in(|| crate::toast::live_undo(app));
+        assert_eq!(live, Some(trashed.clone()));
+        // the toast that came after it (⌘S) is no trash's
+        r.run_in(|| app.toast("workspace saved", "just now", None));
+        assert_eq!(r.run_in(|| crate::toast::live_undo(app)), None);
+        // and the note's ⌘Z is its own
+        type_text(&mut r, "k");
+        let undo = Modifiers::ctrl_or_meta();
+        key(&mut r, Key::Character("z".into()), Code::KeyZ, undo);
+        assert_eq!(written(&mut r, &file), "gui");
+        // while a trash's toast shows, ⌘Z is the toast's alone: not the text
+        type_text(&mut r, "m");
+        r.run_in(|| app.toast("b.md moved to trash", "", Some(trashed.clone())));
+        key(&mut r, Key::Character("z".into()), Code::KeyZ, undo);
+        assert_eq!(written(&mut r, &file), "mgui");
+        // and once it has gone, nothing is taken back
+        r.run_in(|| {
+            let mut t = app.toast;
+            if let Some(t) = t.write().as_mut() {
+                t.at -= Duration::from_secs(6);
+            }
+        });
+        assert_eq!(r.run_in(|| crate::toast::live_undo(app)), None);
+    }
+
+    /// A note with a line break the sheet doesn't split on (U+2028 from a
+    /// web page or a PDF, a lone CR) still draws a row for each of the
+    /// editor's lines, and is not written back for that alone (ED-019).
+    #[test]
+    fn a_unicode_line_separator_keeps_the_rows_in_step() {
+        let text = "a\u{2028}b\nc\rd";
+        let (mut r, app, file) = pane("ls", text);
+        cmd_arrow(&mut r, NamedKey::ArrowDown);
+        assert_eq!((app.caret.peek().row, app.caret.peek().col), (3, 1));
+        for line in ["a", "b", "c", "d"] {
+            laid_out(&r, line);
+        }
+        assert_eq!(written(&mut r, &file), text, "nothing written for it");
+    }
+
+    #[test]
+    fn the_ropes_other_line_breaks_become_newlines() {
+        assert_eq!(plain_breaks("a\nb\r\nc"), None, "LF and CRLF stay");
+        let odd = "1\u{0B}2\u{0C}3\u{85}4\u{2028}5\u{2029}6\r7\r";
+        assert_eq!(plain_breaks(odd).as_deref(), Some("1\n2\n3\n4\n5\n6\n7\n"));
+        // one unit for one: the editor's offsets all hold
+        let fixed = plain_breaks("x\u{2028}y").unwrap();
+        assert_eq!(fixed.encode_utf16().count(), 3);
+    }
+
+    /// The caret's alpha on the line that holds it, every 20 ms for `ms`.
+    fn caret_alphas(r: &mut TestingRunner, ms: u64) -> Vec<u8> {
+        let mut seen = vec![];
+        for _ in 0..ms / 20 {
+            r.poll(Duration::from_millis(5), Duration::from_millis(20));
+            let a = r.find(|_, el| {
+                let p = Paragraph::try_downcast(el)?;
+                p.cursor_index.map(|_| p.cursor_style_data.color.a())
+            });
+            seen.extend(a);
+        }
+        seen
+    }
+
+    /// The caret blinks at rest and holds still while it moves (ED-015).
+    #[test]
+    fn the_caret_blinks_at_rest_and_holds_while_typing() {
+        let (mut r, _app, _file) = pane("blink", "alpha");
+        let rest = caret_alphas(&mut r, 1600);
+        assert!(!rest.is_empty(), "the caret is drawn");
+        assert_eq!(rest[0], 255, "lit when it lands");
+        assert!(rest.iter().any(|a| *a < 100), "it blinks: {rest:?}");
+        // typing: lit the whole time, for the half second after each key
+        let mut typing = vec![];
+        for c in ["a", "b", "c"] {
+            r.write_text(c);
+            typing.extend(caret_alphas(&mut r, 200));
+        }
+        assert!(
+            typing.iter().all(|a| *a == 255),
+            "typing holds it: {typing:?}"
+        );
+    }
+
+    /// A line whose lowercase is longer or shorter than itself (İ, the
+    /// Kelvin sign, ẞ) still has its hits, where they are (ED-011).
+    #[test]
+    fn find_keeps_the_hits_of_a_line_whose_lowercase_changes_length() {
+        assert_eq!(find_in("AÇÃO beta", "ação"), vec![(0, 4)]);
+        assert_eq!(find_in("İstanbul beta", "beta"), vec![(9, 13)]);
+        assert_eq!(find_in("20 \u{212A} beta", "beta"), vec![(5, 9)]);
+        // a hit on such a character is the whole character
+        assert_eq!(find_in("20 \u{212A} beta", "k"), vec![(3, 4)]);
+        assert_eq!(find_in("STRAẞE", "straße"), vec![(0, 6)]);
+    }
+
+    /// A selection dragged with the mouse: the status bar's caret is its
+    /// moving end, not where the press went down (ED-036).
+    #[test]
+    fn a_mouse_selection_publishes_its_moving_end() {
+        let (mut r, app, _file) = pane("drag", "alpha beta\ngamma delta");
+        let (top, _) = laid_out(&r, "alpha beta");
+        let (low, w) = laid_out(&r, "gamma delta");
+        r.press_cursor(((top.min_x() + 1.) as f64, top.center().y as f64));
+        settle(&mut r);
+        let end = ((low.min_x() + w - 1.) as f64, low.center().y as f64);
+        r.move_cursor(end);
+        settle(&mut r);
+        let caret = (app.caret.peek().row, app.caret.peek().col);
+        r.release_cursor(end);
+        assert_eq!(caret, (1, 11), "the caret is where the drag is");
+    }
+
+    /// The keys the fork's editor learned in its wave 1 (webergnr/freya
+    /// `synapso-editor-wave1`, pinned at 155724b4), seen from the note: the
+    /// fork's own tests pin the editor, these pin that the note hands the
+    /// keys through. The 300 ms undo group is the fork's to test: here the
+    /// gaps between keys are wall-clock, and a busy runner would flake.
+    mod editor_keys {
+        use super::*;
+
+        fn named(r: &mut TestingRunner, k: NamedKey, m: Modifiers) {
+            let code = match k {
+                NamedKey::ArrowLeft => Code::ArrowLeft,
+                NamedKey::ArrowRight => Code::ArrowRight,
+                NamedKey::Backspace => Code::Backspace,
+                _ => Code::Unidentified,
+            };
+            key(r, Key::Named(k), code, m);
+        }
+
+        fn chr(r: &mut TestingRunner, c: &str, code: Code, m: Modifiers) {
+            key(r, Key::Character(c.into()), code, m);
+        }
+
+        fn caret(app: App) -> (usize, usize) {
+            let c = app.caret.peek();
+            (c.row, c.col)
+        }
+
+        fn shift(r: &mut TestingRunner, down: bool) {
+            let name = if down {
+                KeyboardEventName::KeyDown
+            } else {
+                KeyboardEventName::KeyUp
+            };
+            r.send_event(PlatformEvent::Keyboard {
+                name,
+                key: Key::Named(NamedKey::Shift),
+                code: Code::ShiftLeft,
+                modifiers: if down { Modifiers::SHIFT } else { NONE },
+            });
+            r.sync_and_update();
+        }
+
+        /// ED-002: ⌘⇧Z redoes, and types no "Z" over the text.
+        #[test]
+        fn cmd_shift_z_redoes() {
+            if !crate::keys::is_mac() {
+                return;
+            }
+            let (mut r, _app, file) = pane("redo", "abc");
+            type_text(&mut r, "X");
+            chr(&mut r, "z", Code::KeyZ, Modifiers::META);
+            assert_eq!(written(&mut r, &file), "abc");
+            // winit on macOS reports ⌘⇧Z as "Z" (charactersIgnoringModifiers keeps ⇧)
+            chr(&mut r, "Z", Code::KeyZ, Modifiers::META | Modifiers::SHIFT);
+            assert_eq!(written(&mut r, &file), "Xabc", "⌘⇧Z redoes");
+        }
+
+        /// ED-010: ⌃A goes to the paragraph's start and types nothing, which
+        /// takes both halves: the fork's editor and the note's ⌘-only chords.
+        #[test]
+        fn ctrl_a_moves_to_the_paragraph_start() {
+            if !crate::keys::is_mac() {
+                return;
+            }
+            let (mut r, app, file) = pane("ctrla", "abc def");
+            cmd_arrow(&mut r, NamedKey::ArrowRight);
+            chr(&mut r, "a", Code::KeyA, Modifiers::CONTROL);
+            assert_eq!(written(&mut r, &file), "abc def", "⌃A types nothing");
+            assert_eq!(caret(app), (0, 0), "⌃A = moveToBeginningOfParagraph:");
+        }
+
+        /// ED-009: ⌘⌫ deletes to the line's start.
+        #[test]
+        fn cmd_backspace_deletes_to_the_line_start() {
+            if !crate::keys::is_mac() {
+                return;
+            }
+            let (mut r, _app, file) = pane("cmdbs", "hello world\nnext");
+            cmd_arrow(&mut r, NamedKey::ArrowRight);
+            named(&mut r, NamedKey::Backspace, Modifiers::META);
+            assert_eq!(
+                written(&mut r, &file),
+                "\nnext",
+                "⌘⌫ = deleteToBeginningOfLine:"
+            );
+        }
+
+        /// ED-008: ← on a selection lands at its start, → on a backward one
+        /// at its end, instead of one step past the caret.
+        #[test]
+        fn arrows_collapse_a_selection_to_its_ends() {
+            let (mut r, app, _file) = pane("collapse", "abcdef");
+            shift(&mut r, true);
+            for _ in 0..3 {
+                named(&mut r, NamedKey::ArrowRight, Modifiers::SHIFT);
+            }
+            shift(&mut r, false);
+            named(&mut r, NamedKey::ArrowLeft, NONE);
+            assert_eq!(caret(app), (0, 0), "← lands at the selection's start");
+
+            let (mut r, app, _file) = pane("collapse2", "abcdef");
+            for _ in 0..3 {
+                named(&mut r, NamedKey::ArrowRight, NONE);
+            }
+            shift(&mut r, true);
+            for _ in 0..3 {
+                named(&mut r, NamedKey::ArrowLeft, Modifiers::SHIFT);
+            }
+            shift(&mut r, false);
+            named(&mut r, NamedKey::ArrowRight, NONE);
+            assert_eq!(caret(app), (0, 3), "→ lands at the selection's end");
+        }
     }
 }
