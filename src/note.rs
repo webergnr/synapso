@@ -2382,6 +2382,18 @@ impl Component for SheetLine {
                     editor_line: EditorLine::Paragraph(index),
                     holder: &holder.read(),
                 });
+                // a drag moves the caret: the status bar follows its end,
+                // not the press (ED-036)
+                let ed = editable.editor().read();
+                let (row, col) = (ed.cursor_row(), ed.cursor_col());
+                drop(ed);
+                let now = caret.peek();
+                if (now.row, now.col) != (row, col) {
+                    drop(now);
+                    let mut c = caret.write();
+                    c.row = row;
+                    c.col = col;
+                }
             })
             .maybe(floor.is_some(), |p| {
                 p.min_height(Size::px(floor.unwrap_or_default()))
@@ -4330,5 +4342,22 @@ mod find_tests {
         // a hit on such a character is the whole character
         assert_eq!(find_in("20 \u{212A} beta", "k"), vec![(3, 4)]);
         assert_eq!(find_in("STRAẞE", "straße"), vec![(0, 6)]);
+    }
+
+    /// A selection dragged with the mouse: the status bar's caret is its
+    /// moving end, not where the press went down (ED-036).
+    #[test]
+    fn a_mouse_selection_publishes_its_moving_end() {
+        let (mut r, app, _file) = pane("drag", "alpha beta\ngamma delta");
+        let (top, _) = laid_out(&r, "alpha beta");
+        let (low, w) = laid_out(&r, "gamma delta");
+        r.press_cursor(((top.min_x() + 1.) as f64, top.center().y as f64));
+        settle(&mut r);
+        let end = ((low.min_x() + w - 1.) as f64, low.center().y as f64);
+        r.move_cursor(end);
+        settle(&mut r);
+        let caret = (app.caret.peek().row, app.caret.peek().col);
+        r.release_cursor(end);
+        assert_eq!(caret, (1, 11), "the caret is where the drag is");
     }
 }
