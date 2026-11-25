@@ -2893,6 +2893,24 @@ fn find_in(line: &str, query: &str) -> Vec<(usize, usize)> {
         .collect()
 }
 
+/// The hit ⌘F starts on, counted as the bar counts them: the first at or
+/// after `caret` (UTF-16 from the buffer's start), as Zed and VS Code do;
+/// past the last one, the first.
+fn hit_from(text: &str, query: &str, caret: usize) -> usize {
+    let mut start = 0;
+    let mut k = 0;
+    for line in text.split('\n') {
+        for (a, _) in find_in(line, query) {
+            if start + a >= caret {
+                return k;
+            }
+            k += 1;
+        }
+        start += line.encode_utf16().count() + 1;
+    }
+    0
+}
+
 /// ⌘F: floats at the top right of the note. ⏎/↓ next, ↑ previous, Esc closes
 /// and hands the keyboard back to the note with the current hit selected.
 #[derive(PartialEq)]
@@ -2915,16 +2933,24 @@ impl Component for FindBar {
     fn render(&self) -> impl IntoElement {
         let app = use_consume::<App>();
         let mut query = use_state(|| app.find.read().clone().unwrap_or_default());
-        // mirror the field into the shared query
+        let total = self.total;
+        let (hit, editable, note) = (self.hit, self.editable, self.note);
+        // mirror the field into the shared query, starting from the hit at
+        // or after the caret (ED-012)
         let q = query.read().clone();
         if app.find.read().as_deref() != Some(q.as_str()) {
             let mut f = app.find;
             f.set(Some(q.clone()));
+            let ed = editable.editor().read();
+            let caret = match ed.selection() {
+                TextSelection::Cursor(p) => *p,
+                TextSelection::Range { from, to } => (*from).min(*to),
+            };
+            let first = hit_from(ed.text().as_ref(), &q, caret);
+            drop(ed);
             let mut at = app.find_at;
-            at.set(0);
+            at.set(first);
         }
-        let total = self.total;
-        let (hit, editable, note) = (self.hit, self.editable, self.note);
         let at = *app.find_at.read();
         let step = move |d: i32| {
             let mut a = app.find_at;
@@ -4022,5 +4048,39 @@ mod find_tests {
         // and the note keeps the keyboard and its caret
         type_text(&mut r, "X");
         assert_eq!(written(&mut r, &file), "Xalpha beta");
+    }
+
+    #[test]
+    fn find_starts_at_the_first_hit_after_the_caret() {
+        let mut text = String::from("beta first\n");
+        for _ in 0..40 {
+            text.push_str("filler line\n");
+        }
+        text.push_str("beta last");
+        let (mut r, app, file) = pane("near", &text);
+        // the caret at the start of the last line
+        let cmd = Modifiers::META;
+        key(
+            &mut r,
+            Key::Named(NamedKey::ArrowDown),
+            Code::ArrowDown,
+            cmd,
+        );
+        key(
+            &mut r,
+            Key::Named(NamedKey::ArrowLeft),
+            Code::ArrowLeft,
+            cmd,
+        );
+        open_find(&mut r, app);
+        type_text(&mut r, "beta");
+        key(&mut r, Key::Named(NamedKey::Escape), Code::Escape, NONE);
+        type_text(&mut r, "X");
+        let out = written(&mut r, &file);
+        assert!(
+            out.starts_with("beta first"),
+            "the hit above stays: {out:?}"
+        );
+        assert!(out.ends_with("X last"), "the hit at the caret is current");
     }
 }
