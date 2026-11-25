@@ -2911,7 +2911,7 @@ fn hit_from(text: &str, query: &str, caret: usize) -> usize {
     0
 }
 
-/// ⌘F: floats at the top right of the note. ⏎/↓ next, ↑ previous, Esc closes
+/// ⌘F: floats at the top right of the note. ⏎/↓ next, ⇧⏎/↑ previous, Esc closes
 /// and hands the keyboard back to the note with the current hit selected.
 #[derive(PartialEq)]
 struct FindBar {
@@ -3003,7 +3003,9 @@ impl Component for FindBar {
                     .placeholder("find in note")
                     // ⌘F again: the query selected, so typing replaces it
                     .select_all()
-                    .on_arrow(step),
+                    .on_arrow(step)
+                    // ⇧⏎ is the previous hit, as in Zed and VS Code (ED-013)
+                    .on_back(move |_| step(-1)),
                 ),
             )
             .child(
@@ -4082,5 +4084,18 @@ mod find_tests {
             "the hit above stays: {out:?}"
         );
         assert!(out.ends_with("X last"), "the hit at the caret is current");
+    }
+
+    #[test]
+    fn shift_enter_in_find_goes_to_the_previous_hit() {
+        let (mut r, app, file) = pane("prev", "beta one beta two beta");
+        open_find(&mut r, app);
+        type_text(&mut r, "beta");
+        // from the first hit, back round to the last
+        let shift = Modifiers::SHIFT;
+        key(&mut r, Key::Named(NamedKey::Enter), Code::Enter, shift);
+        key(&mut r, Key::Named(NamedKey::Escape), Code::Escape, NONE);
+        type_text(&mut r, "X");
+        assert_eq!(written(&mut r, &file), "beta one beta two X");
     }
 }

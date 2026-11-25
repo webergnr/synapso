@@ -26,6 +26,8 @@ pub struct Field {
     pub on_submit: EventHandler<String>,
     pub on_cancel: EventHandler<()>,
     pub on_arrow: Option<EventHandler<i32>>,
+    /// ⇧⏎ steps back instead of submitting (find's previous hit).
+    pub on_back: Option<EventHandler<()>>,
     /// Select everything on open, so typing replaces it (a rename).
     pub select_all: bool,
     pub weight: FontWeight,
@@ -60,6 +62,7 @@ impl Field {
             on_submit: on_submit.into(),
             on_cancel: on_cancel.into(),
             on_arrow: None,
+            on_back: None,
             select_all: false,
             weight: FontWeight::NORMAL,
             grab: true,
@@ -100,6 +103,10 @@ impl Field {
     }
     pub fn on_arrow(mut self, h: impl Into<EventHandler<i32>>) -> Self {
         self.on_arrow = Some(h.into());
+        self
+    }
+    pub fn on_back(mut self, h: impl Into<EventHandler<()>>) -> Self {
+        self.on_back = Some(h.into());
         self
     }
     pub fn multiline(mut self) -> Self {
@@ -175,6 +182,7 @@ impl Component for Field {
         });
         let on_submit = self.on_submit.clone();
         let on_arrow = self.on_arrow.clone();
+        let on_back = self.on_back.clone();
         let multiline = self.multiline;
         let blur_cancels = self.blur_cancels;
         // what it opened with, for a cancel to put back: the next rename
@@ -212,6 +220,13 @@ impl Component for Field {
             match &e.key {
                 Key::Named(NamedKey::Enter)
                     if multiline && e.modifiers.contains(Modifiers::SHIFT) => {}
+                Key::Named(NamedKey::Enter)
+                    if e.modifiers.contains(Modifiers::SHIFT) && on_back.is_some() =>
+                {
+                    e.stop_propagation();
+                    on_back.as_ref().unwrap().call(());
+                    return;
+                }
                 Key::Named(NamedKey::Enter) => {
                     e.stop_propagation();
                     on_submit.call(value.read().clone());
