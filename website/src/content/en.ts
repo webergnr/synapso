@@ -196,6 +196,7 @@ export const en = {
     published: 'published',
     unknown: 'Could not reach GitHub to read the latest release.',
     allReleases: 'All releases and notes',
+    nightly: 'Nightly: the next version, can break',
     notAvailable: 'Not available yet',
     fromSource: 'Build from source',
     file: 'File',

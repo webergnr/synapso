@@ -77,8 +77,10 @@ test('the browser only swaps in a newer release than the build saw', () => {
 });
 
 test('the release line: the version once one is known, the warning only without one', () => {
-  const t = { latest: 'Latest release', published: 'published', unknown: 'WARN', allReleases: 'All' } as DownloadsCopy;
+  const t = { latest: 'Latest release', published: 'published', unknown: 'WARN', allReleases: 'All', nightly: 'Nightly' } as DownloadsCopy;
   const known = releaseHTML(toView(v001), t);
+  // the nightly pre-release is never "latest": it is reached by its fixed tag
+  assert.match(known, /href="https:\/\/github\.com\/webergnr\/synapso\/releases\/tag\/nightly">Nightly ↗</);
   assert.match(known, /class="ver" href="https:\/\/github\.com\/webergnr\/synapso\/releases\/tag\/v0\.0\.1">v0\.0\.1</);
   assert.match(known, /published Nov 9, 2026/);
   assert.doesNotMatch(known, /WARN/);

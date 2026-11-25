@@ -3,6 +3,8 @@ name: release
 # Every push to main that touches the app PUBLISHES a release: Windows x64 and
 # macOS arm64, built and tested here, under the next version (see the version
 # job). Pushes that only touch the website or the docs do not release.
+# A push to dev does the same builds and replaces the one `nightly`
+# pre-release instead (the last step): the next release, to try before main.
 #
 # The "Run workflow" button, and a pull request that changes this file or the
 # macOS recipe, do the same builds WITHOUT publishing anything: the .zip files
@@ -11,7 +13,7 @@ name: release
 # Hosted runners, macOS included, are free on a public repository.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths-ignore:
       - "website/**"
       - "docs/**"
@@ -140,8 +142,8 @@ jobs:
           ls -l dist
           test -f dist/synapso-windows-x86_64.zip
           test -f dist/synapso-macos-arm64.zip
-      # only a push to main publishes; a pull request or "Run workflow" stops
-      # at the artifacts above.
+      # only a push to main publishes a release (a push to dev, the nightly
+      # below); a pull request or "Run workflow" stops at the artifacts above.
       # - a commit that is not AHEAD of the latest release (a re-run of an old
       #   run, an already-released commit) is not published: that would put
       #   older binaries out as the newest download. A failed release can
@@ -175,3 +177,30 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" > /dev/null
           gh release create "$TAG" dist/*.zip --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "$TAG" --notes "$NOTES" --generate-notes
+      # a push to dev replaces the one `nightly` pre-release. A pre-release is
+      # never GitHub's "latest", so the step above (`gh release view`), the
+      # version job (v* tags only) and the website's main download never see
+      # it; the website links to it by its fixed tag.
+      - name: publish nightly
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: |
+            The `dev` branch at ${{ github.sha }}, rebuilt on every push to dev: what
+            the next release will be, before anyone has tested it. It can break.
+
+            Neither binary is signed.
+
+            - **macOS**: Gatekeeper blocks the first launch. Try to open it once, then
+              System Settings -> Privacy & Security -> Open Anyway (right-click -> Open
+              on macOS 14 and older), or `xattr -dr com.apple.quarantine Synapso.app`.
+            - **Windows**: SmartScreen warns. More info -> Run anyway.
+        run: |
+          set -euo pipefail
+          # either may be gone already (the first run, or a run that died in
+          # between): that is the state these two lines want
+          gh release delete nightly --repo "$GITHUB_REPOSITORY" --yes || true
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/nightly" || true
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref=refs/tags/nightly -f sha="$GITHUB_SHA" > /dev/null
+          gh release create nightly dist/*.zip --repo "$GITHUB_REPOSITORY" --verify-tag --prerelease \
+            --title "nightly · dev ${GITHUB_SHA::7}" --notes "$NOTES"
