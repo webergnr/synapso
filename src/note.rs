@@ -172,7 +172,12 @@ impl Component for NotePane {
         let mut editable = use_editable(
             {
                 let loaded = loaded.read().clone();
-                move || loaded.unwrap_or_default()
+                // the editor's lines are the sheet's rows (ED-019). Not
+                // written back for this alone: only an edit saves
+                move || {
+                    let text = loaded.unwrap_or_default();
+                    plain_breaks(&text).unwrap_or(text)
+                }
             },
             EditableConfig::new,
         );
@@ -415,6 +420,33 @@ impl Component for NotePane {
                     publish(&editable);
                     touch();
                     app.reindex();
+                    return;
+                }
+                // ⌘V of text broken where the sheet doesn't break (U+2028 from
+                // a web page or a PDF): pasted with plain newlines (ED-019)
+                if crate::ctrl(&e)
+                    && e.code == Code::KeyV
+                    && let Some(pasted) = freya::clipboard::Clipboard::get()
+                        .ok()
+                        .and_then(|t| plain_breaks(&t))
+                {
+                    e.prevent_default();
+                    let ed = editable.editor().read();
+                    let text = ed.text().to_string();
+                    let (from, to) = match ed.selection() {
+                        TextSelection::Cursor(p) => (*p, *p),
+                        TextSelection::Range { from, to } => ((*from).min(*to), (*from).max(*to)),
+                    };
+                    drop(ed);
+                    let at = byte_at(&text, from);
+                    let edit = crate::format::Edit {
+                        range: at..byte_at(&text, to),
+                        caret: at + pasted.len(),
+                        text: pasted,
+                    };
+                    apply(&mut editable, &edit);
+                    publish(&editable);
+                    touch();
                     return;
                 }
                 let before = editable.editor().read().text().to_string();
@@ -2842,6 +2874,25 @@ fn sheet_key(e: &KeyboardEventData, editable: &UseEditable) -> Option<crate::for
     }
 }
 
+/// `text` with the line breaks the editor's rope knows besides `\n` (ropey's
+/// VT, FF, NEL, U+2028, U+2029, and a CR on its own) turned into `\n`, or
+/// `None` when it has none. The sheet splits on `\n` alone, so each of
+/// those put the rows out of step with the editor's lines (ED-019). One
+/// unit for one: every caret offset still holds. A CRLF is one break to
+/// both, and stays.
+fn plain_breaks(text: &str) -> Option<String> {
+    let odd = |(i, c): (usize, char)| match c {
+        '\u{0B}' | '\u{0C}' | '\u{85}' | '\u{2028}' | '\u{2029}' => true,
+        '\r' => !text[i + 1..].starts_with('\n'),
+        _ => false,
+    };
+    text.char_indices().any(odd).then(|| {
+        text.char_indices()
+            .map(|(i, c)| if odd((i, c)) { '\n' } else { c })
+            .collect()
+    })
+}
+
 /// One replacement into the editor's rope, the caret where the rule put it.
 fn apply(editable: &mut UseEditable, edit: &crate::format::Edit) {
     let text = editable.editor().read().text().to_string();
@@ -4153,5 +4204,36 @@ mod find_tests {
             }
         });
         assert_eq!(r.run_in(|| crate::toast::live_undo(app)), None);
+    }
+
+    /// A note with a line break the sheet doesn't split on (U+2028 from a
+    /// web page or a PDF, a lone CR) still draws a row for each of the
+    /// editor's lines, and is not written back for that alone (ED-019).
+    #[test]
+    fn a_unicode_line_separator_keeps_the_rows_in_step() {
+        let text = "a\u{2028}b\nc\rd";
+        let (mut r, app, file) = pane("ls", text);
+        let cmd = Modifiers::META;
+        key(
+            &mut r,
+            Key::Named(NamedKey::ArrowDown),
+            Code::ArrowDown,
+            cmd,
+        );
+        assert_eq!((app.caret.peek().row, app.caret.peek().col), (3, 1));
+        for line in ["a", "b", "c", "d"] {
+            laid_out(&r, line);
+        }
+        assert_eq!(written(&mut r, &file), text, "nothing written for it");
+    }
+
+    #[test]
+    fn the_ropes_other_line_breaks_become_newlines() {
+        assert_eq!(plain_breaks("a\nb\r\nc"), None, "LF and CRLF stay");
+        let odd = "1\u{0B}2\u{0C}3\u{85}4\u{2028}5\u{2029}6\r7\r";
+        assert_eq!(plain_breaks(odd).as_deref(), Some("1\n2\n3\n4\n5\n6\n7\n"));
+        // one unit for one: the editor's offsets all hold
+        let fixed = plain_breaks("x\u{2028}y").unwrap();
+        assert_eq!(fixed.encode_utf16().count(), 3);
     }
 }
