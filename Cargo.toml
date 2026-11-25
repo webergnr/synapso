@@ -24,9 +24,9 @@ synapso-core = { path = "crates/synapso-core" }
 # the app as `on_pinch`, and a paragraph's cursor width can be set (the
 # canvas editor is zoomed), and auto-hidden scrollbars show only while the
 # pointer is over their list. See docs/adr-009-freya.md.
-freya = { git = "https://github.com/webergnr/freya", rev = "fa68d74a", features = ["zoom-shortcuts", "borderless"] }
-freya-engine = { git = "https://github.com/webergnr/freya", rev = "fa68d74a" }
-freya-winit = { git = "https://github.com/webergnr/freya", rev = "fa68d74a" }
+freya = { git = "https://github.com/webergnr/freya", rev = "155724b4", features = ["zoom-shortcuts", "borderless"] }
+freya-engine = { git = "https://github.com/webergnr/freya", rev = "155724b4" }
+freya-winit = { git = "https://github.com/webergnr/freya", rev = "155724b4" }
 # the sidecar is edited in place, so keys this build doesn't know keep their order
 serde_json = { version = "1", features = ["preserve_order"] }
 # the versions the core pins, so colours and geometry cross unconverted
@@ -63,7 +63,7 @@ objc2-foundation = { version = "0.3.2", default-features = false, features = [
 # Headless runs of the note pane (`note.rs`'s find tests): keys in, the
 # buffer out, no window. Same fork and rev as `freya` above.
 [dev-dependencies]
-freya-testing = { git = "https://github.com/webergnr/freya", rev = "fa68d74a" }
+freya-testing = { git = "https://github.com/webergnr/freya", rev = "155724b4" }
 
 [profile.dev]
 opt-level = 1

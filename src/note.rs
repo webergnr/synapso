@@ -4223,6 +4223,8 @@ mod find_tests {
         let text = written(&mut r, &file);
         assert!(!text.contains("**"), "⌃B made bold: {text:?}");
         assert!(!text.contains('`'), "⌃E made inline code: {text:?}");
+        // and the fork's editor (155724b4) types no letter for them either
+        assert_eq!(text, "abc", "⌃+letter types nothing");
     }
 
     /// ⌘Z takes the trash back while its toast shows, and only then: a
@@ -4343,5 +4345,119 @@ mod find_tests {
         let caret = (app.caret.peek().row, app.caret.peek().col);
         r.release_cursor(end);
         assert_eq!(caret, (1, 11), "the caret is where the drag is");
+    }
+
+    /// The keys the fork's editor learned in its wave 1 (webergnr/freya
+    /// `synapso-editor-wave1`, pinned at 155724b4), seen from the note: the
+    /// fork's own tests pin the editor, these pin that the note hands the
+    /// keys through. The 300 ms undo group is the fork's to test: here the
+    /// gaps between keys are wall-clock, and a busy runner would flake.
+    mod editor_keys {
+        use super::*;
+
+        fn named(r: &mut TestingRunner, k: NamedKey, m: Modifiers) {
+            let code = match k {
+                NamedKey::ArrowLeft => Code::ArrowLeft,
+                NamedKey::ArrowRight => Code::ArrowRight,
+                NamedKey::Backspace => Code::Backspace,
+                _ => Code::Unidentified,
+            };
+            key(r, Key::Named(k), code, m);
+        }
+
+        fn chr(r: &mut TestingRunner, c: &str, code: Code, m: Modifiers) {
+            key(r, Key::Character(c.into()), code, m);
+        }
+
+        fn caret(app: App) -> (usize, usize) {
+            let c = app.caret.peek();
+            (c.row, c.col)
+        }
+
+        fn shift(r: &mut TestingRunner, down: bool) {
+            let name = if down {
+                KeyboardEventName::KeyDown
+            } else {
+                KeyboardEventName::KeyUp
+            };
+            r.send_event(PlatformEvent::Keyboard {
+                name,
+                key: Key::Named(NamedKey::Shift),
+                code: Code::ShiftLeft,
+                modifiers: if down { Modifiers::SHIFT } else { NONE },
+            });
+            r.sync_and_update();
+        }
+
+        /// ED-002: ⌘⇧Z redoes, and types no "Z" over the text.
+        #[test]
+        fn cmd_shift_z_redoes() {
+            if !crate::keys::is_mac() {
+                return;
+            }
+            let (mut r, _app, file) = pane("redo", "abc");
+            type_text(&mut r, "X");
+            chr(&mut r, "z", Code::KeyZ, Modifiers::META);
+            assert_eq!(written(&mut r, &file), "abc");
+            // winit on macOS reports ⌘⇧Z as "Z" (charactersIgnoringModifiers keeps ⇧)
+            chr(&mut r, "Z", Code::KeyZ, Modifiers::META | Modifiers::SHIFT);
+            assert_eq!(written(&mut r, &file), "Xabc", "⌘⇧Z redoes");
+        }
+
+        /// ED-010: ⌃A goes to the paragraph's start and types nothing, which
+        /// takes both halves: the fork's editor and the note's ⌘-only chords.
+        #[test]
+        fn ctrl_a_moves_to_the_paragraph_start() {
+            if !crate::keys::is_mac() {
+                return;
+            }
+            let (mut r, app, file) = pane("ctrla", "abc def");
+            cmd_arrow(&mut r, NamedKey::ArrowRight);
+            chr(&mut r, "a", Code::KeyA, Modifiers::CONTROL);
+            assert_eq!(written(&mut r, &file), "abc def", "⌃A types nothing");
+            assert_eq!(caret(app), (0, 0), "⌃A = moveToBeginningOfParagraph:");
+        }
+
+        /// ED-009: ⌘⌫ deletes to the line's start.
+        #[test]
+        fn cmd_backspace_deletes_to_the_line_start() {
+            if !crate::keys::is_mac() {
+                return;
+            }
+            let (mut r, _app, file) = pane("cmdbs", "hello world\nnext");
+            cmd_arrow(&mut r, NamedKey::ArrowRight);
+            named(&mut r, NamedKey::Backspace, Modifiers::META);
+            assert_eq!(
+                written(&mut r, &file),
+                "\nnext",
+                "⌘⌫ = deleteToBeginningOfLine:"
+            );
+        }
+
+        /// ED-008: ← on a selection lands at its start, → on a backward one
+        /// at its end, instead of one step past the caret.
+        #[test]
+        fn arrows_collapse_a_selection_to_its_ends() {
+            let (mut r, app, _file) = pane("collapse", "abcdef");
+            shift(&mut r, true);
+            for _ in 0..3 {
+                named(&mut r, NamedKey::ArrowRight, Modifiers::SHIFT);
+            }
+            shift(&mut r, false);
+            named(&mut r, NamedKey::ArrowLeft, NONE);
+            assert_eq!(caret(app), (0, 0), "← lands at the selection's start");
+
+            let (mut r, app, _file) = pane("collapse2", "abcdef");
+            for _ in 0..3 {
+                named(&mut r, NamedKey::ArrowRight, NONE);
+            }
+            shift(&mut r, true);
+            for _ in 0..3 {
+                named(&mut r, NamedKey::ArrowLeft, Modifiers::SHIFT);
+            }
+            shift(&mut r, false);
+            named(&mut r, NamedKey::ArrowRight, NONE);
+            assert_eq!(caret(app), (0, 3), "→ lands at the selection's end");
+        }
     }
 }
