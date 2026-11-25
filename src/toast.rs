@@ -1,6 +1,6 @@
 //! The one toast: rises and fades in at the bottom right, counts its age,
-//! fades out after a few seconds. An undoable action carries "undo" (⌘Z
-//! keeps working after it's gone).
+//! fades out after a few seconds. An undoable action carries "undo", and ⌘Z
+//! takes it back while it shows.
 use std::time::Duration;
 
 use freya::animation::*;
@@ -10,6 +10,18 @@ use crate::{app::App, theme::*};
 
 /// How long an undoable toast holds its undo (design 1f), in seconds.
 const UNDO_SECS: u64 = 5;
+
+/// What ⌘Z takes back: the undo of the toast on screen, while it shows.
+/// ⚠️ the toast is never cleared when it fades: being there is not being on
+/// screen. Any toast at all once meant ⌘Z in a note also brought the last
+/// trash back (ED-023).
+pub fn live_undo(app: App) -> Option<crate::app::Undo> {
+    let toast = app.toast.read();
+    let t = toast.as_ref()?;
+    (t.at.elapsed() < Duration::from_secs(UNDO_SECS))
+        .then(|| t.undo.clone())
+        .flatten()
+}
 
 #[derive(PartialEq)]
 pub struct ToastHost {}

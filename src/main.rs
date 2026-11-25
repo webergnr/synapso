@@ -223,7 +223,6 @@ fn app() -> impl IntoElement {
             color_pick: State::create(None),
             flush: State::create(0),
             naming: State::create(None),
-            last_undo: State::create(None),
             drag_doc: State::create(None),
             drop_at: State::create(None),
             board_rev: State::create(0),
@@ -360,13 +359,7 @@ fn app() -> impl IntoElement {
                 app.close_tab(&rel);
             }
             ("z", false) => {
-                // ⌘Z where no editor holds the keyboard: take back the last trash
-                let last = app.last_undo.read().clone();
-                if let Some(u) = last
-                    && (*view.read() == View::Graph
-                        || app.note.read().is_empty()
-                        || app.toast.read().is_some())
-                {
+                if let Some(u) = toast::live_undo(app) {
                     app.undo(&u);
                 }
             }
@@ -540,9 +533,8 @@ pub fn open_vault(app: App) {
     cs.set(canvases);
     n.set(note.clone());
     c.set(canvas);
-    let (mut d, mut u, mut g) = (app.dirty, app.last_undo, app.graph);
+    let (mut d, mut g) = (app.dirty, app.graph);
     d.set(HashSet::new());
-    u.set(None);
     g.write().focus = note;
     app.toast(format!("opened {}", root.display()), "", None);
 }

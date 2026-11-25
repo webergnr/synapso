@@ -360,6 +360,15 @@ impl Component for NotePane {
                     report(save(), true);
                     return;
                 }
+                // ⌘Z while the trash's toast shows is the toast's: the shell
+                // takes the trash back, and the note's text stays as it is
+                if crate::ctrl(&e)
+                    && e.code == Code::KeyZ
+                    && !e.modifiers.contains(Modifiers::SHIFT)
+                    && crate::toast::live_undo(app).is_some()
+                {
+                    return;
+                }
                 // the shell's chords are not text
                 if crate::ctrl(&e)
                     && matches!(
@@ -3693,7 +3702,6 @@ mod find_tests {
             color_pick: State::create(None),
             flush: State::create(0),
             naming: State::create(None),
-            last_undo: State::create(None),
             drag_doc: State::create(None),
             drop_at: State::create(None),
             board_rev: State::create(0),
@@ -4113,5 +4121,37 @@ mod find_tests {
         let text = written(&mut r, &file);
         assert!(!text.contains("**"), "⌃B made bold: {text:?}");
         assert!(!text.contains('`'), "⌃E made inline code: {text:?}");
+    }
+
+    /// ⌘Z takes the trash back while its toast shows, and only then: a
+    /// later toast, or the trash's own gone, leaves ⌘Z to the note (ED-023).
+    #[test]
+    fn cmd_z_takes_the_trash_back_only_while_its_toast_shows() {
+        let (mut r, app, file) = pane("trash", "gui");
+        let trashed = crate::app::Undo::Trash(vec![]);
+        r.run_in(|| app.toast("outra.md moved to trash", "", Some(trashed.clone())));
+        let live = r.run_in(|| crate::toast::live_undo(app));
+        assert_eq!(live, Some(trashed.clone()));
+        // the toast that came after it (⌘S) is no trash's
+        r.run_in(|| app.toast("workspace saved", "just now", None));
+        assert_eq!(r.run_in(|| crate::toast::live_undo(app)), None);
+        // and the note's ⌘Z is its own
+        type_text(&mut r, "k");
+        let undo = Modifiers::ctrl_or_meta();
+        key(&mut r, Key::Character("z".into()), Code::KeyZ, undo);
+        assert_eq!(written(&mut r, &file), "gui");
+        // while a trash's toast shows, ⌘Z is the toast's alone: not the text
+        type_text(&mut r, "m");
+        r.run_in(|| app.toast("b.md moved to trash", "", Some(trashed.clone())));
+        key(&mut r, Key::Character("z".into()), Code::KeyZ, undo);
+        assert_eq!(written(&mut r, &file), "mgui");
+        // and once it has gone, nothing is taken back
+        r.run_in(|| {
+            let mut t = app.toast;
+            if let Some(t) = t.write().as_mut() {
+                t.at -= Duration::from_secs(6);
+            }
+        });
+        assert_eq!(r.run_in(|| crate::toast::live_undo(app)), None);
     }
 }

@@ -65,6 +65,8 @@ pub struct Toast {
     pub text: String,
     pub detail: String,
     pub undo: Option<Undo>,
+    /// When it rose: its undo holds for the seconds it shows.
+    pub at: std::time::Instant,
 }
 
 /// Where the colour popover opened, and for which folder or document.
@@ -132,8 +134,6 @@ pub struct App {
     pub flush: State<u32>,
     /// A document freshly created whose name is being typed in place.
     pub naming: State<Option<String>>,
-    /// The last undoable action, kept after its toast is gone (⌘Z).
-    pub last_undo: State<Option<Undo>>,
     /// A document being dragged out of the tree, and where it hovers over
     /// the board (pane coordinates).
     pub drag_doc: State<Option<String>>,
@@ -353,15 +353,12 @@ impl App {
         static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
         let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let mut t = self.toast;
-        if undo.is_some() {
-            let mut last = self.last_undo;
-            last.set(undo.clone());
-        }
         t.set(Some(Toast {
             id,
             text: text.into(),
             detail: detail.into(),
             undo,
+            at: std::time::Instant::now(),
         }));
     }
 
@@ -442,8 +439,6 @@ impl App {
                 }
                 let mut t = self.toast;
                 t.set(None);
-                let mut last = self.last_undo;
-                last.set(None);
             }
         }
     }
