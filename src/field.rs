@@ -373,7 +373,8 @@ fn is_app_chord(key: &Key, mods: Modifiers) -> bool {
     let Key::Character(c) = key else {
         return false;
     };
-    // either one, as `crate::ctrl` reads the app's chords
+    // either one: `crate::ctrl` reads only ⌘ on the Mac, but a ⌃+letter
+    // the editor would type is no text in a field either
     mods.intersects(Modifiers::CONTROL | Modifiers::META)
         && !mods.contains(Modifiers::ALT)
         && !matches!(c.as_str(), "a" | "c" | "x" | "v" | "z" | "y")

@@ -4098,4 +4098,20 @@ mod find_tests {
         type_text(&mut r, "X");
         assert_eq!(written(&mut r, &file), "beta one beta two X");
     }
+
+    /// ⌃ is the Mac's text-system modifier (⌃A, ⌃E…, the fork's to answer),
+    /// never ⌘: ⌃B is no bold and ⌃F no find (ED-010).
+    #[test]
+    fn control_letters_are_not_command_chords_on_the_mac() {
+        if !crate::keys::is_mac() {
+            return;
+        }
+        let (mut r, _app, file) = pane("ctrl", "abc");
+        let ctrl = Modifiers::CONTROL;
+        key(&mut r, Key::Character("b".into()), Code::KeyB, ctrl);
+        key(&mut r, Key::Character("e".into()), Code::KeyE, ctrl);
+        let text = written(&mut r, &file);
+        assert!(!text.contains("**"), "⌃B made bold: {text:?}");
+        assert!(!text.contains('`'), "⌃E made inline code: {text:?}");
+    }
 }

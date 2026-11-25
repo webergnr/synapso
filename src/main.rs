@@ -166,8 +166,20 @@ pub fn vault_root() -> PathBuf {
 
 const SPLIT_DEFAULT: f32 = 0.42;
 
+/// The app's chords' modifier is held: ⌘ on the Mac, Ctrl elsewhere.
 pub fn ctrl(e: &KeyboardEventData) -> bool {
-    e.modifiers.contains(Modifiers::CONTROL) || e.modifiers.contains(Modifiers::META)
+    command(e.modifiers, keys::is_mac())
+}
+
+/// ⌘ alone on the Mac: ⌃ there is the text system's (⌃A, ⌃E, ⌃K…), and a
+/// ⌃ read as ⌘ made ⌃B bold and ⌃F a find (ED-010). Off the Mac, Ctrl, or
+/// the Windows/Super key as before.
+pub fn command(mods: Modifiers, mac: bool) -> bool {
+    if mac {
+        mods.contains(Modifiers::META)
+    } else {
+        mods.intersects(Modifiers::CONTROL | Modifiers::META)
+    }
 }
 
 fn app() -> impl IntoElement {
@@ -1016,6 +1028,20 @@ pub fn absorb(app: App, path: &std::path::Path, beside: &str) -> Option<String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_chord_modifier_is_cmd_on_the_mac_and_ctrl_elsewhere() {
+        let (ctrl, cmd) = (Modifiers::CONTROL, Modifiers::META);
+        // the Mac: ⌘ alone, ⌃ is the text system's
+        assert!(command(cmd, true));
+        assert!(command(cmd | Modifiers::SHIFT, true));
+        assert!(!command(ctrl, true));
+        assert!(!command(ctrl | Modifiers::SHIFT, true));
+        // elsewhere: Ctrl, or the Windows/Super key, as before
+        assert!(command(ctrl, false));
+        assert!(command(cmd, false));
+        assert!(!command(Modifiers::ALT, false));
+    }
 
     #[test]
     fn a_vault_from_the_command_line_is_spelled_as_the_picker_spells_it() {

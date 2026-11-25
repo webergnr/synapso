@@ -181,12 +181,22 @@ pub fn set_mods(e: &KeyboardEventData, pressed: bool) {
 /// and its release saying it is down. A key that IS a modifier is believed
 /// over the state it carries.
 fn mods_after(e: &KeyboardEventData, pressed: bool) -> (bool, bool) {
-    let (mut ctrl, mut shift) = (crate::ctrl(e), e.modifiers.contains(Modifiers::SHIFT));
+    mods_on(e, pressed, crate::keys::is_mac())
+}
+
+/// [`mods_after`] on the Mac or off it: the Ctrl/⌘ flag is the app's chord
+/// modifier, `crate::command`.
+fn mods_on(e: &KeyboardEventData, pressed: bool, mac: bool) -> (bool, bool) {
+    let mods = e.modifiers;
+    let (mut ctrl, mut shift) = (crate::command(mods, mac), mods.contains(Modifiers::SHIFT));
     match e.key {
         Key::Named(NamedKey::Shift) => shift = pressed,
-        // ⌃ and ⌘ are one flag: letting go of one leaves the other's say
-        Key::Named(NamedKey::Control) => ctrl = pressed || e.modifiers.contains(Modifiers::META),
-        Key::Named(NamedKey::Meta) => ctrl = pressed || e.modifiers.contains(Modifiers::CONTROL),
+        // on the Mac ⌘ alone is the flag, and ⌃ says nothing about it
+        Key::Named(NamedKey::Meta) if mac => ctrl = pressed,
+        // elsewhere ⌃ and ⌘ are one flag: letting go of one leaves the
+        // other's say
+        Key::Named(NamedKey::Control) if !mac => ctrl = pressed || mods.contains(Modifiers::META),
+        Key::Named(NamedKey::Meta) => ctrl = pressed || mods.contains(Modifiers::CONTROL),
         _ => {}
     }
     (ctrl, shift)
@@ -567,18 +577,35 @@ mod tests {
     #[test]
     fn letting_go_of_one_of_ctrl_and_cmd_keeps_the_other_held() {
         let key = |k, code, mods| KeyboardEventData::new(Key::Named(k), code, mods);
-        // the release says both are down (macOS) or only the other one is: either
-        // way the other one is still held
+        // off the Mac: the release says both are down or only the other one
+        // is: either way the other one is still held
         let both = Modifiers::CONTROL | Modifiers::META;
         let cmd = key(NamedKey::Meta, Code::MetaLeft, both);
-        assert_eq!(mods_after(&cmd, false), (true, false));
+        assert_eq!(mods_on(&cmd, false, false), (true, false));
         let ctrl = key(NamedKey::Control, Code::ControlLeft, both);
-        assert_eq!(mods_after(&ctrl, false), (true, false));
+        assert_eq!(mods_on(&ctrl, false, false), (true, false));
         let cmd = key(NamedKey::Meta, Code::MetaLeft, Modifiers::CONTROL);
-        assert_eq!(mods_after(&cmd, false), (true, false));
+        assert_eq!(mods_on(&cmd, false, false), (true, false));
         // and one held alone, let go, is let go
         let cmd = key(NamedKey::Meta, Code::MetaLeft, Modifiers::META);
-        assert_eq!(mods_after(&cmd, false), (false, false));
+        assert_eq!(mods_on(&cmd, false, false), (false, false));
+    }
+
+    /// On the Mac the flag is ⌘ alone: ⌃ held, pressed or let go says
+    /// nothing about it (ED-010).
+    #[test]
+    fn on_the_mac_only_cmd_is_the_chord_flag() {
+        let key = |k, code, mods| KeyboardEventData::new(Key::Named(k), code, mods);
+        let ctrl = key(NamedKey::Control, Code::ControlLeft, Modifiers::empty());
+        assert_eq!(mods_on(&ctrl, true, true), (false, false));
+        let ctrl = key(NamedKey::Control, Code::ControlLeft, Modifiers::META);
+        assert_eq!(mods_on(&ctrl, false, true), (true, false));
+        let cmd = key(NamedKey::Meta, Code::MetaLeft, Modifiers::CONTROL);
+        assert_eq!(mods_on(&cmd, false, true), (false, false));
+        assert_eq!(mods_on(&cmd, true, true), (true, false));
+        let a = KeyboardEventData::new(Key::Character("a".into()), Code::KeyA, Modifiers::CONTROL);
+        assert_eq!(mods_on(&a, true, true), (false, false));
+        assert_eq!(mods_on(&a, true, false), (true, false));
     }
 
     /// A refused flush stops what was about to unmount the pane. Only the same
