@@ -220,6 +220,13 @@ impl Component for NotePane {
             move || {
                 publish(&editable);
                 a11y.request_focus();
+                // a find bar left open goes with the note it searched: it
+                // would mount again here and take the keyboard (ED-018), as
+                // VS Code and TextEdit leave each document's own bar shut
+                let mut find = app.find;
+                if find.peek().is_some() {
+                    find.set(None);
+                }
                 // the keyboard is the note's now, and so is ⌘W (`View::pane`):
                 // the graph's round trip and ⌘O remount it with no press
                 let mut pane = app.pane;
@@ -3897,5 +3904,50 @@ mod find_tests {
         settle(&mut r);
         let (after, _) = laid_out(&r, "short");
         assert_eq!(after, before);
+    }
+
+    /// Two notes, `a.md` open, the pane showing whichever `app.note` names
+    /// (the shell's own switch).
+    fn two(tag: &str) -> (TestingRunner, App, std::path::PathBuf) {
+        let root = std::env::temp_dir().join(format!("synapso-two-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("a.md"), "alpha").unwrap();
+        std::fs::write(root.join("b.md"), "beta").unwrap();
+        let held = Rc::new(Cell::new(None::<App>));
+        let (mut r, _) = TestingRunner::new(
+            {
+                let held = held.clone();
+                let root = root.clone();
+                move || {
+                    let app = use_provide_context(|| shell(&root));
+                    held.set(Some(app));
+                    let rel = app.note.read().clone();
+                    NotePane { rel }
+                }
+            },
+            (1200., 800.).into(),
+            |_| {},
+            1.0,
+        );
+        settle(&mut r);
+        let app = held.get().expect("the pane rendered");
+        (r, app, root.join("b.md"))
+    }
+
+    #[test]
+    fn the_find_bar_closes_when_the_note_changes() {
+        let (mut r, app, b) = two("switch");
+        open_find(&mut r, app);
+        type_text(&mut r, "gamma");
+        r.run_in(flush_note);
+        r.run_in(|| {
+            let mut n = app.note;
+            n.set("b.md".into());
+        });
+        settle(&mut r);
+        type_text(&mut r, "Y");
+        assert_eq!(*app.find.peek(), None, "the bar went with its note");
+        assert_eq!(written(&mut r, &b), "Ybeta", "the keyboard is the note's");
     }
 }
