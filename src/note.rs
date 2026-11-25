@@ -204,6 +204,9 @@ impl Component for NotePane {
         // changes on every key, and a render per key just to remember it is
         // the cost the follow would add
         let followed = use_hook(|| Rc::new(std::cell::Cell::new(None::<(usize, usize)>)));
+        // bumped by ⌘F with the bar already open: the bar mounts again, and
+        // its field takes the keyboard back
+        let mut find_gen = use_state(|| 0u64);
 
         let publish = move |editable: &UseEditable| {
             let mut caret = caret;
@@ -335,6 +338,23 @@ impl Component for NotePane {
             move |e: Event<KeyboardEventData>| {
                 if !a11y.is_focused() || app.color_pick.read().is_some() {
                     return;
+                }
+                // the find bar open and the note typing: Esc shuts it, as
+                // VS Code's does with the editor focused (ED-017), and ⌘F
+                // takes the keyboard back to its field (ED-016)
+                if app.find.read().is_some() {
+                    if matches!(e.key, Key::Named(NamedKey::Escape)) {
+                        let mut find = app.find;
+                        find.set(None);
+                        return;
+                    }
+                    if crate::ctrl(&e)
+                        && e.code == Code::KeyF
+                        && !e.modifiers.contains(Modifiers::SHIFT)
+                    {
+                        *find_gen.write() += 1;
+                        return;
+                    }
                 }
                 if crate::ctrl(&e) && e.code == Code::KeyS {
                     report(save(), true);
@@ -637,6 +657,7 @@ impl Component for NotePane {
                     hit,
                     editable,
                     note: a11y,
+                    generation: *find_gen.read(),
                 }
                 .into_element()
             }))
@@ -2882,9 +2903,15 @@ struct FindBar {
     editable: UseEditable,
     /// The note's own focus.
     note: AccessibilityId,
+    /// A new one mounts the bar again: ⌘F while it is open.
+    generation: u64,
 }
 
 impl Component for FindBar {
+    fn render_key(&self) -> DiffKey {
+        (&self.generation).into()
+    }
+
     fn render(&self) -> impl IntoElement {
         let app = use_consume::<App>();
         let mut query = use_state(|| app.find.read().clone().unwrap_or_default());
@@ -2948,6 +2975,8 @@ impl Component for FindBar {
                         },
                     )
                     .placeholder("find in note")
+                    // ⌘F again: the query selected, so typing replaces it
+                    .select_all()
                     .on_arrow(step),
                 ),
             )
@@ -3935,6 +3964,14 @@ mod find_tests {
         (r, app, root.join("b.md"))
     }
 
+    /// A click at the start of the line that shows `text`: the note's
+    /// keyboard, the caret there.
+    fn click_line(r: &mut TestingRunner, text: &str) {
+        let (area, _) = laid_out(r, text);
+        r.click_cursor(((area.min_x() + 1.) as f64, area.center().y as f64));
+        settle(r);
+    }
+
     #[test]
     fn the_find_bar_closes_when_the_note_changes() {
         let (mut r, app, b) = two("switch");
@@ -3949,5 +3986,41 @@ mod find_tests {
         type_text(&mut r, "Y");
         assert_eq!(*app.find.peek(), None, "the bar went with its note");
         assert_eq!(written(&mut r, &b), "Ybeta", "the keyboard is the note's");
+    }
+
+    #[test]
+    fn cmd_f_with_the_bar_open_takes_the_keyboard_back_to_the_field() {
+        let (mut r, app, file) = pane("refind", "alpha beta gamma");
+        open_find(&mut r, app);
+        type_text(&mut r, "gamma");
+        click_line(&mut r, "alpha beta gamma");
+        key(
+            &mut r,
+            Key::Character("f".into()),
+            Code::KeyF,
+            Modifiers::ctrl_or_meta(),
+        );
+        // the field has the keyboard, its query selected: typing replaces it
+        type_text(&mut r, "q");
+        assert_eq!(app.find.peek().as_deref(), Some("q"));
+        assert_eq!(written(&mut r, &file), "alpha beta gamma");
+    }
+
+    #[test]
+    fn esc_in_the_note_closes_the_find_bar() {
+        let (mut r, app, file) = pane("escnote", "alpha beta");
+        open_find(&mut r, app);
+        type_text(&mut r, "beta");
+        click_line(&mut r, "alpha beta");
+        key(
+            &mut r,
+            Key::Named(NamedKey::Escape),
+            Code::Escape,
+            Modifiers::empty(),
+        );
+        assert_eq!(*app.find.peek(), None, "Esc in the note closes the bar");
+        // and the note keeps the keyboard and its caret
+        type_text(&mut r, "X");
+        assert_eq!(written(&mut r, &file), "Xalpha beta");
     }
 }
